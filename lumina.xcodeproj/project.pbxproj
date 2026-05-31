@@ -14,6 +14,11 @@
 		5B3255742FCA363F00A23693 /* luminaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3255732FCA363F00A23693 /* luminaTests.swift */; };
 		5B32557E2FCA363F00A23693 /* luminaUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32557D2FCA363F00A23693 /* luminaUITests.swift */; };
 		5B3255802FCA363F00A23693 /* luminaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */; };
+		5BC000022FCA500000000001 /* LuminaCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC000012FCA500000000001 /* LuminaCore.swift */; };
+		5BC000082FCA500000000001 /* capabilities-supported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000042FCA500000000001 /* capabilities-supported.json */; };
+		5BC000092FCA500000000001 /* capabilities-unsupported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000052FCA500000000001 /* capabilities-unsupported.json */; };
+		5BC0000A2FCA500000000001 /* error-envelope-stream-token-expired.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */; };
+		5BC0000B2FCA500000000001 /* error-envelope-validation.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000072FCA500000000001 /* error-envelope-validation.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +49,12 @@
 		5B3255792FCA363F00A23693 /* luminaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = luminaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B32557D2FCA363F00A23693 /* luminaUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = luminaUITests.swift; sourceTree = "<group>"; };
 		5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = luminaUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		5BC000012FCA500000000001 /* LuminaCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LuminaCore.swift; sourceTree = "<group>"; };
+		5BC0000C2FCA500000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5BC000042FCA500000000001 /* capabilities-supported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-supported.json"; sourceTree = "<group>"; };
+		5BC000052FCA500000000001 /* capabilities-unsupported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-unsupported.json"; sourceTree = "<group>"; };
+		5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "error-envelope-stream-token-expired.json"; sourceTree = "<group>"; };
+		5BC000072FCA500000000001 /* error-envelope-validation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "error-envelope-validation.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -96,6 +107,8 @@
 			children = (
 				5B3255622FCA363B00A23693 /* luminaApp.swift */,
 				5B3255642FCA363B00A23693 /* ContentView.swift */,
+				5BC000012FCA500000000001 /* LuminaCore.swift */,
+				5BC0000C2FCA500000000001 /* Info.plist */,
 				5B3255662FCA363E00A23693 /* Assets.xcassets */,
 				5B3255682FCA363E00A23693 /* Preview Content */,
 			);
@@ -114,8 +127,20 @@
 			isa = PBXGroup;
 			children = (
 				5B3255732FCA363F00A23693 /* luminaTests.swift */,
+				5BC000032FCA500000000001 /* Fixtures */,
 			);
 			path = luminaTests;
+			sourceTree = "<group>";
+		};
+		5BC000032FCA500000000001 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				5BC000042FCA500000000001 /* capabilities-supported.json */,
+				5BC000052FCA500000000001 /* capabilities-unsupported.json */,
+				5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */,
+				5BC000072FCA500000000001 /* error-envelope-validation.json */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		5B32557C2FCA363F00A23693 /* luminaUITests */ = {
@@ -240,6 +265,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5BC000082FCA500000000001 /* capabilities-supported.json in Resources */,
+				5BC000092FCA500000000001 /* capabilities-unsupported.json in Resources */,
+				5BC0000A2FCA500000000001 /* error-envelope-stream-token-expired.json in Resources */,
+				5BC0000B2FCA500000000001 /* error-envelope-validation.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -258,6 +287,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5B3255652FCA363B00A23693 /* ContentView.swift in Sources */,
+				5BC000022FCA500000000001 /* LuminaCore.swift in Sources */,
 				5B3255632FCA363B00A23693 /* luminaApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -423,9 +453,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"lumina/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = lumina/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -448,9 +477,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"lumina/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIUserInterfaceStyle = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = lumina/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -1,0 +1,107 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-jwt-token-here
+@movieLibraryId = 1
+@tvLibraryId = 2
+@libraryPathId = 1
+@genreId = 1
+@browsePath = D:/Media
+
+### List active libraries
+GET {{api}}/libraries?active_only=true
+Authorization: Bearer {{token}}
+
+### List all libraries
+GET {{api}}/libraries
+Authorization: Bearer {{token}}
+
+### Browse folders for library setup (admin)
+GET {{api}}/libraries/browse?path={{browsePath}}
+Authorization: Bearer {{token}}
+
+### Create movie library (admin)
+POST {{api}}/libraries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Movies",
+  "type": "movie",
+  "preferred_language": "en",
+  "country_region": "US",
+  "active": true,
+  "paths": ["D:/Media/Movies"]
+}
+
+### Create TV library (admin)
+POST {{api}}/libraries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "TV Shows",
+  "type": "tv_show",
+  "preferred_language": "en",
+  "country_region": "US",
+  "active": true,
+  "paths": ["D:/Media/TV"]
+}
+
+### Get library
+GET {{api}}/libraries/{{movieLibraryId}}
+Authorization: Bearer {{token}}
+
+### Update library (admin)
+PUT {{api}}/libraries/{{movieLibraryId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Movies Updated",
+  "type": "movie",
+  "preferred_language": "en",
+  "country_region": "US",
+  "active": true,
+  "paths": ["D:/Media/Movies"]
+}
+
+### Add library path (admin)
+POST {{api}}/libraries/{{movieLibraryId}}/paths
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "path": "E:/More Movies"
+}
+
+### Delete library path (admin)
+DELETE {{api}}/libraries/{{movieLibraryId}}/paths/{{libraryPathId}}
+Authorization: Bearer {{token}}
+
+### List library movies
+GET {{api}}/libraries/movies/{{movieLibraryId}}?page=1&limit=20&search=heat
+Authorization: Bearer {{token}}
+
+### List library TV shows
+GET {{api}}/libraries/tv/{{tvLibraryId}}?page=1&limit=20&search=dark
+Authorization: Bearer {{token}}
+
+### Delete library (admin)
+DELETE {{api}}/libraries/{{movieLibraryId}}
+Authorization: Bearer {{token}}
+
+### List genres
+GET {{api}}/genres?page=1&limit=50
+Authorization: Bearer {{token}}
+
+### Get genre
+GET {{api}}/genres/{{genreId}}
+Authorization: Bearer {{token}}
+
+### Genre movies
+GET {{api}}/genres/{{genreId}}/movies?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Genre TV shows
+GET {{api}}/genres/{{genreId}}/tv_shows?page=1&limit=20
+Authorization: Bearer {{token}}

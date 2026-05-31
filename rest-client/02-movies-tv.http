@@ -1,0 +1,183 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-jwt-token-here
+@movieId = 1
+@tvShowId = 1
+@libraryId = 1
+@seasonNumber = 1
+@episodeNumber = 1
+
+### List movies
+GET {{api}}/movies?page=1&limit=20&search=heat&library_id={{libraryId}}&order_by=added_at&sort_direction=desc
+Authorization: Bearer {{token}}
+
+### List movies with credits and genres
+GET {{api}}/movies/{{movieId}}?include_credits=true&include_genres=true
+Authorization: Bearer {{token}}
+
+### Create movie
+POST {{api}}/movies
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Heat",
+  "original_title": "Heat",
+  "year": 1995,
+  "release_date": "1995-12-15",
+  "description": "A professional thief and an LAPD detective obsessively pursue each other.",
+  "runtime": 170,
+  "rating": 8.3,
+  "file_path": "D:/Media/Movies/Heat (1995).mkv"
+}
+
+### Update movie
+PUT {{api}}/movies/{{movieId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Heat",
+  "rating": 8.4
+}
+
+### Add movie to libraries
+POST {{api}}/movies/{{movieId}}/libraries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "library_ids": [{{libraryId}}]
+}
+
+### Remove movie from library
+DELETE {{api}}/movies/{{movieId}}/libraries/{{libraryId}}
+Authorization: Bearer {{token}}
+
+### Movie credits
+GET {{api}}/movies/{{movieId}}/credits
+Authorization: Bearer {{token}}
+
+### Movie logo options
+GET {{api}}/movies/{{movieId}}/logo-options
+Authorization: Bearer {{token}}
+
+### Update movie logo
+POST {{api}}/movies/{{movieId}}/logo
+Authorization: Bearer {{token}}
+
+### Trending movies
+GET {{api}}/movies/trending?time_window=week&language=en-US&include_genres=true&library_id={{libraryId}}
+Authorization: Bearer {{token}}
+
+### Refresh trending movies cache
+POST {{api}}/movies/trending/refresh
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "time_window": "week",
+  "language": "en-US"
+}
+
+### Update all movie logos
+POST {{api}}/movies/logos/update-all
+Authorization: Bearer {{token}}
+
+### Delete movie
+DELETE {{api}}/movies/{{movieId}}
+Authorization: Bearer {{token}}
+
+### List TV shows
+GET {{api}}/tv_shows?page=1&limit=20&search=dark&library_id={{libraryId}}&order_by=added_at&sort_direction=desc
+Authorization: Bearer {{token}}
+
+### Get TV show with credits and genres
+GET {{api}}/tv_shows/{{tvShowId}}?include_credits=true&include_genres=true
+Authorization: Bearer {{token}}
+
+### Create TV show
+POST {{api}}/tv_shows
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Dark",
+  "original_title": "Dark",
+  "year": 2017,
+  "first_air_date": "2017-12-01",
+  "description": "A missing child sets four families on a frantic hunt.",
+  "status": "Ended",
+  "rating": 8.7
+}
+
+### Update TV show
+PUT {{api}}/tv_shows/{{tvShowId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Dark",
+  "status": "Ended"
+}
+
+### List seasons
+GET {{api}}/tv_shows/{{tvShowId}}/seasons
+Authorization: Bearer {{token}}
+
+### Create season
+POST {{api}}/tv_shows/{{tvShowId}}/seasons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "season_number": {{seasonNumber}},
+  "title": "Season {{seasonNumber}}",
+  "overview": "Season overview"
+}
+
+### Get season
+GET {{api}}/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}
+Authorization: Bearer {{token}}
+
+### List episodes
+GET {{api}}/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}/episodes
+Authorization: Bearer {{token}}
+
+### Create episode
+POST {{api}}/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}/episodes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "episode_number": {{episodeNumber}},
+  "title": "Secrets",
+  "description": "Episode overview",
+  "runtime": 52,
+  "file_path": "D:/Media/TV/Dark/Season 01/Dark S01E01.mkv"
+}
+
+### Get episode
+GET {{api}}/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}
+Authorization: Bearer {{token}}
+
+### TV show credits
+GET {{api}}/tv_shows/{{tvShowId}}/credits
+Authorization: Bearer {{token}}
+
+### TV show logo options
+GET {{api}}/tv_shows/{{tvShowId}}/logo-options
+Authorization: Bearer {{token}}
+
+### Update TV show logo
+POST {{api}}/tv_shows/{{tvShowId}}/logo
+Authorization: Bearer {{token}}
+
+### Update all TV show logos
+POST {{api}}/tv_shows/logos/update-all
+Authorization: Bearer {{token}}
+
+### Delete TV show
+DELETE {{api}}/tv_shows/{{tvShowId}}
+Authorization: Bearer {{token}}
+

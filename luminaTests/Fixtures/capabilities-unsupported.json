@@ -1,0 +1,63 @@
+{
+  "server": {
+    "name": "Lumina",
+    "version": "0.8.0"
+  },
+  "api": {
+    "version": "legacy",
+    "minimumTvClientVersion": "unsupported"
+  },
+  "auth": {
+    "modes": [
+      "password_jwt"
+    ],
+    "sessionValidationRoute": "/api/v1/auth/me"
+  },
+  "playback": {
+    "hls": {
+      "movies": false,
+      "episodes": false
+    },
+    "streamTokens": {
+      "requiredForProtectedStreams": false,
+      "transport": "none"
+    },
+    "progress": {
+      "supported": false,
+      "recommendedIntervalSeconds": 0,
+      "events": []
+    },
+    "sessions": {
+      "supported": false,
+      "route": null
+    }
+  },
+  "library": {
+    "home": false,
+    "search": true,
+    "movieBrowse": true,
+    "tvBrowse": false,
+    "movieDetails": false,
+    "tvDetails": false,
+    "watchlist": false,
+    "favorites": false,
+    "artworkKinds": [
+      "poster"
+    ]
+  },
+  "diagnostics": {
+    "correlationIds": true,
+    "playbackSessionCorrelation": false,
+    "clientEventUpload": false
+  },
+  "routes": {
+    "catalogSearch": "/api/v1/catalog/search",
+    "catalogMovies": "/api/v1/catalog/movies",
+    "authMe": "/api/v1/auth/me"
+  },
+  "limits": {
+    "defaultPageSize": 20,
+    "maximumPageSize": 40,
+    "maximumArtworkWidth": 1280
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "error": {
+    "code": "STREAM_TOKEN_EXPIRED",
+    "category": "stream_token",
+    "safeMessage": "The playback link expired. Try playing again.",
+    "retryable": true,
+    "correlationId": "req_01HYSAFE",
+    "details": {
+      "mediaKind": "movie",
+      "operation": "start_playback"
+    }
+  }
+}

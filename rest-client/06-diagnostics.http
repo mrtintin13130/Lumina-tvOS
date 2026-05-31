@@ -1,0 +1,31 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-admin-jwt-token-here
+@movieId = 1
+@showId = 1
+@seasonNumber = 1
+@episodeNumber = 1
+@sessionId = 1
+
+### Movie stream diagnostics (admin)
+GET {{api}}/diagnostics/stream/movies/{{movieId}}
+Authorization: Bearer {{token}}
+
+### Episode stream diagnostics (admin)
+GET {{api}}/diagnostics/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}
+Authorization: Bearer {{token}}
+
+### Playback sessions diagnostics (admin)
+GET {{api}}/diagnostics/playback/sessions?status=active&page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Playback session diagnostics (admin)
+GET {{api}}/diagnostics/playback/sessions/{{sessionId}}
+Authorization: Bearer {{token}}
+
+### Unsupported diagnostics action placeholder (admin)
+POST {{api}}/diagnostics/actions/restart-streaming
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}

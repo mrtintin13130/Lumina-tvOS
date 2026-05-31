@@ -1,0 +1,327 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-jwt-token-here
+@streamToken = paste-stream-token-here
+@movieId = 1
+@episodeId = 1
+@showId = 1
+@seasonNumber = 1
+@episodeNumber = 1
+@sessionId = 1
+@subtitleId = 1
+@quality = original
+@segment = 0
+@audioRenditionId = audio-0
+@subtitleRenditionId = subtitle-0
+@historyId = 1
+
+### Create movie stream token
+POST {{api}}/stream/token
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "movie",
+  "media_id": {{movieId}}
+}
+
+### Create episode stream token
+POST {{api}}/stream/token
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "episode",
+  "media_id": {{episodeId}}
+}
+
+### Stream client info
+GET {{api}}/stream/client-info?quality=original
+Authorization: Bearer {{token}}
+
+### Get transcoding settings (admin)
+GET {{api}}/stream/transcoding-settings
+Authorization: Bearer {{token}}
+
+### Update transcoding settings (admin)
+PUT {{api}}/stream/transcoding-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "default_playback_mode": "direct_auto",
+  "max_concurrent_transcodes": 10,
+  "max_sessions": 100,
+  "max_quality": "original",
+  "hls_segment_duration_seconds": 6,
+  "temp_directory": null,
+  "hardware_acceleration": "off",
+  "direct_play_policy": "compatible_only",
+  "subtitle_policy": "external_webvtt_preferred",
+  "audio_policy": "aac_stereo_for_unsupported"
+}
+
+### Stream speed test (admin, expensive)
+GET {{api}}/stream/speed-test
+Authorization: Bearer {{token}}
+
+### Stream service status
+GET {{api}}/stream/status
+Authorization: Bearer {{token}}
+
+### Movie stream info
+GET {{api}}/stream/movies/{{movieId}}/info
+Authorization: Bearer {{token}}
+
+### Direct movie stream
+GET {{api}}/stream/movies/{{movieId}}?quality=original&t=0&session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Direct movie stream with selected tracks
+GET {{api}}/stream/movies/{{movieId}}?quality=original&t=0&audio_track=0&subtitle_track=external:{{subtitleId}}&session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS manifest
+GET {{api}}/stream/movies/{{movieId}}/hls/manifest.m3u8?quality=original&t=0&session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS playlist
+GET {{api}}/stream/movies/{{movieId}}/hls/playlist/{{quality}}.m3u8?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS segment
+GET {{api}}/stream/movies/{{movieId}}/hls/segment/{{quality}}/{{segment}}.ts?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS audio playlist
+GET {{api}}/stream/movies/{{movieId}}/hls/audio/{{audioRenditionId}}.m3u8?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS audio segment
+GET {{api}}/stream/movies/{{movieId}}/hls/audio/{{audioRenditionId}}/{{segment}}.ts?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS subtitle playlist
+GET {{api}}/stream/movies/{{movieId}}/hls/subtitles/{{subtitleRenditionId}}.m3u8?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS subtitle segment
+GET {{api}}/stream/movies/{{movieId}}/hls/subtitles/{{subtitleRenditionId}}/{{segment}}.vtt?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Movie HLS manifest with stream token
+GET {{api}}/stream/movies/{{movieId}}/hls/manifest.m3u8?stream_token={{streamToken}}&quality=original
+
+### Episode stream info
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/info
+Authorization: Bearer {{token}}
+
+### Direct episode stream
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}?quality=original&t=0&session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS manifest
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/manifest.m3u8?quality=original&t=0&session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS playlist
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/playlist/{{quality}}.m3u8?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS segment
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/segment/{{quality}}/{{segment}}.ts?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS audio playlist
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/audio/{{audioRenditionId}}.m3u8?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS audio segment
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/audio/{{audioRenditionId}}/{{segment}}.ts?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS subtitle playlist
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/subtitles/{{subtitleRenditionId}}.m3u8?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Episode HLS subtitle segment
+GET {{api}}/stream/tv/{{showId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}/hls/subtitles/{{subtitleRenditionId}}/{{segment}}.vtt?session_id={{sessionId}}
+Authorization: Bearer {{token}}
+
+### Cleanup stream sessions (admin)
+DELETE {{api}}/stream/cleanup
+Authorization: Bearer {{token}}
+
+### Continue watching
+GET {{api}}/playback/continue-watching?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Playback history
+GET {{api}}/playback/history?page=1&limit=20&status=all&media_type=all
+Authorization: Bearer {{token}}
+
+### Playback troubleshooting detail
+GET {{api}}/playback/troubleshooting/{{historyId}}?media_type=movie&media_id={{movieId}}
+Authorization: Bearer {{token}}
+
+### Get selection preferences
+GET {{api}}/playback/preferences/selection
+Authorization: Bearer {{token}}
+
+### Save selection preferences
+PUT {{api}}/playback/preferences/selection
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "audio": {
+    "source_index": 0,
+    "language": "eng",
+    "codec": "aac",
+    "role": "default"
+  },
+  "subtitle": {
+    "mode": "auto",
+    "source_kind": "external",
+    "external_subtitle_id": {{subtitleId}},
+    "language": "eng",
+    "format": "srt",
+    "role": "default"
+  }
+}
+
+### Clear selection preferences
+DELETE {{api}}/playback/preferences/selection
+Authorization: Bearer {{token}}
+
+### List playback sessions (admin)
+GET {{api}}/playback/sessions?status=active
+Authorization: Bearer {{token}}
+
+### Start movie playback session
+POST {{api}}/playback/sessions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "movie",
+  "media_id": {{movieId}},
+  "position_seconds": 0,
+  "play_state": "playing",
+  "client_label": "Thunder Client"
+}
+
+### Start episode playback session
+POST {{api}}/playback/sessions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "episode",
+  "media_id": {{episodeId}},
+  "position_seconds": 0,
+  "play_state": "playing",
+  "client_label": "Thunder Client"
+}
+
+### Update playback session
+PUT {{api}}/playback/sessions/{{sessionId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "position_seconds": 120,
+  "play_state": "paused",
+  "selection_diagnostics": {
+    "requested": null,
+    "preferred": null,
+    "effective": null,
+    "fallback": null,
+    "failure": null
+  }
+}
+
+### Stop playback session
+POST {{api}}/playback/sessions/{{sessionId}}/stop
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "position_seconds": 240,
+  "play_state": "stopped"
+}
+
+### Get movie progress
+GET {{api}}/playback/movies/{{movieId}}/progress
+Authorization: Bearer {{token}}
+
+### Save movie progress
+PUT {{api}}/playback/movies/{{movieId}}/progress
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "position_seconds": 1200,
+  "duration_seconds": 10200,
+  "play_state": "paused"
+}
+
+### Set movie watched
+PUT {{api}}/playback/movies/{{movieId}}/watched
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_watched": true
+}
+
+### Movie tracks
+GET {{api}}/playback/movies/{{movieId}}/tracks
+Authorization: Bearer {{token}}
+
+### Refresh movie tracks (admin)
+POST {{api}}/playback/movies/{{movieId}}/tracks/refresh
+Authorization: Bearer {{token}}
+
+### Get movie subtitle
+GET {{api}}/playback/movies/{{movieId}}/subtitles/{{subtitleId}}
+Authorization: Bearer {{token}}
+
+### Get movie subtitle with stream token
+GET {{api}}/playback/movies/{{movieId}}/subtitles/{{subtitleId}}?stream_token={{streamToken}}
+
+### Get episode progress
+GET {{api}}/playback/episodes/{{episodeId}}/progress
+Authorization: Bearer {{token}}
+
+### Save episode progress
+PUT {{api}}/playback/episodes/{{episodeId}}/progress
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "position_seconds": 600,
+  "duration_seconds": 3000,
+  "play_state": "paused"
+}
+
+### Set episode watched
+PUT {{api}}/playback/episodes/{{episodeId}}/watched
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_watched": true
+}
+
+### Episode tracks
+GET {{api}}/playback/episodes/{{episodeId}}/tracks
+Authorization: Bearer {{token}}
+
+### Refresh episode tracks (admin)
+POST {{api}}/playback/episodes/{{episodeId}}/tracks/refresh
+Authorization: Bearer {{token}}
+
+### Get episode subtitle
+GET {{api}}/playback/episodes/{{episodeId}}/subtitles/{{subtitleId}}
+Authorization: Bearer {{token}}

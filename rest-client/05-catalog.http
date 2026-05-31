@@ -1,0 +1,236 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-jwt-token-here
+@movieId = 1
+@tvShowId = 1
+@personId = 1
+@libraryId = 1
+@genreId = 1
+@entityId = 1
+@seasonNumber = 1
+@episodeNumber = 1
+
+### Catalog Home feed
+# Backend-composed React Home payload. Replaces separate Home calls for continue-watching,
+# recently added movie rows, recently added TV rows, genres, and genre-specific rows.
+# Sections are returned in render order. Empty sections are omitted.
+GET {{api}}/catalog/home?limit=10&hero_limit=5&section_limit=10&include_presentation=true&include_badges=true
+Authorization: Bearer {{token}}
+
+### Catalog search
+# Response cards now include trailer_preview when a primary remote trailer is available.
+GET {{api}}/catalog/search?q=heat&page=1&limit=20&media_type=movie&library_id={{libraryId}}&genre_id={{genreId}}&year_from=1990&year_to=2000&playable_only=true&order_by=relevance&sort_direction=desc
+Authorization: Bearer {{token}}
+
+### Catalog search all media
+# Movie and TV result cards expose trailer_preview without local playback URLs or filesystem paths.
+GET {{api}}/catalog/search?q=dark&page=1&limit=20&order_by=created_at&sort_direction=desc
+Authorization: Bearer {{token}}
+
+### Browse catalog movies
+# Movie cards include trailer_preview.
+GET {{api}}/catalog/movies?page=1&limit=20&order_by=rating&sort_direction=desc&genre_id={{genreId}}&year=1995&rating_min=7&rating_max=10&runtime_min=60&runtime_max=240&library_id={{libraryId}}&watched_state=any
+Authorization: Bearer {{token}}
+
+### Browse catalog TV shows
+# TV cards include trailer_preview.
+GET {{api}}/catalog/tv_shows?page=1&limit=20&order_by=first_air_year&sort_direction=desc&genre_id={{genreId}}&first_air_year=2017&status=Ended&library_id={{libraryId}}&watched_state=any
+Authorization: Bearer {{token}}
+
+### Browse catalog media by studio/network entity
+GET {{api}}/catalog/browse?page=1&limit=20&entity_kind=studio_network&entity_id={{entityId}}
+Authorization: Bearer {{token}}
+
+### Catalog facets for all media
+GET {{api}}/catalog/facets?media_type=all
+Authorization: Bearer {{token}}
+
+### Catalog facets for movies
+GET {{api}}/catalog/facets?media_type=movie
+Authorization: Bearer {{token}}
+
+### Catalog movie detail
+# Detail responses include primary_trailer and trailers.
+GET {{api}}/catalog/movies/{{movieId}}
+Authorization: Bearer {{token}}
+
+### Update catalog movie metadata (admin)
+PATCH {{api}}/catalog/movies/{{movieId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Heat",
+  "rating": 8.4,
+  "content_rating": "R",
+  "studio": "Warner Bros."
+}
+
+### Catalog movie artwork capabilities (admin)
+GET {{api}}/catalog/movies/{{movieId}}/artwork/capabilities
+Authorization: Bearer {{token}}
+
+### Update catalog movie artwork (admin)
+PUT {{api}}/catalog/movies/{{movieId}}/artwork
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "poster_path": "/example-poster.jpg",
+  "backdrop_path": "/example-backdrop.jpg",
+  "backdrop_with_text_path": "/example-backdrop-text.jpg",
+  "logo_path": "/example-logo.png"
+}
+
+### Catalog TV detail
+# Detail responses include primary_trailer and trailers.
+GET {{api}}/catalog/tv_shows/{{tvShowId}}
+Authorization: Bearer {{token}}
+
+### Update catalog TV show metadata (admin)
+PATCH {{api}}/catalog/tv_shows/{{tvShowId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Dark",
+  "status": "Ended",
+  "content_rating": "TV-MA",
+  "studio": "Netflix"
+}
+
+### Catalog TV show seasons
+GET {{api}}/catalog/tv_shows/{{tvShowId}}/seasons
+Authorization: Bearer {{token}}
+
+### Catalog TV show season
+GET {{api}}/catalog/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}
+Authorization: Bearer {{token}}
+
+### Update catalog season metadata (admin)
+PATCH {{api}}/catalog/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Season {{seasonNumber}}",
+  "description": "Updated season overview",
+  "air_date": "2017-12-01",
+  "poster_path": "/example-season-poster.jpg"
+}
+
+### Catalog TV show season episodes
+GET {{api}}/catalog/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}/episodes
+Authorization: Bearer {{token}}
+
+### Catalog TV show episode
+GET {{api}}/catalog/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}
+Authorization: Bearer {{token}}
+
+### Update catalog episode metadata (admin)
+PATCH {{api}}/catalog/tv_shows/{{tvShowId}}/seasons/{{seasonNumber}}/episodes/{{episodeNumber}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Secrets",
+  "description": "Updated episode overview",
+  "air_date": "2017-12-01",
+  "still_path": "/example-episode-still.jpg"
+}
+
+### Catalog TV show artwork capabilities (admin)
+GET {{api}}/catalog/tv_shows/{{tvShowId}}/artwork/capabilities
+Authorization: Bearer {{token}}
+
+### Update catalog TV show artwork (admin)
+PUT {{api}}/catalog/tv_shows/{{tvShowId}}/artwork
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "poster_path": "/example-tv-poster.jpg",
+  "backdrop_path": "/example-tv-backdrop.jpg",
+  "backdrop_with_text_path": "/example-tv-backdrop-text.jpg",
+  "logo_path": "/example-tv-logo.png"
+}
+
+### Catalog person detail
+GET {{api}}/catalog/people/{{personId}}
+Authorization: Bearer {{token}}
+
+### Add movie to watchlist
+POST {{api}}/catalog/watchlist
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "movie",
+  "media_id": {{movieId}}
+}
+
+### Add TV show to watchlist
+POST {{api}}/catalog/watchlist
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "tv_show",
+  "media_id": {{tvShowId}}
+}
+
+### Watchlist membership
+GET {{api}}/catalog/watchlist/membership?media_type=movie&media_id={{movieId}}
+Authorization: Bearer {{token}}
+
+### List watchlist
+GET {{api}}/catalog/watchlist?page=1&limit=20&media_type=movie
+Authorization: Bearer {{token}}
+
+### Remove movie from watchlist
+DELETE {{api}}/catalog/watchlist?media_type=movie&media_id={{movieId}}
+Authorization: Bearer {{token}}
+
+### Add movie to favorites
+POST {{api}}/catalog/favorites
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "movie",
+  "media_id": {{movieId}}
+}
+
+### Add TV show to favorites
+POST {{api}}/catalog/favorites
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "media_type": "tv_show",
+  "media_id": {{tvShowId}}
+}
+
+### Favorites membership
+GET {{api}}/catalog/favorites/membership?media_type=movie&media_id={{movieId}}
+Authorization: Bearer {{token}}
+
+### List favorites
+GET {{api}}/catalog/favorites?page=1&limit=20&media_type=movie
+Authorization: Bearer {{token}}
+
+### Remove movie from favorites
+DELETE {{api}}/catalog/favorites?media_type=movie&media_id={{movieId}}
+Authorization: Bearer {{token}}
+
+### Invalid catalog search: unsupported parameter
+GET {{api}}/catalog/search?search=heat
+Authorization: Bearer {{token}}
+
+### Invalid movie browse: public added_at sort is not accepted here
+GET {{api}}/catalog/movies?order_by=added_at
+Authorization: Bearer {{token}}
+
+### Invalid TV browse: rating sort is not accepted here
+GET {{api}}/catalog/tv_shows?order_by=rating
+Authorization: Bearer {{token}}

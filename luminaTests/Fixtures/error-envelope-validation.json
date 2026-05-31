@@ -1,0 +1,13 @@
+{
+  "error": {
+    "code": "SERVER_CAPABILITY_UNSUPPORTED",
+    "category": "capability",
+    "safeMessage": "This Lumina server does not support Apple TV playback yet.",
+    "retryable": false,
+    "correlationId": "req_01HYVALID",
+    "details": {
+      "operation": "validate_server",
+      "missingCapability": "playback.hls.movies"
+    }
+  }
+}

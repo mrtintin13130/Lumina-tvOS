@@ -1,0 +1,76 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-jwt-token-here
+
+### API info
+GET {{api}}
+
+### Health
+GET {{api}}/health
+
+### Root health
+GET {{baseUrl}}/health
+
+### System capabilities
+GET {{api}}/system/capabilities
+
+### Auth setup status
+GET {{api}}/auth/setup/status
+
+### Register first/admin user
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@example.test",
+  "password": "ChangeMe123!",
+  "username": "admin",
+  "firstname": "Admin",
+  "lastname": "User",
+  "timezone": "Europe/Paris",
+  "country": "FR",
+  "language_preference": "en"
+}
+
+### Register normal user
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.test",
+  "password": "ChangeMe123!",
+  "username": "standard-user",
+  "firstname": "Standard",
+  "lastname": "User",
+  "timezone": "Europe/Paris",
+  "country": "FR",
+  "language_preference": "en"
+}
+
+### Login
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.test",
+  "password": "ChangeMe123!"
+}
+
+### Me
+GET {{api}}/auth/me
+Authorization: Bearer {{token}}
+
+### Update profile
+PUT {{api}}/auth/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "admin-renamed",
+  "firstname": "Admin",
+  "lastname": "Renamed",
+  "timezone": "Europe/Paris",
+  "country": "FR",
+  "language_preference": "en",
+  "avatar_url": "https://example.test/avatar.png"
+}

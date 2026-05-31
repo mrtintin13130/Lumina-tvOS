@@ -1,0 +1,98 @@
+{
+  "server": {
+    "name": "Lumina",
+    "version": "1.0.0"
+  },
+  "api": {
+    "version": "2026-05-tv",
+    "minimumTvClientVersion": "1.0"
+  },
+  "auth": {
+    "modes": [
+      "password_jwt"
+    ],
+    "sessionValidationRoute": "/api/v1/auth/me"
+  },
+  "playback": {
+    "hls": {
+      "movies": true,
+      "episodes": true
+    },
+    "streamTokens": {
+      "requiredForProtectedStreams": true,
+      "transport": "header_or_cookie"
+    },
+    "progress": {
+      "supported": true,
+      "recommendedIntervalSeconds": 20,
+      "events": [
+        "interval",
+        "pause",
+        "seek",
+        "exit",
+        "completion"
+      ]
+    },
+    "sessions": {
+      "supported": true,
+      "route": "/api/v1/playback/sessions"
+    }
+  },
+  "library": {
+    "home": true,
+    "search": true,
+    "movieBrowse": true,
+    "tvBrowse": true,
+    "movieDetails": true,
+    "tvDetails": true,
+    "watchlist": true,
+    "favorites": true,
+    "artworkKinds": [
+      "poster",
+      "backdrop",
+      "logo",
+      "thumbnail"
+    ]
+  },
+  "diagnostics": {
+    "correlationIds": true,
+    "playbackSessionCorrelation": true,
+    "clientEventUpload": false
+  },
+  "routes": {
+    "apiInfo": "/api/v1",
+    "health": "/api/v1/health",
+    "capabilities": "/api/v1/system/capabilities",
+    "authLogin": "/api/v1/auth/login",
+    "authMe": "/api/v1/auth/me",
+    "catalogHome": "/api/v1/catalog/home",
+    "catalogSearch": "/api/v1/catalog/search",
+    "catalogMovies": "/api/v1/catalog/movies",
+    "catalogMovieDetail": "/api/v1/catalog/movies/:movieId",
+    "catalogTvShows": "/api/v1/catalog/tv_shows",
+    "streamToken": "/api/v1/stream/token",
+    "streamClientInfo": "/api/v1/stream/client-info",
+    "movieStreamInfo": "/api/v1/stream/movies/:movieId/info",
+    "movieHlsManifest": "/api/v1/stream/movies/:id/hls/manifest.m3u8",
+    "movieHlsPlaylist": "/api/v1/stream/movies/:movieId/hls/playlist/:quality.m3u8",
+    "movieHlsSegment": "/api/v1/stream/movies/:movieId/hls/segment/:quality/:segment.ts",
+    "episodeHlsManifest": "/api/v1/stream/tv/:showId/seasons/:seasonNumber/episodes/:episodeNumber/hls/manifest.m3u8",
+    "playbackSessions": "/api/v1/playback/sessions",
+    "playbackSession": "/api/v1/playback/sessions/:sessionId",
+    "playbackSessionStop": "/api/v1/playback/sessions/:sessionId/stop",
+    "movieProgress": "/api/v1/playback/movies/:movieId/progress",
+    "movieProgressUpdate": "/api/v1/playback/movies/:movieId/progress",
+    "movieWatched": "/api/v1/playback/movies/:movieId/watched",
+    "movieTracks": "/api/v1/playback/movies/:movieId/tracks",
+    "movieSubtitle": "/api/v1/playback/movies/:movieId/subtitles/:subtitleId",
+    "watchlist": "/api/v1/catalog/watchlist",
+    "watchlistMembership": "/api/v1/catalog/watchlist/membership",
+    "favorites": "/api/v1/catalog/favorites",
+    "favoritesMembership": "/api/v1/catalog/favorites/membership"
+  },
+  "limits": {
+    "defaultPageSize": 24,
+    "maximumPageSize": 60,
+    "maximumArtworkWidth": 1920
+  }
+}

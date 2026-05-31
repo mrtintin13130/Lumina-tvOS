@@ -1,0 +1,199 @@
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api/v1
+@token = paste-admin-jwt-token-here
+@libraryId = 1
+@movieId = 1
+@tvShowId = 1
+@personId = 1
+@jobId = 1
+@jobEventsToken = paste-scanner-events-token-here
+
+### Scanner status (admin)
+GET {{api}}/scanner/status
+Authorization: Bearer {{token}}
+
+### Check library paths (admin)
+GET {{api}}/scanner/check-paths
+Authorization: Bearer {{token}}
+
+### Start file watching (admin)
+POST {{api}}/scanner/start-watching
+Authorization: Bearer {{token}}
+
+### Stop file watching (admin)
+POST {{api}}/scanner/stop-watching
+Authorization: Bearer {{token}}
+
+### Scan all libraries (admin, expensive)
+# Response includes job_id when the background job store is available.
+# Copy job_id into @jobId, then run "Create scanner job events token".
+POST {{api}}/scanner/scan-all
+Authorization: Bearer {{token}}
+
+### Scan one library (admin, expensive)
+# Response includes job_id when the background job store is available.
+# Copy job_id into @jobId, then run "Create scanner job events token".
+POST {{api}}/scanner/scan-library/{{libraryId}}
+Authorization: Bearer {{token}}
+
+### Live scanner progress flow
+# 1. Run "Scan all libraries" or "Scan one library".
+# 2. Copy response job_id into @jobId.
+# 3. Run "Create scanner job events token".
+# 4. Copy response stream_token into @jobEventsToken.
+# 5. Open "Stream scanner job events" with a client that supports SSE/EventSource.
+
+### Test movie filename parse (admin)
+POST {{api}}/scanner/test-parse
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "filename": "The Matrix (1999).mp4",
+  "type": "movie"
+}
+
+### Test TV filename parse (admin)
+POST {{api}}/scanner/test-parse
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "filename": "Breaking Bad S01E01.mkv",
+  "type": "tv_show"
+}
+
+### List scanner jobs (admin)
+GET {{api}}/scanner/jobs?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Get scanner job (admin)
+GET {{api}}/scanner/jobs/{{jobId}}
+Authorization: Bearer {{token}}
+
+### Create scanner job events token (admin)
+# Requires normal Bearer auth and admin authorization.
+# Response:
+# {
+#   "stream_token": "...",
+#   "expires_in": 60
+# }
+POST {{api}}/scanner/jobs/{{jobId}}/events-token
+Authorization: Bearer {{token}}
+
+### Stream scanner job events (SSE; no Bearer auth)
+# Native EventSource cannot send Authorization headers.
+# The token is short-lived and scoped to @jobId.
+# Emits "job" events with a snapshot:
+# {
+#   "id": 1,
+#   "type": "scan_library",
+#   "scope": "library",
+#   "target_id": 1,
+#   "status": "running",
+#   "total": 180,
+#   "processed": 42,
+#   "success_count": 40,
+#   "failed_count": 2,
+#   "progress": 23,
+#   "message": "Scanning library",
+#   "error": null,
+#   "created_at": "...",
+#   "updated_at": "...",
+#   "started_at": "...",
+#   "completed_at": null
+# }
+# The stream ends after status is succeeded, failed, or cancelled.
+GET {{api}}/scanner/jobs/{{jobId}}/events?token={{jobEventsToken}}
+
+### TMDB status (admin)
+GET {{api}}/scanner/tmdb/status
+Authorization: Bearer {{token}}
+
+### TMDB image config
+GET {{api}}/scanner/tmdb/image-config
+Authorization: Bearer {{token}}
+
+### Movies needing enrichment (admin)
+GET {{api}}/scanner/tmdb/movies-needing-enrichment?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Enrich all movies (admin, expensive)
+POST {{api}}/scanner/tmdb/enrich-all-movies
+Authorization: Bearer {{token}}
+
+### Enrich movie (admin, expensive)
+POST {{api}}/scanner/tmdb/enrich-movie/{{movieId}}
+Authorization: Bearer {{token}}
+
+### Refresh movie trailers (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-movie-trailers/{{movieId}}
+Authorization: Bearer {{token}}
+
+### Search TMDB movie (admin, expensive)
+POST {{api}}/scanner/tmdb/search
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Heat",
+  "year": 1995
+}
+
+### TV shows needing enrichment (admin)
+GET {{api}}/scanner/tmdb/tv-shows-needing-enrichment?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Enrich all TV shows (admin, expensive)
+POST {{api}}/scanner/tmdb/enrich-all-tv
+Authorization: Bearer {{token}}
+
+### Enrich TV show (admin, expensive)
+POST {{api}}/scanner/tmdb/enrich-tv/{{tvShowId}}
+Authorization: Bearer {{token}}
+
+### Refresh TV show trailers (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-tv-trailers/{{tvShowId}}
+Authorization: Bearer {{token}}
+
+### Refresh person biography (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-person-biography/{{personId}}
+Authorization: Bearer {{token}}
+
+### Search TMDB TV show (admin, expensive)
+POST {{api}}/scanner/tmdb/search-tv
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Dark",
+  "year": 2017
+}
+
+### Update movie backdrops (admin, expensive)
+POST {{api}}/scanner/tmdb/update-movie-backdrops
+Authorization: Bearer {{token}}
+
+### Update TV backdrops (admin, expensive)
+POST {{api}}/scanner/tmdb/update-tv-backdrops
+Authorization: Bearer {{token}}
+
+### Refresh all movie trailers (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-all-movie-trailers
+Authorization: Bearer {{token}}
+
+### Refresh all TV show trailers (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-all-tv-trailers
+Authorization: Bearer {{token}}
+
+### Refresh all person biographies (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-all-person-biographies
+Authorization: Bearer {{token}}
+
+### Refresh catalog trending cache (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-catalog-trending
+Authorization: Bearer {{token}}
+
+### Refresh catalog editorial sections (admin, expensive)
+POST {{api}}/scanner/tmdb/refresh-catalog-editorial
+Authorization: Bearer {{token}}
