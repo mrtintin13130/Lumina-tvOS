@@ -528,6 +528,14 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     let progressPercent: Double
     let watchedState: String?
     let hasPlayableMedia: Bool?
+    let year: Int?
+    let runtimeMinutes: Int?
+    let rating: Double?
+    let contentRating: String?
+    let genres: [String]
+    let isWatchlisted: Bool?
+    let isFavorite: Bool?
+    let primaryTrailerTitle: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -537,8 +545,24 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         case name
         case originalTitle = "original_title"
         case year
+        case releaseDate = "release_date"
+        case firstAirDate = "first_air_date"
+        case airDate = "air_date"
         case overview
         case description
+        case runtime
+        case runtimeMinutes = "runtime_minutes"
+        case rating
+        case voteAverage = "vote_average"
+        case contentRating = "content_rating"
+        case genres
+        case isWatchlisted = "is_watchlisted"
+        case inWatchlist = "in_watchlist"
+        case watchlist
+        case isFavorite = "is_favorite"
+        case favorite
+        case primaryTrailer = "primary_trailer"
+        case trailerPreview = "trailer_preview"
         case posterPath = "poster_path"
         case backdropPath = "backdrop_path"
         case backdropWithTextPath = "backdrop_with_text_path"
@@ -566,6 +590,17 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         case title
     }
 
+    enum GenreKeys: String, CodingKey {
+        case name
+        case title
+    }
+
+    enum TrailerKeys: String, CodingKey {
+        case title
+        case name
+        case site
+    }
+
     init(
         id: String,
         mediaType: String = "movie",
@@ -577,7 +612,15 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         logoPath: String? = nil,
         progressPercent: Double = 0,
         watchedState: String? = nil,
-        hasPlayableMedia: Bool? = nil
+        hasPlayableMedia: Bool? = nil,
+        year: Int? = nil,
+        runtimeMinutes: Int? = nil,
+        rating: Double? = nil,
+        contentRating: String? = nil,
+        genres: [String] = [],
+        isWatchlisted: Bool? = nil,
+        isFavorite: Bool? = nil,
+        primaryTrailerTitle: String? = nil
     ) {
         self.id = id
         self.mediaType = mediaType
@@ -590,6 +633,14 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         self.progressPercent = progressPercent
         self.watchedState = watchedState
         self.hasPlayableMedia = hasPlayableMedia
+        self.year = year
+        self.runtimeMinutes = runtimeMinutes
+        self.rating = rating
+        self.contentRating = contentRating
+        self.genres = genres
+        self.isWatchlisted = isWatchlisted
+        self.isFavorite = isFavorite
+        self.primaryTrailerTitle = primaryTrailerTitle
     }
 
     init(from decoder: Decoder) throws {
@@ -608,7 +659,10 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         title = try container.decodeIfPresent(String.self, forKey: .title)
             ?? container.decodeIfPresent(String.self, forKey: .name)
             ?? "Untitled"
-        let year = try container.decodeIfPresent(Int.self, forKey: .year)
+        year = try container.decodeIfPresent(Int.self, forKey: .year)
+            ?? CatalogItem.year(from: try container.decodeIfPresent(String.self, forKey: .releaseDate))
+            ?? CatalogItem.year(from: try container.decodeIfPresent(String.self, forKey: .firstAirDate))
+            ?? CatalogItem.year(from: try container.decodeIfPresent(String.self, forKey: .airDate))
         let originalTitle = try container.decodeIfPresent(String.self, forKey: .originalTitle)
         if let show = try? container.nestedContainer(keyedBy: ShowKeys.self, forKey: .show),
            let showTitle = try show.decodeIfPresent(String.self, forKey: .title) {
@@ -635,6 +689,18 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
             progressPercent = try container.decodeIfPresent(Double.self, forKey: .progressPercent) ?? 0
         }
         watchedState = try container.decodeIfPresent(String.self, forKey: .watchedState)
+        runtimeMinutes = try container.decodeIfPresent(Int.self, forKey: .runtimeMinutes)
+            ?? container.decodeIfPresent(Int.self, forKey: .runtime)
+        rating = try container.decodeIfPresent(Double.self, forKey: .rating)
+            ?? container.decodeIfPresent(Double.self, forKey: .voteAverage)
+        contentRating = try container.decodeIfPresent(String.self, forKey: .contentRating)
+        genres = CatalogItem.decodeGenres(from: container)
+        isWatchlisted = try container.decodeIfPresent(Bool.self, forKey: .isWatchlisted)
+            ?? container.decodeIfPresent(Bool.self, forKey: .inWatchlist)
+            ?? container.decodeIfPresent(Bool.self, forKey: .watchlist)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite)
+            ?? container.decodeIfPresent(Bool.self, forKey: .favorite)
+        primaryTrailerTitle = CatalogItem.decodeTrailerTitle(from: container)
         if let direct = try container.decodeIfPresent(Bool.self, forKey: .hasPlayableMedia) {
             hasPlayableMedia = direct
         } else if let readiness = try? container.nestedContainer(keyedBy: PlaybackReadinessKeys.self, forKey: .playbackReadiness) {
@@ -647,7 +713,56 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     var playableMovie: PlayableMovie {
         PlayableMovie(id: id, title: title, overview: overview, hasPlayableMedia: hasPlayableMedia)
     }
+
+    private static func year(from date: String?) -> Int? {
+        guard let prefix = date?.prefix(4), let year = Int(prefix) else {
+            return nil
+        }
+        return year
+    }
+
+    private static func decodeGenres(from container: KeyedDecodingContainer<CodingKeys>) -> [String] {
+        if let strings = try? container.decode([String].self, forKey: .genres) {
+            return strings
+        }
+        guard var nested = try? container.nestedUnkeyedContainer(forKey: .genres) else {
+            return []
+        }
+        var names: [String] = []
+        while !nested.isAtEnd {
+            if let value = try? nested.decode(String.self) {
+                names.append(value)
+                continue
+            }
+            if let genre = try? nested.nestedContainer(keyedBy: GenreKeys.self) {
+                if let name = try? genre.decodeIfPresent(String.self, forKey: .name) {
+                    names.append(name)
+                } else if let title = try? genre.decodeIfPresent(String.self, forKey: .title) {
+                    names.append(title)
+                }
+            } else {
+                _ = try? nested.decode(EmptyDecodable.self)
+            }
+        }
+        return names
+    }
+
+    private static func decodeTrailerTitle(from container: KeyedDecodingContainer<CodingKeys>) -> String? {
+        if let trailer = try? container.nestedContainer(keyedBy: TrailerKeys.self, forKey: .primaryTrailer) {
+            return (try? trailer.decode(String.self, forKey: .title))
+                ?? (try? trailer.decode(String.self, forKey: .name))
+                ?? (try? trailer.decode(String.self, forKey: .site))
+        }
+        if let trailer = try? container.nestedContainer(keyedBy: TrailerKeys.self, forKey: .trailerPreview) {
+            return (try? trailer.decode(String.self, forKey: .title))
+                ?? (try? trailer.decode(String.self, forKey: .name))
+                ?? (try? trailer.decode(String.self, forKey: .site))
+        }
+        return nil
+    }
 }
+
+private struct EmptyDecodable: Decodable {}
 
 struct CatalogSection: Decodable, Equatable, Identifiable {
     let id: String
@@ -694,6 +809,111 @@ struct CatalogListResponse: Decodable, Equatable {
     }
 }
 
+struct CatalogDetailResponse: Decodable, Equatable {
+    let item: CatalogItem
+
+    enum CodingKeys: String, CodingKey {
+        case movie
+        case tvShow = "tv_show"
+        case show
+        case item
+        case data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let movie = try container.decodeIfPresent(CatalogItem.self, forKey: .movie) {
+            item = movie
+        } else if let tvShow = try container.decodeIfPresent(CatalogItem.self, forKey: .tvShow) {
+            item = tvShow
+        } else if let show = try container.decodeIfPresent(CatalogItem.self, forKey: .show) {
+            item = show
+        } else if let value = try container.decodeIfPresent(CatalogItem.self, forKey: .item) {
+            item = value
+        } else if let data = try container.decodeIfPresent(CatalogItem.self, forKey: .data) {
+            item = data
+        } else {
+            item = try CatalogItem(from: decoder)
+        }
+    }
+}
+
+struct TVSeasonSummary: Decodable, Equatable, Identifiable {
+    let id: String
+    let seasonNumber: Int
+    let title: String
+    let overview: String?
+    let posterPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case seasonNumber = "season_number"
+        case title
+        case name
+        case overview
+        case description
+        case posterPath = "poster_path"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        seasonNumber = try container.decodeIfPresent(Int.self, forKey: .seasonNumber) ?? 0
+        if let stringID = try? container.decode(String.self, forKey: .id) {
+            id = stringID
+        } else if let intID = try? container.decode(Int.self, forKey: .id) {
+            id = String(intID)
+        } else {
+            id = "season-\(seasonNumber)"
+        }
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+            ?? "Season \(seasonNumber)"
+        overview = try container.decodeIfPresent(String.self, forKey: .overview)
+            ?? container.decodeIfPresent(String.self, forKey: .description)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+    }
+}
+
+struct TVSeasonListResponse: Decodable, Equatable {
+    let seasons: [TVSeasonSummary]
+
+    enum CodingKeys: String, CodingKey {
+        case seasons
+        case items
+        case results
+        case data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        seasons = try container.decodeIfPresent([TVSeasonSummary].self, forKey: .seasons)
+            ?? container.decodeIfPresent([TVSeasonSummary].self, forKey: .items)
+            ?? container.decodeIfPresent([TVSeasonSummary].self, forKey: .results)
+            ?? container.decodeIfPresent([TVSeasonSummary].self, forKey: .data)
+            ?? []
+    }
+}
+
+struct TVEpisodeListResponse: Decodable, Equatable {
+    let episodes: [CatalogItem]
+
+    enum CodingKeys: String, CodingKey {
+        case episodes
+        case items
+        case results
+        case data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        episodes = try container.decodeIfPresent([CatalogItem].self, forKey: .episodes)
+            ?? container.decodeIfPresent([CatalogItem].self, forKey: .items)
+            ?? container.decodeIfPresent([CatalogItem].self, forKey: .results)
+            ?? container.decodeIfPresent([CatalogItem].self, forKey: .data)
+            ?? []
+    }
+}
+
 enum CatalogArtworkKind {
     case poster
     case backdrop
@@ -719,6 +939,10 @@ protocol LuminaAPIClient {
     func fetchMovies(token: String) async throws -> [CatalogItem]
     func fetchTVShows(token: String) async throws -> [CatalogItem]
     func searchCatalog(query: String, token: String) async throws -> [CatalogItem]
+    func fetchMovieDetail(movieId: String, token: String) async throws -> CatalogItem
+    func fetchTVShowDetail(showId: String, token: String) async throws -> CatalogItem
+    func fetchTVSeasons(showId: String, token: String) async throws -> [TVSeasonSummary]
+    func fetchTVEpisodes(showId: String, seasonNumber: Int, token: String) async throws -> [CatalogItem]
     func fetchPlayableMovie(token: String) async throws -> PlayableMovie
     func fetchMovieProgress(movieId: String, token: String) async throws -> MovieProgressResponse
     func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse
@@ -814,6 +1038,50 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
             body: Optional<Data>.none
         )
         return response.results
+    }
+
+    func fetchMovieDetail(movieId: String, token: String) async throws -> CatalogItem {
+        let response: CatalogDetailResponse = try await send(
+            path: route("/api/v1/catalog/movies/:movieId", movieId: movieId),
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+        return response.item
+    }
+
+    func fetchTVShowDetail(showId: String, token: String) async throws -> CatalogItem {
+        let response: CatalogDetailResponse = try await send(
+            path: route("/api/v1/catalog/tv_shows/:showId", showId: showId),
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+        return response.item
+    }
+
+    func fetchTVSeasons(showId: String, token: String) async throws -> [TVSeasonSummary] {
+        let response: TVSeasonListResponse = try await send(
+            path: route("/api/v1/catalog/tv_shows/:showId/seasons", showId: showId),
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+        return response.seasons
+    }
+
+    func fetchTVEpisodes(showId: String, seasonNumber: Int, token: String) async throws -> [CatalogItem] {
+        let response: TVEpisodeListResponse = try await send(
+            path: route(
+                "/api/v1/catalog/tv_shows/:showId/seasons/:seasonNumber/episodes",
+                showId: showId,
+                seasonNumber: seasonNumber
+            ),
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+        return response.episodes
     }
 
     func fetchPlayableMovie(token: String) async throws -> PlayableMovie {
@@ -1032,11 +1300,23 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         return components.url ?? rawURL
     }
 
-    private func route(_ template: String, movieId: String? = nil, sessionId: String? = nil) -> String {
+    private func route(
+        _ template: String,
+        movieId: String? = nil,
+        showId: String? = nil,
+        seasonNumber: Int? = nil,
+        sessionId: String? = nil
+    ) -> String {
         var path = template
         if let movieId {
             path = path.replacingOccurrences(of: ":movieId", with: movieId)
             path = path.replacingOccurrences(of: ":id", with: movieId)
+        }
+        if let showId {
+            path = path.replacingOccurrences(of: ":showId", with: showId)
+        }
+        if let seasonNumber {
+            path = path.replacingOccurrences(of: ":seasonNumber", with: String(seasonNumber))
         }
         if let sessionId {
             path = path.replacingOccurrences(of: ":sessionId", with: sessionId)
@@ -1192,6 +1472,11 @@ final class AppModel: ObservableObject {
     @Published var searchQuery: String = ""
     @Published var searchResults: [CatalogItem] = []
     @Published var isCatalogLoading = false
+    @Published var selectedCatalogItem: CatalogItem?
+    @Published var selectedTVSeasons: [TVSeasonSummary] = []
+    @Published var selectedTVEpisodes: [CatalogItem] = []
+    @Published var selectedSeasonNumber: Int?
+    @Published var isDetailLoading = false
 
     private let tokenStore: TokenStore
     private let settingsStore: ServerSettingsStore
@@ -1375,6 +1660,84 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func openCatalogDetail(_ item: CatalogItem) async {
+        guard let url = normalizeServerURL(serverURLString) else {
+            statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            return
+        }
+        isDetailLoading = true
+        selectedCatalogItem = item
+        selectedTVSeasons = []
+        selectedTVEpisodes = []
+        selectedSeasonNumber = nil
+        defer { isDetailLoading = false }
+
+        do {
+            guard let token = try tokenStore.loadToken() else {
+                throw LuminaClientError.missingToken
+            }
+            let client = apiClientFactory(url)
+            if item.mediaType == "tv_show" {
+                async let detail = client.fetchTVShowDetail(showId: item.id, token: token)
+                async let seasons = client.fetchTVSeasons(showId: item.id, token: token)
+                let (showDetail, fetchedSeasons) = try await (detail, seasons)
+                selectedCatalogItem = showDetail
+                selectedTVSeasons = fetchedSeasons
+                if let firstSeason = fetchedSeasons.first {
+                    await selectTVSeason(firstSeason)
+                }
+            } else if item.mediaType == "movie" {
+                selectedCatalogItem = try await client.fetchMovieDetail(movieId: item.id, token: token)
+            }
+            statusMessage = nil
+        } catch let error as LuminaClientError {
+            diagnostics.record(operation: "catalog_detail", message: error.safeMessage)
+            statusMessage = error.safeMessage
+        } catch {
+            diagnostics.record(operation: "catalog_detail", message: "\(error)")
+            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+        }
+    }
+
+    func selectTVSeason(_ season: TVSeasonSummary) async {
+        guard let show = selectedCatalogItem, show.mediaType == "tv_show" else {
+            return
+        }
+        guard let url = normalizeServerURL(serverURLString) else {
+            statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            return
+        }
+        selectedSeasonNumber = season.seasonNumber
+        isDetailLoading = true
+        defer { isDetailLoading = false }
+
+        do {
+            guard let token = try tokenStore.loadToken() else {
+                throw LuminaClientError.missingToken
+            }
+            let client = apiClientFactory(url)
+            selectedTVEpisodes = try await client.fetchTVEpisodes(
+                showId: show.id,
+                seasonNumber: season.seasonNumber,
+                token: token
+            )
+            statusMessage = selectedTVEpisodes.isEmpty ? "No episodes found for this season." : nil
+        } catch let error as LuminaClientError {
+            diagnostics.record(operation: "catalog_tv_episodes", message: error.safeMessage)
+            statusMessage = error.safeMessage
+        } catch {
+            diagnostics.record(operation: "catalog_tv_episodes", message: "\(error)")
+            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+        }
+    }
+
+    func closeCatalogDetail() {
+        selectedCatalogItem = nil
+        selectedTVSeasons = []
+        selectedTVEpisodes = []
+        selectedSeasonNumber = nil
+    }
+
     func playCatalogMovie(_ item: CatalogItem) async {
         guard item.mediaType == "movie" else {
             statusMessage = "Episode playback from catalog shelves is not wired yet."
@@ -1518,6 +1881,10 @@ final class AppModel: ObservableObject {
         tvShows = []
         searchQuery = ""
         searchResults = []
+        selectedCatalogItem = nil
+        selectedTVSeasons = []
+        selectedTVEpisodes = []
+        selectedSeasonNumber = nil
         username = ""
         password = ""
         statusMessage = nil

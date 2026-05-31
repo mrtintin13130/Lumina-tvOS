@@ -128,6 +128,74 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(item.hasPlayableMedia, true)
     }
 
+    func testCatalogMovieDetailDecodesNestedMetadata() throws {
+        let json = """
+        {
+          "movie": {
+            "id": 42,
+            "media_type": "movie",
+            "title": "Heat",
+            "release_date": "1995-12-15",
+            "runtime": 170,
+            "rating": 8.3,
+            "content_rating": "R",
+            "genres": [{"name": "Crime"}, {"name": "Drama"}],
+            "is_watchlisted": true,
+            "is_favorite": false,
+            "primary_trailer": {"title": "Official Trailer"},
+            "playback_readiness": {"has_playable_media": true}
+          }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(CatalogDetailResponse.self, from: json)
+
+        XCTAssertEqual(response.item.id, "42")
+        XCTAssertEqual(response.item.year, 1995)
+        XCTAssertEqual(response.item.runtimeMinutes, 170)
+        XCTAssertEqual(response.item.rating, 8.3)
+        XCTAssertEqual(response.item.contentRating, "R")
+        XCTAssertEqual(response.item.genres, ["Crime", "Drama"])
+        XCTAssertEqual(response.item.isWatchlisted, true)
+        XCTAssertEqual(response.item.isFavorite, false)
+        XCTAssertEqual(response.item.primaryTrailerTitle, "Official Trailer")
+        XCTAssertEqual(response.item.hasPlayableMedia, true)
+    }
+
+    func testTVSeasonAndEpisodeListsDecodeFlexibleBackendShapes() throws {
+        let seasonsJSON = """
+        {
+          "seasons": [
+            {"season_number": 1, "title": "Season 1", "poster_path": "/season.jpg"}
+          ]
+        }
+        """.data(using: .utf8)!
+        let episodesJSON = """
+        {
+          "episodes": [
+            {
+              "id": "e1",
+              "media_type": "episode",
+              "title": "Secrets",
+              "season_number": 1,
+              "episode_number": 1,
+              "progress": {"progress_percent": 25},
+              "playback_readiness": {"has_playable_media": true}
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        let seasons = try JSONDecoder().decode(TVSeasonListResponse.self, from: seasonsJSON)
+        let episodes = try JSONDecoder().decode(TVEpisodeListResponse.self, from: episodesJSON)
+
+        XCTAssertEqual(seasons.seasons.first?.seasonNumber, 1)
+        XCTAssertEqual(seasons.seasons.first?.title, "Season 1")
+        XCTAssertEqual(episodes.episodes.first?.mediaType, "episode")
+        XCTAssertEqual(episodes.episodes.first?.progressPercent, 25)
+        XCTAssertEqual(episodes.episodes.first?.hasPlayableMedia, true)
+    }
+
     @MainActor
     func testArtworkURLResolvesTMDBAndServerPaths() {
         let model = AppModel(tokenStore: InMemoryTokenStore())
