@@ -28,6 +28,7 @@
 		5BD000172FCA500000000001 /* CatalogComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000182FCA500000000001 /* CatalogComponents.swift */; };
 		5BD000192FCA500000000001 /* StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001A2FCA500000000001 /* StatusText.swift */; };
 		5BD0001B2FCA500000000001 /* SetupScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001C2FCA500000000001 /* SetupScreens.swift */; };
+		5BD0001D2FCA500000000001 /* CatalogScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001E2FCA500000000001 /* CatalogScreens.swift */; };
 		5BC000082FCA500000000001 /* capabilities-supported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000042FCA500000000001 /* capabilities-supported.json */; };
 		5BC000092FCA500000000001 /* capabilities-unsupported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000052FCA500000000001 /* capabilities-unsupported.json */; };
 		5BC0000A2FCA500000000001 /* error-envelope-stream-token-expired.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */; };
@@ -76,6 +77,7 @@
 		5BD000182FCA500000000001 /* CatalogComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/CatalogComponents.swift"; sourceTree = "<group>"; };
 		5BD0001A2FCA500000000001 /* StatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/StatusText.swift"; sourceTree = "<group>"; };
 		5BD0001C2FCA500000000001 /* SetupScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SetupScreens.swift"; sourceTree = "<group>"; };
+		5BD0001E2FCA500000000001 /* CatalogScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/CatalogScreens.swift"; sourceTree = "<group>"; };
 		5BC0000C2FCA500000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5BC000042FCA500000000001 /* capabilities-supported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-supported.json"; sourceTree = "<group>"; };
 		5BC000052FCA500000000001 /* capabilities-unsupported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-unsupported.json"; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				5BD000182FCA500000000001 /* CatalogComponents.swift */,
 				5BD0001A2FCA500000000001 /* StatusText.swift */,
 				5BD0001C2FCA500000000001 /* SetupScreens.swift */,
+				5BD0001E2FCA500000000001 /* CatalogScreens.swift */,
 				5BC0000C2FCA500000000001 /* Info.plist */,
 				5B3255662FCA363E00A23693 /* Assets.xcassets */,
 				5B3255682FCA363E00A23693 /* Preview Content */,
@@ -340,6 +343,7 @@
 				5BD000172FCA500000000001 /* CatalogComponents.swift in Sources */,
 				5BD000192FCA500000000001 /* StatusText.swift in Sources */,
 				5BD0001B2FCA500000000001 /* SetupScreens.swift in Sources */,
+				5BD0001D2FCA500000000001 /* CatalogScreens.swift in Sources */,
 				5B3255632FCA363B00A23693 /* luminaApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
