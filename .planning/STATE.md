@@ -100,6 +100,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-03 | setup-auth-screen-split | Extracted setup/sign-in screens and shared contract badge from `ContentView.swift`; generic tvOS build and simulator tests passed. |
 | 2026-06-03 | refactor-checkpoint-hygiene | Untracked local Xcode user-state noise and prepared the completed refactor set for a checkpoint commit. |
 | 2026-06-03 | catalog-components-split | Extracted reusable catalog components and shared status text from `ContentView.swift`; generic tvOS build and simulator tests passed. |
 | 2026-06-03 | content-view-playback-detail-split | Split catalog detail overlay and AVKit player bridge out of `ContentView.swift`; generic tvOS build and simulator test run passed. |
