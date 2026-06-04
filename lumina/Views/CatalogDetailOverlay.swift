@@ -7,114 +7,155 @@
 
 import SwiftUI
 
-struct CatalogDetailOverlay: View {
+struct CatalogDetailPage: View {
     @EnvironmentObject private var appModel: AppModel
-    @FocusState private var closeFocused: Bool
+    @FocusState private var playFocused: Bool
 
     let item: CatalogItem
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Color.black.opacity(0.94)
-                .ignoresSafeArea()
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 32) {
+                DetailHero(playFocused: $playFocused, item: item)
 
-            ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 28) {
-                    HStack(alignment: .top, spacing: 32) {
-                        CatalogArtwork(
-                            url: appModel.artworkURL(for: item.posterPath ?? item.backdropPath, kind: .poster),
-                            aspectRatio: 2 / 3
-                        )
-                        .frame(width: 300, height: 450)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                if item.mediaType == "tv_show" {
+                    TVSeasonEpisodeSection()
+                }
 
-                        VStack(alignment: .leading, spacing: 18) {
-                            HStack(alignment: .firstTextBaseline) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(item.title)
-                                        .font(.system(size: 54, weight: .bold))
-                                        .lineLimit(2)
+                if appModel.isDetailLoading {
+                    ProgressView("Loading details")
+                }
 
-                                    Text(item.subtitle ?? item.mediaTypeDisplayName)
-                                        .font(.title3)
-                                        .foregroundStyle(.white.opacity(0.7))
-                                }
+                StatusText(message: appModel.statusMessage)
+            }
+            .padding(.horizontal, 80)
+            .padding(.vertical, 54)
+        }
+        .background(Color.black.ignoresSafeArea())
+        .navigationTitle(item.title)
+        .onAppear {
+            playFocused = item.mediaType == "movie" && item.hasPlayableMedia != false
+        }
+    }
+}
 
-                                Spacer()
+private struct DetailHero: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState.Binding var playFocused: Bool
 
-                                Button {
-                                    appModel.closeCatalogDetail()
-                                } label: {
-                                    Label("Close", systemImage: "xmark.circle")
-                                }
-                                .buttonStyle(.bordered)
-                                .focused($closeFocused)
+    let item: CatalogItem
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            CatalogArtwork(
+                url: appModel.artworkURL(for: item.backdropPath ?? item.posterPath, kind: .backdrop),
+                aspectRatio: 16 / 9
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 560)
+
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.86),
+                    .black.opacity(0.44),
+                    .clear
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .black.opacity(0.92)
+                ],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            HStack(alignment: .bottom, spacing: 32) {
+                CatalogArtwork(
+                    url: appModel.artworkURL(for: item.posterPath ?? item.backdropPath, kind: .poster),
+                    aspectRatio: 2 / 3
+                )
+                .frame(width: 250, height: 375)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 14)
+
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(item.title)
+                            .font(.system(size: 58, weight: .bold))
+                            .lineLimit(2)
+
+                        Text(item.subtitle ?? item.mediaTypeDisplayName)
+                            .font(.title3)
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+
+                    if !item.detailMetadata.isEmpty {
+                        DetailMetadataRow(values: item.detailMetadata)
+                    }
+
+                    if let overview = item.overview, !overview.isEmpty {
+                        Text(overview)
+                            .font(.title3)
+                            .foregroundStyle(.white.opacity(0.8))
+                            .lineLimit(5)
+                            .frame(maxWidth: 900, alignment: .leading)
+                    }
+
+                    HStack(spacing: 14) {
+                        if item.mediaType == "movie" {
+                            Button {
+                                Task { await appModel.playCatalogMovie(item) }
+                            } label: {
+                                Label(item.progressPercent > 0 ? "Resume" : "Play", systemImage: "play.fill")
                             }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(item.hasPlayableMedia == false)
+                            .focused($playFocused)
+                        }
 
-                            if !item.detailMetadata.isEmpty {
-                                HStack(spacing: 10) {
-                                    ForEach(item.detailMetadata, id: \.self) { value in
-                                        Text(value)
-                                            .font(.callout.weight(.semibold))
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 7)
-                                            .background(.white.opacity(0.11), in: Capsule())
-                                    }
-                                }
-                            }
+                        DetailStateBadge(title: "Playable", value: item.hasPlayableMedia == false ? "No" : "Yes")
 
-                            if let overview = item.overview, !overview.isEmpty {
-                                Text(overview)
-                                    .font(.title3)
-                                    .foregroundStyle(.white.opacity(0.78))
-                                    .lineLimit(6)
-                                    .frame(maxWidth: 920, alignment: .leading)
-                            }
+                        if let watchlist = item.isWatchlisted {
+                            DetailStateBadge(title: "Watchlist", value: watchlist ? "Added" : "Not added")
+                        }
 
-                            HStack(spacing: 14) {
-                                Button {
-                                    Task { await appModel.playCatalogMovie(item) }
-                                } label: {
-                                    Label(item.progressPercent > 0 ? "Resume" : "Play", systemImage: "play.fill")
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .disabled(item.hasPlayableMedia == false)
-
-                                DetailStateBadge(title: "Playable", value: item.hasPlayableMedia == false ? "No" : "Yes")
-
-                                if let watchlist = item.isWatchlisted {
-                                    DetailStateBadge(title: "Watchlist", value: watchlist ? "Added" : "Not added")
-                                }
-
-                                if let favorite = item.isFavorite {
-                                    DetailStateBadge(title: "Favorite", value: favorite ? "Yes" : "No")
-                                }
-                            }
-
-                            if let trailer = item.primaryTrailerTitle {
-                                Label(trailer, systemImage: "film.stack")
-                                    .font(.callout.weight(.medium))
-                                    .foregroundStyle(.white.opacity(0.7))
-                            }
+                        if let favorite = item.isFavorite {
+                            DetailStateBadge(title: "Favorite", value: favorite ? "Yes" : "No")
                         }
                     }
 
-                    if item.mediaType == "tv_show" {
-                        TVSeasonEpisodeSection()
+                    if let trailer = item.primaryTrailerTitle {
+                        Label(trailer, systemImage: "film.stack")
+                            .font(.callout.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.72))
                     }
-
-                    if appModel.isDetailLoading {
-                        ProgressView("Loading details")
-                    }
-
-                    StatusText(message: appModel.statusMessage)
                 }
-                .padding(.horizontal, 80)
-                .padding(.vertical, 54)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(38)
         }
-        .onAppear {
-            closeFocused = true
+        .frame(maxWidth: .infinity)
+        .frame(height: 560)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct DetailMetadataRow: View {
+    let values: [String]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(values, id: \.self) { value in
+                Text(value)
+                    .font(.callout.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(.white.opacity(0.13), in: Capsule())
+            }
         }
     }
 }

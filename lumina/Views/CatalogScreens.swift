@@ -11,42 +11,49 @@ struct HomeShellView: View {
     @EnvironmentObject private var appModel: AppModel
 
     var body: some View {
-        ZStack {
-            TabView {
-                CatalogHomeView()
-                    .tabItem {
-                        Label("Home", systemImage: "house")
-                    }
+        TabView {
+            CatalogHomeView()
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
 
-                CatalogGridView(title: "Movies", items: appModel.movies, emptyTitle: "No movies found")
-                    .tabItem {
-                        Label("Movies", systemImage: "film")
-                    }
+            CatalogGridView(title: "Movies", items: appModel.movies, emptyTitle: "No movies found")
+                .tabItem {
+                    Label("Movies", systemImage: "film")
+                }
 
-                CatalogGridView(title: "TV Shows", items: appModel.tvShows, emptyTitle: "No TV shows found")
-                    .tabItem {
-                        Label("TV Shows", systemImage: "tv")
-                    }
+            CatalogGridView(title: "TV Shows", items: appModel.tvShows, emptyTitle: "No TV shows found")
+                .tabItem {
+                    Label("TV Shows", systemImage: "tv")
+                }
 
-                CatalogSearchView()
-                    .tabItem {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
+            CatalogSearchView()
+                .tabItem {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
 
-                SettingsView()
-                    .tabItem {
-                        Label("Settings", systemImage: "gearshape")
-                    }
-            }
-
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
+                }
+        }
+        .navigationDestination(isPresented: detailPageBinding) {
             if let detail = appModel.selectedCatalogItem {
-                CatalogDetailOverlay(item: detail)
-                    .transition(.opacity.combined(with: .scale(scale: 0.985)))
-                    .zIndex(20)
+                CatalogDetailPage(item: detail)
             }
         }
         .task {
             await appModel.loadCatalog()
+        }
+    }
+
+    private var detailPageBinding: Binding<Bool> {
+        Binding {
+            appModel.selectedCatalogItem != nil
+        } set: { isPresented in
+            if !isPresented {
+                appModel.closeCatalogDetail()
+            }
         }
     }
 }
