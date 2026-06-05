@@ -1,31 +1,48 @@
 ---
 phase: 10-physical-movie-playback-proof
-status: human_needed
-verified: 2026-05-30
+status: gaps_found
+verified: 2026-06-04
 ---
 
 # Phase 10 Verification: Physical Movie Playback Proof
 
 ## Result
 
-status: human_needed
+status: gaps_found
 
-Automated preparation is complete, but physical Apple TV playback proof must be performed by the user on hardware against a live Lumina server.
+Physical Apple TV proof reached successful sign-in, navigation, movie selection, and playback start against a live Lumina server. The milestone is not fully passed because progress, stop/exit, relaunch, and resume evidence has not yet been reported, and physical navigation exposed a client-side detail-overlay focus bug.
 
 ## Automated Evidence
 
 - Phase 9 no-sign tvOS test build succeeded after real API alignment.
 - `docs/tvos-physical-playback-proof.md` provides the safe hardware proof checklist.
 
-## Human Verification Required
+## Physical Apple TV Evidence
 
-Run `docs/tvos-physical-playback-proof.md` and report:
+Reported by user on 2026-06-04:
 
-- Server validation passed or failed.
-- Password JWT sign-in passed or failed.
-- Playable movie proof opened AVKit on physical Apple TV.
+- Passed: user successfully logged in.
+- Passed: user navigated through the app.
+- Passed: user selected a movie.
+- Passed: movie playback started correctly on physical Apple TV.
+
+No secrets, tokenized URLs, Authorization headers, backend filesystem paths, SQL details, stack traces, or raw subprocess output were recorded.
+
+## Gaps Found
+
+### Client UX / Focus Gap
+
+Selecting a movie from the homepage opens the movie details as a modal-style overlay. On physical Apple TV, focus/navigation can still move behind that overlay, causing the user to navigate the home screen while details remain on top.
+
+**Impact:** Starting playback is harder than expected and the interaction does not behave like a dedicated tvOS screen. The detail view should likely become a dedicated route/page, or otherwise block underlying Home focus while presented.
+
+**Owner:** client.
+
+### Remaining Proof Evidence
+
+The following checklist items still need safe evidence before the playback milestone can pass:
+
 - Backend playback session was created.
-- HLS started on physical Apple TV.
 - Progress updated during playback and/or on exit.
 - Stop/exit updated backend state.
 - Relaunch restored session and resumed from backend progress.
@@ -33,4 +50,4 @@ Run `docs/tvos-physical-playback-proof.md` and report:
 
 ## Blocking Reason
 
-The current environment cannot access a physical Apple TV or live Lumina server. Simulator success is explicitly insufficient for this milestone.
+Physical Apple TV playback start is proven, but Phase 10 success criteria require progress, stop/exit, relaunch, and resume evidence too. The detail-overlay focus bug should be addressed or explicitly deferred before broad Home/search/details polish.

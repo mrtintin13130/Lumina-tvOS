@@ -14,25 +14,25 @@
 		5B3255742FCA363F00A23693 /* luminaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3255732FCA363F00A23693 /* luminaTests.swift */; };
 		5B32557E2FCA363F00A23693 /* luminaUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32557D2FCA363F00A23693 /* luminaUITests.swift */; };
 		5B3255802FCA363F00A23693 /* luminaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */; };
-		5BD000012FCA500000000001 /* DiagnosticsRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000022FCA500000000001 /* DiagnosticsRecorder.swift */; };
-		5BD000032FCA500000000001 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000042FCA500000000001 /* System.swift */; };
-		5BD000052FCA500000000001 /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000062FCA500000000001 /* Auth.swift */; };
-		5BD000072FCA500000000001 /* Playback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000082FCA500000000001 /* Playback.swift */; };
-		5BD000092FCA500000000001 /* Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0000A2FCA500000000001 /* Catalog.swift */; };
-		5BD0000B2FCA500000000001 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0000C2FCA500000000001 /* APIError.swift */; };
-		5BD0000D2FCA500000000001 /* URLSessionLuminaAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0000E2FCA500000000001 /* URLSessionLuminaAPIClient.swift */; };
-		5BD0000F2FCA500000000001 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000102FCA500000000001 /* TokenStore.swift */; };
-		5BD000112FCA500000000001 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000122FCA500000000001 /* AppModel.swift */; };
-		5BD000132FCA500000000001 /* CatalogDetailOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000142FCA500000000001 /* CatalogDetailOverlay.swift */; };
-		5BD000152FCA500000000001 /* AVKitPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000162FCA500000000001 /* AVKitPlayerView.swift */; };
-		5BD000172FCA500000000001 /* CatalogComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000182FCA500000000001 /* CatalogComponents.swift */; };
-		5BD000192FCA500000000001 /* StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001A2FCA500000000001 /* StatusText.swift */; };
-		5BD0001B2FCA500000000001 /* SetupScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001C2FCA500000000001 /* SetupScreens.swift */; };
-		5BD0001D2FCA500000000001 /* CatalogScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001E2FCA500000000001 /* CatalogScreens.swift */; };
 		5BC000082FCA500000000001 /* capabilities-supported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000042FCA500000000001 /* capabilities-supported.json */; };
 		5BC000092FCA500000000001 /* capabilities-unsupported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000052FCA500000000001 /* capabilities-unsupported.json */; };
 		5BC0000A2FCA500000000001 /* error-envelope-stream-token-expired.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */; };
 		5BC0000B2FCA500000000001 /* error-envelope-validation.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000072FCA500000000001 /* error-envelope-validation.json */; };
+		5BD000012FCA500000000001 /* Diagnostics/DiagnosticsRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000022FCA500000000001 /* Diagnostics/DiagnosticsRecorder.swift */; };
+		5BD000032FCA500000000001 /* Networking/DTOs/System.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000042FCA500000000001 /* Networking/DTOs/System.swift */; };
+		5BD000052FCA500000000001 /* Networking/DTOs/Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000062FCA500000000001 /* Networking/DTOs/Auth.swift */; };
+		5BD000072FCA500000000001 /* Networking/DTOs/Playback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000082FCA500000000001 /* Networking/DTOs/Playback.swift */; };
+		5BD000092FCA500000000001 /* Networking/DTOs/Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0000A2FCA500000000001 /* Networking/DTOs/Catalog.swift */; };
+		5BD0000B2FCA500000000001 /* Networking/APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0000C2FCA500000000001 /* Networking/APIError.swift */; };
+		5BD0000D2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0000E2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift */; };
+		5BD0000F2FCA500000000001 /* Auth/TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000102FCA500000000001 /* Auth/TokenStore.swift */; };
+		5BD000112FCA500000000001 /* App/AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000122FCA500000000001 /* App/AppModel.swift */; };
+		5BD000132FCA500000000001 /* Views/CatalogDetailOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */; };
+		5BD000152FCA500000000001 /* Playback/AVKitPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */; };
+		5BD000172FCA500000000001 /* Views/CatalogComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000182FCA500000000001 /* Views/CatalogComponents.swift */; };
+		5BD000192FCA500000000001 /* Views/StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001A2FCA500000000001 /* Views/StatusText.swift */; };
+		5BD0001B2FCA500000000001 /* Views/SetupScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001C2FCA500000000001 /* Views/SetupScreens.swift */; };
+		5BD0001D2FCA500000000001 /* Views/CatalogScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,26 +63,26 @@
 		5B3255792FCA363F00A23693 /* luminaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = luminaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B32557D2FCA363F00A23693 /* luminaUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = luminaUITests.swift; sourceTree = "<group>"; };
 		5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = luminaUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		5BD000022FCA500000000001 /* DiagnosticsRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Diagnostics/DiagnosticsRecorder.swift"; sourceTree = "<group>"; };
-		5BD000042FCA500000000001 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Networking/DTOs/System.swift"; sourceTree = "<group>"; };
-		5BD000062FCA500000000001 /* Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Networking/DTOs/Auth.swift"; sourceTree = "<group>"; };
-		5BD000082FCA500000000001 /* Playback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Networking/DTOs/Playback.swift"; sourceTree = "<group>"; };
-		5BD0000A2FCA500000000001 /* Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Networking/DTOs/Catalog.swift"; sourceTree = "<group>"; };
-		5BD0000C2FCA500000000001 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Networking/APIError.swift"; sourceTree = "<group>"; };
-		5BD0000E2FCA500000000001 /* URLSessionLuminaAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Networking/URLSessionLuminaAPIClient.swift"; sourceTree = "<group>"; };
-		5BD000102FCA500000000001 /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Auth/TokenStore.swift"; sourceTree = "<group>"; };
-		5BD000122FCA500000000001 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "App/AppModel.swift"; sourceTree = "<group>"; };
-		5BD000142FCA500000000001 /* CatalogDetailOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/CatalogDetailOverlay.swift"; sourceTree = "<group>"; };
-		5BD000162FCA500000000001 /* AVKitPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Playback/AVKitPlayerView.swift"; sourceTree = "<group>"; };
-		5BD000182FCA500000000001 /* CatalogComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/CatalogComponents.swift"; sourceTree = "<group>"; };
-		5BD0001A2FCA500000000001 /* StatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/StatusText.swift"; sourceTree = "<group>"; };
-		5BD0001C2FCA500000000001 /* SetupScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/SetupScreens.swift"; sourceTree = "<group>"; };
-		5BD0001E2FCA500000000001 /* CatalogScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Views/CatalogScreens.swift"; sourceTree = "<group>"; };
-		5BC0000C2FCA500000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5BC000042FCA500000000001 /* capabilities-supported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-supported.json"; sourceTree = "<group>"; };
 		5BC000052FCA500000000001 /* capabilities-unsupported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-unsupported.json"; sourceTree = "<group>"; };
 		5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "error-envelope-stream-token-expired.json"; sourceTree = "<group>"; };
 		5BC000072FCA500000000001 /* error-envelope-validation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "error-envelope-validation.json"; sourceTree = "<group>"; };
+		5BC0000C2FCA500000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5BD000022FCA500000000001 /* Diagnostics/DiagnosticsRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsRecorder.swift; sourceTree = "<group>"; };
+		5BD000042FCA500000000001 /* Networking/DTOs/System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/DTOs/System.swift; sourceTree = "<group>"; };
+		5BD000062FCA500000000001 /* Networking/DTOs/Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/DTOs/Auth.swift; sourceTree = "<group>"; };
+		5BD000082FCA500000000001 /* Networking/DTOs/Playback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/DTOs/Playback.swift; sourceTree = "<group>"; };
+		5BD0000A2FCA500000000001 /* Networking/DTOs/Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/DTOs/Catalog.swift; sourceTree = "<group>"; };
+		5BD0000C2FCA500000000001 /* Networking/APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/APIError.swift; sourceTree = "<group>"; };
+		5BD0000E2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/URLSessionLuminaAPIClient.swift; sourceTree = "<group>"; };
+		5BD000102FCA500000000001 /* Auth/TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth/TokenStore.swift; sourceTree = "<group>"; };
+		5BD000122FCA500000000001 /* App/AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppModel.swift; sourceTree = "<group>"; };
+		5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogDetailOverlay.swift; sourceTree = "<group>"; };
+		5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playback/AVKitPlayerView.swift; sourceTree = "<group>"; };
+		5BD000182FCA500000000001 /* Views/CatalogComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogComponents.swift; sourceTree = "<group>"; };
+		5BD0001A2FCA500000000001 /* Views/StatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/StatusText.swift; sourceTree = "<group>"; };
+		5BD0001C2FCA500000000001 /* Views/SetupScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SetupScreens.swift; sourceTree = "<group>"; };
+		5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogScreens.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -135,21 +135,21 @@
 			children = (
 				5B3255622FCA363B00A23693 /* luminaApp.swift */,
 				5B3255642FCA363B00A23693 /* ContentView.swift */,
-				5BD000022FCA500000000001 /* DiagnosticsRecorder.swift */,
-				5BD000042FCA500000000001 /* System.swift */,
-				5BD000062FCA500000000001 /* Auth.swift */,
-				5BD000082FCA500000000001 /* Playback.swift */,
-				5BD0000A2FCA500000000001 /* Catalog.swift */,
-				5BD0000C2FCA500000000001 /* APIError.swift */,
-				5BD0000E2FCA500000000001 /* URLSessionLuminaAPIClient.swift */,
-				5BD000102FCA500000000001 /* TokenStore.swift */,
-				5BD000122FCA500000000001 /* AppModel.swift */,
-				5BD000142FCA500000000001 /* CatalogDetailOverlay.swift */,
-				5BD000162FCA500000000001 /* AVKitPlayerView.swift */,
-				5BD000182FCA500000000001 /* CatalogComponents.swift */,
-				5BD0001A2FCA500000000001 /* StatusText.swift */,
-				5BD0001C2FCA500000000001 /* SetupScreens.swift */,
-				5BD0001E2FCA500000000001 /* CatalogScreens.swift */,
+				5BD000022FCA500000000001 /* Diagnostics/DiagnosticsRecorder.swift */,
+				5BD000042FCA500000000001 /* Networking/DTOs/System.swift */,
+				5BD000062FCA500000000001 /* Networking/DTOs/Auth.swift */,
+				5BD000082FCA500000000001 /* Networking/DTOs/Playback.swift */,
+				5BD0000A2FCA500000000001 /* Networking/DTOs/Catalog.swift */,
+				5BD0000C2FCA500000000001 /* Networking/APIError.swift */,
+				5BD0000E2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift */,
+				5BD000102FCA500000000001 /* Auth/TokenStore.swift */,
+				5BD000122FCA500000000001 /* App/AppModel.swift */,
+				5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */,
+				5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */,
+				5BD000182FCA500000000001 /* Views/CatalogComponents.swift */,
+				5BD0001A2FCA500000000001 /* Views/StatusText.swift */,
+				5BD0001C2FCA500000000001 /* Views/SetupScreens.swift */,
+				5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */,
 				5BC0000C2FCA500000000001 /* Info.plist */,
 				5B3255662FCA363E00A23693 /* Assets.xcassets */,
 				5B3255682FCA363E00A23693 /* Preview Content */,
@@ -174,6 +174,15 @@
 			path = luminaTests;
 			sourceTree = "<group>";
 		};
+		5B32557C2FCA363F00A23693 /* luminaUITests */ = {
+			isa = PBXGroup;
+			children = (
+				5B32557D2FCA363F00A23693 /* luminaUITests.swift */,
+				5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */,
+			);
+			path = luminaUITests;
+			sourceTree = "<group>";
+		};
 		5BC000032FCA500000000001 /* Fixtures */ = {
 			isa = PBXGroup;
 			children = (
@@ -183,15 +192,6 @@
 				5BC000072FCA500000000001 /* error-envelope-validation.json */,
 			);
 			path = Fixtures;
-			sourceTree = "<group>";
-		};
-		5B32557C2FCA363F00A23693 /* luminaUITests */ = {
-			isa = PBXGroup;
-			children = (
-				5B32557D2FCA363F00A23693 /* luminaUITests.swift */,
-				5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */,
-			);
-			path = luminaUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -329,21 +329,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				5B3255652FCA363B00A23693 /* ContentView.swift in Sources */,
-				5BD000012FCA500000000001 /* DiagnosticsRecorder.swift in Sources */,
-				5BD000032FCA500000000001 /* System.swift in Sources */,
-				5BD000052FCA500000000001 /* Auth.swift in Sources */,
-				5BD000072FCA500000000001 /* Playback.swift in Sources */,
-				5BD000092FCA500000000001 /* Catalog.swift in Sources */,
-				5BD0000B2FCA500000000001 /* APIError.swift in Sources */,
-				5BD0000D2FCA500000000001 /* URLSessionLuminaAPIClient.swift in Sources */,
-				5BD0000F2FCA500000000001 /* TokenStore.swift in Sources */,
-				5BD000112FCA500000000001 /* AppModel.swift in Sources */,
-				5BD000132FCA500000000001 /* CatalogDetailOverlay.swift in Sources */,
-				5BD000152FCA500000000001 /* AVKitPlayerView.swift in Sources */,
-				5BD000172FCA500000000001 /* CatalogComponents.swift in Sources */,
-				5BD000192FCA500000000001 /* StatusText.swift in Sources */,
-				5BD0001B2FCA500000000001 /* SetupScreens.swift in Sources */,
-				5BD0001D2FCA500000000001 /* CatalogScreens.swift in Sources */,
+				5BD000012FCA500000000001 /* Diagnostics/DiagnosticsRecorder.swift in Sources */,
+				5BD000032FCA500000000001 /* Networking/DTOs/System.swift in Sources */,
+				5BD000052FCA500000000001 /* Networking/DTOs/Auth.swift in Sources */,
+				5BD000072FCA500000000001 /* Networking/DTOs/Playback.swift in Sources */,
+				5BD000092FCA500000000001 /* Networking/DTOs/Catalog.swift in Sources */,
+				5BD0000B2FCA500000000001 /* Networking/APIError.swift in Sources */,
+				5BD0000D2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift in Sources */,
+				5BD0000F2FCA500000000001 /* Auth/TokenStore.swift in Sources */,
+				5BD000112FCA500000000001 /* App/AppModel.swift in Sources */,
+				5BD000132FCA500000000001 /* Views/CatalogDetailOverlay.swift in Sources */,
+				5BD000152FCA500000000001 /* Playback/AVKitPlayerView.swift in Sources */,
+				5BD000172FCA500000000001 /* Views/CatalogComponents.swift in Sources */,
+				5BD000192FCA500000000001 /* Views/StatusText.swift in Sources */,
+				5BD0001B2FCA500000000001 /* Views/SetupScreens.swift in Sources */,
+				5BD0001D2FCA500000000001 /* Views/CatalogScreens.swift in Sources */,
 				5B3255632FCA363B00A23693 /* luminaApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -508,6 +508,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"lumina/Preview Content\"";
+				DEVELOPMENT_TEAM = 26JU9M7ZSB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = lumina/Info.plist;
@@ -532,6 +533,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"lumina/Preview Content\"";
+				DEVELOPMENT_TEAM = 26JU9M7ZSB;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = lumina/Info.plist;

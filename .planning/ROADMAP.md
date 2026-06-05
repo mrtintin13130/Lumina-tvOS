@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 8: Backend Contract Reconciliation** - Reconcile the implemented capabilities response and `rest-client/` endpoint inventory with the tvOS client contract before changing playback code. (completed 2026-05-30)
 - [x] **Phase 9: Real API Client Alignment** - Update Swift networking, DTOs, request payloads, and tests to call the real Lumina endpoints for the proof path. (completed 2026-05-30)
-- [ ] **Phase 10: Physical Movie Playback Proof** - Prove movie HLS playback, progress, stop, relaunch, and resume on physical Apple TV against a live Lumina server.
+- [ ] **Phase 10: Physical Movie Playback Proof** - Prove movie HLS playback, progress, stop, relaunch, and resume on physical Apple TV against a live Lumina server. (gaps found 2026-06-04)
 
 ## Phase Details
 
@@ -83,8 +83,8 @@ Plans:
 Plans:
 
 - [x] 10-01: Build the proof playback screen/state path from playable catalog movie to AVKit player.
-- [ ] 10-02: Execute physical Apple TV movie playback, progress, exit, stop, and relaunch/resume verification.
-- [ ] 10-03: Record proof evidence, backend observations, diagnostics review, and follow-up gaps.
+- [x] 10-02: Execute physical Apple TV movie playback, progress, exit, stop, and relaunch/resume verification. (gaps found 2026-06-04)
+- [x] 10-03: Record proof evidence, backend observations, diagnostics review, and follow-up gaps.
 
 ## Progress
 
@@ -95,4 +95,4 @@ Phases execute in numeric order: 8 -> 9 -> 10
 |-------|----------------|--------|-----------|
 | 8. Backend Contract Reconciliation | 3/3 | Complete    | 2026-05-30 |
 | 9. Real API Client Alignment | 4/4 | Complete   | 2026-05-30 |
-| 10. Physical Movie Playback Proof | 1/3 | In Progress|  |
+| 10. Physical Movie Playback Proof | 3/3 | Gaps Found |  |

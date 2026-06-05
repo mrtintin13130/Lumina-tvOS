@@ -14,25 +14,37 @@ struct CatalogDetailPage: View {
     let item: CatalogItem
 
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 32) {
-                DetailHero(playFocused: $playFocused, item: item)
+        GeometryReader { geometry in
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 0) {
+                    DetailHero(playFocused: $playFocused, item: item)
+                        .frame(width: geometry.size.width)
 
-                if item.mediaType == "tv_show" {
-                    TVSeasonEpisodeSection()
+                    VStack(alignment: .leading, spacing: 46) {
+                        DetailPeopleShelves(item: item)
+
+                        if item.mediaType == "tv_show" {
+                            TVSeasonEpisodeSection()
+                        }
+
+                        if appModel.isDetailLoading {
+                            ProgressView("Loading details")
+                                .font(.headline)
+                                .padding(.vertical, 8)
+                        }
+
+                        StatusText(message: appModel.statusMessage)
+                    }
+                    .padding(.horizontal, 92)
+                    .padding(.top, 18)
+                    .padding(.bottom, 70)
                 }
-
-                if appModel.isDetailLoading {
-                    ProgressView("Loading details")
-                }
-
-                StatusText(message: appModel.statusMessage)
+                .frame(width: geometry.size.width, alignment: .leading)
             }
-            .padding(.horizontal, 80)
-            .padding(.vertical, 54)
+            .ignoresSafeArea(.container, edges: [.top, .horizontal])
         }
         .background(Color.black.ignoresSafeArea())
-        .navigationTitle(item.title)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             playFocused = item.mediaType == "movie" && item.hasPlayableMedia != false
         }
@@ -47,18 +59,14 @@ private struct DetailHero: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            CatalogArtwork(
-                url: appModel.artworkURL(for: item.backdropPath ?? item.posterPath, kind: .backdrop),
-                aspectRatio: 16 / 9
-            )
-            .frame(maxWidth: .infinity)
-            .frame(height: 560)
+            DetailBackdropImage(url: appModel.artworkURL(for: item.backdropPath ?? item.posterPath, kind: .backdrop))
 
             LinearGradient(
                 colors: [
-                    .black.opacity(0.86),
-                    .black.opacity(0.44),
-                    .clear
+                    .black.opacity(0.98),
+                    .black.opacity(0.74),
+                    .black.opacity(0.28),
+                    .black.opacity(0.08)
                 ],
                 startPoint: .leading,
                 endPoint: .trailing
@@ -67,80 +75,297 @@ private struct DetailHero: View {
             LinearGradient(
                 colors: [
                     .clear,
-                    .black.opacity(0.92)
+                    .black.opacity(0.1),
+                    .black.opacity(0.96)
                 ],
-                startPoint: .center,
+                startPoint: .top,
                 endPoint: .bottom
             )
 
-            HStack(alignment: .bottom, spacing: 32) {
-                CatalogArtwork(
-                    url: appModel.artworkURL(for: item.posterPath ?? item.backdropPath, kind: .poster),
-                    aspectRatio: 2 / 3
-                )
-                .frame(width: 250, height: 375)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 14)
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.7),
+                    .clear,
+                    .black.opacity(0.86)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
 
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(item.title)
-                            .font(.system(size: 58, weight: .bold))
-                            .lineLimit(2)
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 14) {
+                    DetailTitleMark(item: item)
 
-                        Text(item.subtitle ?? item.mediaTypeDisplayName)
-                            .font(.title3)
-                            .foregroundStyle(.white.opacity(0.72))
-                    }
+                    DetailMetadataRow(values: item.detailMetadata)
+                }
 
-                    if !item.detailMetadata.isEmpty {
-                        DetailMetadataRow(values: item.detailMetadata)
-                    }
+                if let overview = item.overview, !overview.isEmpty {
+                    Text(overview)
+                        .font(.system(size: 25, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .lineLimit(4)
+                        .lineSpacing(4)
+                        .frame(maxWidth: 960, alignment: .leading)
+                }
 
-                    if let overview = item.overview, !overview.isEmpty {
-                        Text(overview)
-                            .font(.title3)
-                            .foregroundStyle(.white.opacity(0.8))
-                            .lineLimit(5)
-                            .frame(maxWidth: 900, alignment: .leading)
-                    }
+                DetailHeroProgress(item: item)
 
-                    HStack(spacing: 14) {
-                        if item.mediaType == "movie" {
-                            Button {
-                                Task { await appModel.playCatalogMovie(item) }
-                            } label: {
-                                Label(item.progressPercent > 0 ? "Resume" : "Play", systemImage: "play.fill")
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(item.hasPlayableMedia == false)
-                            .focused($playFocused)
+                HStack(alignment: .center, spacing: 14) {
+                    if item.mediaType == "movie" {
+                        Button {
+                            Task { await appModel.playCatalogMovie(item) }
+                        } label: {
+                            Label(item.primaryActionTitle, systemImage: "play.fill")
+                                .font(.system(size: 22, weight: .bold))
+                                .frame(minWidth: 170)
                         }
-
-                        DetailStateBadge(title: "Playable", value: item.hasPlayableMedia == false ? "No" : "Yes")
-
-                        if let watchlist = item.isWatchlisted {
-                            DetailStateBadge(title: "Watchlist", value: watchlist ? "Added" : "Not added")
-                        }
-
-                        if let favorite = item.isFavorite {
-                            DetailStateBadge(title: "Favorite", value: favorite ? "Yes" : "No")
-                        }
+                        .buttonStyle(DetailActionButtonStyle(isPrimary: true))
+                        .disabled(item.hasPlayableMedia == false)
+                        .focused($playFocused)
+                        .scaleEffect(playFocused ? 1.06 : 1)
+                        .shadow(color: .white.opacity(playFocused ? 0.34 : 0), radius: 18, x: 0, y: 0)
+                        .animation(.easeOut(duration: 0.16), value: playFocused)
                     }
 
-                    if let trailer = item.primaryTrailerTitle {
-                        Label(trailer, systemImage: "film.stack")
-                            .font(.callout.weight(.medium))
-                            .foregroundStyle(.white.opacity(0.72))
+                    if item.primaryTrailerTitle != nil {
+                        Button {
+                            appModel.openTrailer(item)
+                        } label: {
+                            Label(item.trailerActionTitle, systemImage: "film.stack")
+                                .font(.system(size: 22, weight: .bold))
+                                .frame(minWidth: 150)
+                        }
+                        .buttonStyle(DetailActionButtonStyle(isPrimary: false))
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(38)
+            .padding(.horizontal, 92)
+            .padding(.bottom, 78)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 560)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(height: 820)
+        .clipped()
+        .ignoresSafeArea(.container, edges: [.top, .horizontal])
+    }
+}
+
+private struct DetailBackdropImage: View {
+    let url: URL?
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black)
+
+            if let url {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure:
+                        Image(systemName: "photo")
+                            .font(.system(size: 64, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.28))
+                    case .empty:
+                        ProgressView()
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            } else {
+                Image(systemName: "play.rectangle")
+                    .font(.system(size: 70, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.28))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 820)
+        .clipped()
+    }
+}
+
+private struct DetailTitleMark: View {
+    @EnvironmentObject private var appModel: AppModel
+    let item: CatalogItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let logoURL = appModel.artworkURL(for: item.logoPath, kind: .logo) {
+                AsyncImage(url: logoURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                    default:
+                        titleText
+                    }
+                }
+                .frame(maxWidth: 620, maxHeight: 180, alignment: .leading)
+            } else {
+                titleText
+            }
+
+            Text(item.mediaTypeDisplayName.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white.opacity(0.58))
+                .tracking(1.6)
+        }
+    }
+
+    private var titleText: some View {
+        Text(item.title)
+            .font(.system(size: 68, weight: .bold))
+            .lineLimit(2)
+            .minimumScaleFactor(0.72)
+            .frame(maxWidth: 960, alignment: .leading)
+    }
+}
+
+private struct DetailHeroProgress: View {
+    let item: CatalogItem
+
+    var body: some View {
+        if item.progressPercent > 0 {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("\(Int(item.progressPercent.rounded()))% watched")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+
+                ProgressView(value: min(max(item.progressPercent / 100, 0), 1))
+                    .progressViewStyle(.linear)
+                    .tint(.white)
+                    .frame(width: 420)
+            }
+            .padding(.top, 2)
+        }
+    }
+}
+
+private struct DetailPeopleShelves: View {
+    let item: CatalogItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 34) {
+            if !item.cast.isEmpty {
+                DetailPersonShelf(title: "Cast", people: item.cast)
+            }
+
+            if !item.behindTheScenesPeople.isEmpty {
+                DetailPersonShelf(title: "Behind the Scenes", people: item.behindTheScenesPeople)
+            }
+
+            if item.cast.isEmpty && item.behindTheScenesPeople.isEmpty {
+                DetailEmptyPeopleShelf()
+            }
+        }
+    }
+}
+
+private struct DetailActionButtonStyle: ButtonStyle {
+    let isPrimary: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isPrimary ? .black : .white)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 16)
+            .background(
+                isPrimary ? .white.opacity(configuration.isPressed ? 0.78 : 0.94) : .white.opacity(0.1),
+                in: Capsule()
+            )
+            .overlay {
+                Capsule()
+                    .stroke(.white.opacity(isPrimary ? 0 : 0.14), lineWidth: 1)
+            }
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+    }
+}
+
+private struct DetailPersonShelf: View {
+    let title: String
+    let people: [CatalogPersonCredit]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.title2.bold())
+
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 18) {
+                    ForEach(people.prefix(18)) { person in
+                        DetailPersonButton(person: person)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+}
+
+private struct DetailPersonButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let person: CatalogPersonCredit
+
+    var body: some View {
+        Button {
+            appModel.statusMessage = "\(person.name) details are not wired yet."
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                CatalogArtwork(
+                    url: appModel.artworkURL(for: person.profilePath, kind: .poster),
+                    aspectRatio: 2 / 3
+                )
+                .frame(width: 150, height: 225)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(person.name)
+                        .font(.headline.weight(.semibold))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+
+                    if let role = person.role ?? person.department {
+                        Text(role)
+                            .font(.callout.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.58))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(width: 150, alignment: .leading)
+            }
+            .padding(10)
+            .background(.white.opacity(isFocused ? 0.18 : 0.04), in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(.white.opacity(isFocused ? 0.82 : 0.08), lineWidth: isFocused ? 2 : 1)
+            }
+            .scaleEffect(isFocused ? 1.06 : 1)
+            .animation(.easeOut(duration: 0.16), value: isFocused)
+        }
+        .buttonStyle(.plain)
+        .focused($isFocused)
+    }
+}
+
+private struct DetailEmptyPeopleShelf: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Cast")
+                .font(.title2.bold())
+
+            Text("Cast and behind-the-scenes credits are not available for this title yet.")
+                .font(.headline)
+                .foregroundStyle(.white.opacity(0.62))
+                .padding(.vertical, 18)
+        }
     }
 }
 
@@ -151,10 +376,15 @@ private struct DetailMetadataRow: View {
         HStack(spacing: 10) {
             ForEach(values, id: \.self) { value in
                 Text(value)
-                    .font(.callout.weight(.semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(.white.opacity(0.13), in: Capsule())
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.74))
+                    .lineLimit(1)
+
+                if value != values.last {
+                    Circle()
+                        .fill(.white.opacity(0.36))
+                        .frame(width: 5, height: 5)
+                }
             }
         }
     }
@@ -174,13 +404,10 @@ private struct TVSeasonEpisodeSection: View {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 14) {
                         ForEach(appModel.selectedTVSeasons) { season in
-                            Button {
-                                Task { await appModel.selectTVSeason(season) }
-                            } label: {
-                                Text(season.title)
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(appModel.selectedSeasonNumber == season.seasonNumber ? .white : .gray)
+                            DetailSeasonButton(
+                                season: season,
+                                isSelected: appModel.selectedSeasonNumber == season.seasonNumber
+                            )
                         }
                     }
                     .padding(.vertical, 6)
@@ -197,20 +424,62 @@ private struct TVSeasonEpisodeSection: View {
     }
 }
 
-private struct DetailStateBadge: View {
-    let title: String
-    let value: String
+private struct DetailSeasonButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let season: TVSeasonSummary
+    let isSelected: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.56))
-            Text(value)
-                .font(.callout.weight(.semibold))
+        Button {
+            Task { await appModel.selectTVSeason(season) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "rectangle.stack")
+                    .font(.headline.weight(.semibold))
+                Text(season.title)
+                    .font(.headline.weight(.semibold))
+            }
+            .frame(minWidth: 150)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(
+                isSelected ? .white.opacity(0.2) : .white.opacity(0.08),
+                in: Capsule()
+            )
+            .overlay {
+                Capsule()
+                    .stroke(
+                        isFocused ? .white.opacity(0.85) : .white.opacity(isSelected ? 0.38 : 0.12),
+                        lineWidth: isFocused ? 2 : 1
+                    )
+            }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+        .buttonStyle(.plain)
+        .focusable(true)
+        .focused($isFocused)
+    }
+}
+
+private extension CatalogItem {
+    var primaryActionTitle: String {
+        if progressPercent > 0 {
+            return "Resume"
+        }
+        return "Play"
+    }
+
+    var trailerActionTitle: String {
+        "Trailer"
+    }
+
+    var behindTheScenesPeople: [CatalogPersonCredit] {
+        crew.filter { credit in
+            guard let label = credit.role?.lowercased() ?? credit.department?.lowercased() else {
+                return true
+            }
+            return !label.contains("cast")
+        }
     }
 }

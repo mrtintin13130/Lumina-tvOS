@@ -59,6 +59,9 @@ final class AppModel: ObservableObject {
     }
 
     func restoreSession() async {
+        guard phase == .restoring || phase == .setup else {
+            return
+        }
         guard let storedServer = settingsStore.serverURLString, let url = normalizeServerURL(storedServer) else {
             phase = .setup
             return
@@ -305,6 +308,11 @@ final class AppModel: ObservableObject {
             return
         }
         await loadPlaybackProof(movieOverride: item.playableMovie)
+    }
+
+    func openTrailer(_ item: CatalogItem) {
+        statusMessage = "Trailer playback is not wired yet."
+        diagnostics.record(operation: "catalog_trailer", message: "Trailer selected for \(item.mediaType) \(item.id)")
     }
 
     func loadPlaybackProof() async {
