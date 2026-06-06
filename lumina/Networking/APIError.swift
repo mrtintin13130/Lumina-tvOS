@@ -26,6 +26,8 @@ enum LuminaClientError: Error, Equatable {
     case decoding
     case routeNotFound(String)
     case missingToken
+    case sessionExpired
+    case secureStorageUnavailable
 
     var safeMessage: String {
         switch self {
@@ -34,9 +36,9 @@ enum LuminaClientError: Error, Equatable {
         case .unsupportedServer:
             return "This Lumina server does not support Apple TV playback yet."
         case .server(let body):
-            return body.safeMessage
+            return DiagnosticsRecorder.redact(body.safeMessage)
         case .transport(let message):
-            return message.isEmpty ? "The server could not be reached. Check the address and try again." : message
+            return message.isEmpty ? "The server could not be reached. Check the address and try again." : DiagnosticsRecorder.redact(message)
         case .decoding:
             return "The server response was not compatible with this Apple TV app."
         case .routeNotFound(let path):
@@ -52,6 +54,10 @@ enum LuminaClientError: Error, Equatable {
             return "Server reached, but the required API route was not found."
         case .missingToken:
             return "Sign in again to continue."
+        case .sessionExpired:
+            return "Sign in again to continue."
+        case .secureStorageUnavailable:
+            return "Apple TV secure storage is unavailable. Restart the app and try signing in again."
         }
     }
 
@@ -73,6 +79,9 @@ enum LuminaClientError: Error, Equatable {
     }
 
     static func fromHTTPStatus(_ statusCode: Int, path: String) -> LuminaClientError {
+        if statusCode == 401 || statusCode == 403 {
+            return .sessionExpired
+        }
         if statusCode == 404 {
             return .routeNotFound(path)
         }

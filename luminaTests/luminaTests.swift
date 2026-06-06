@@ -40,6 +40,16 @@ final class luminaTests: XCTestCase {
         XCTAssertTrue(envelope.error.retryable)
     }
 
+    func testNoPlayableMediaEnvelopeDecodesSafeSupportDetails() throws {
+        let envelope = try decodeFixture(LuminaErrorEnvelope.self, name: "error-envelope-no-playable-media")
+
+        XCTAssertEqual(envelope.error.code, "NO_PLAYABLE_MOVIE")
+        XCTAssertEqual(envelope.error.category, "missing_media")
+        XCTAssertEqual(envelope.error.safeMessage, "No playable movie was found on this Lumina server.")
+        XCTAssertEqual(envelope.error.correlationId, "support-no-playable-1")
+        XCTAssertTrue(envelope.error.retryable)
+    }
+
     func testBackendLoginResponseDecodesTokenAndUserShape() throws {
         let json = """
         {
@@ -140,9 +150,12 @@ final class luminaTests: XCTestCase {
             "rating": 8.3,
             "content_rating": "R",
             "genres": [{"name": "Crime"}, {"name": "Drama"}],
-            "is_watchlisted": true,
-            "is_favorite": false,
-            "primary_trailer": {"title": "Official Trailer"},
+            "list_membership": {"in_watchlist": true, "is_favorite": false},
+            "primary_trailer": {"name": "Official Trailer"},
+            "credits": [
+              {"person_id": 1, "name": "Al Pacino", "profile_path": "/al.jpg", "credit_type": "cast", "character": "Hanna"},
+              {"person_id": 2, "name": "Michael Mann", "credit_type": "crew", "job": "Director"}
+            ],
             "playback_readiness": {"has_playable_media": true}
           }
         }
@@ -159,6 +172,10 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(response.item.isWatchlisted, true)
         XCTAssertEqual(response.item.isFavorite, false)
         XCTAssertEqual(response.item.primaryTrailerTitle, "Official Trailer")
+        XCTAssertEqual(response.item.cast.first?.name, "Al Pacino")
+        XCTAssertEqual(response.item.cast.first?.role, "Hanna")
+        XCTAssertEqual(response.item.cast.first?.creditType, "cast")
+        XCTAssertEqual(response.item.crew.first?.name, "Michael Mann")
         XCTAssertEqual(response.item.hasPlayableMedia, true)
     }
 
@@ -198,23 +215,22 @@ final class luminaTests: XCTestCase {
 
     @MainActor
     func testArtworkURLResolvesTMDBAndServerPaths() {
-        let model = AppModel(tokenStore: InMemoryTokenStore())
-        model.serverURLString = "https://lumina.example.test"
+        let resolver = ArtworkURLResolver(serverURL: URL(string: "https://lumina.example.test")!)
 
         XCTAssertEqual(
-            model.artworkURL(for: "/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg", kind: .poster)?.absoluteString,
+            resolver.url(for: "/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg", kind: .poster)?.absoluteString,
             "https://image.tmdb.org/t/p/w500/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg"
         )
         XCTAssertEqual(
-            model.artworkURL(for: "/qO55CD8tgVL1T4WKn6zYFFiD6lL.jpg", kind: .backdrop)?.absoluteString,
+            resolver.url(for: "/qO55CD8tgVL1T4WKn6zYFFiD6lL.jpg", kind: .backdrop)?.absoluteString,
             "https://image.tmdb.org/t/p/w1280/qO55CD8tgVL1T4WKn6zYFFiD6lL.jpg"
         )
         XCTAssertEqual(
-            model.artworkURL(for: "/api/v1/artwork/poster.jpg", kind: .poster)?.absoluteString,
+            resolver.url(for: "/api/v1/artwork/poster.jpg", kind: .poster)?.absoluteString,
             "https://lumina.example.test/api/v1/artwork/poster.jpg"
         )
         XCTAssertEqual(
-            model.artworkURL(for: "https://cdn.example.test/poster.jpg", kind: .poster)?.absoluteString,
+            resolver.url(for: "https://cdn.example.test/poster.jpg", kind: .poster)?.absoluteString,
             "https://cdn.example.test/poster.jpg"
         )
     }
@@ -307,6 +323,102 @@ final class luminaTests: XCTestCase {
         )
     }
 
+    func testRouteTemplateResolverUsesCapabilitiesAndEncodesSegments() {
+        let resolver = RouteTemplateResolver(routes: [
+            "movieHlsManifest": "/api/v1/custom/movies/:id/:movieId/manifest.m3u8"
+        ])
+
+        let path = resolver.path(
+            key: "movieHlsManifest",
+            fallback: "/fallback/:movieId",
+            parameters: [
+                "id": "movie/42?#",
+                "movieId": "movie/42?#"
+            ]
+        )
+
+        XCTAssertEqual(path, "/api/v1/custom/movies/movie%2F42%3F%23/movie%2F42%3F%23/manifest.m3u8")
+    }
+
+    func testMovieHLSManifestURLUsesCapabilityRouteTemplate() throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let client = URLSessionLuminaAPIClient(
+            baseURL: URL(string: "https://lumina.example.test")!,
+            capabilities: capabilities
+        )
+        let movie = PlayableMovie(id: "movie/42?#", title: "Heat")
+
+        let url = client.movieHLSManifestURL(
+            movie: movie,
+            streamToken: nil,
+            sessionId: nil,
+            startTime: 0,
+            quality: "720p"
+        )
+
+        XCTAssertEqual(
+            url.absoluteString,
+            "https://lumina.example.test/api/v1/stream/movies/movie%2F42%3F%23/hls/manifest.m3u8?quality=720p&t=0"
+        )
+    }
+
+    func testMovieHLSManifestURLEncodesPathSegments() {
+        let client = URLSessionLuminaAPIClient(baseURL: URL(string: "https://lumina.example.test")!)
+        let movie = PlayableMovie(id: "movie/42?#", title: "Heat")
+
+        let url = client.movieHLSManifestURL(
+            movie: movie,
+            streamToken: nil,
+            sessionId: "session/77",
+            startTime: 0,
+            quality: "720p"
+        )
+
+        XCTAssertEqual(
+            url.absoluteString,
+            "https://lumina.example.test/api/v1/stream/movies/movie%2F42%3F%23/hls/manifest.m3u8?quality=720p&t=0&session_id=session/77"
+        )
+    }
+
+    func testMovieHLSManifestURLIgnoresExternalBackendManifestPath() {
+        let client = URLSessionLuminaAPIClient(baseURL: URL(string: "https://lumina.example.test")!)
+        let movie = PlayableMovie(
+            id: "42",
+            title: "Heat",
+            hlsManifestPath: "https://evil.example.test/manifest.m3u8"
+        )
+
+        let url = client.movieHLSManifestURL(
+            movie: movie,
+            streamToken: nil,
+            sessionId: nil,
+            startTime: 0,
+            quality: "720p"
+        )
+
+        XCTAssertEqual(
+            url.absoluteString,
+            "https://lumina.example.test/api/v1/stream/movies/42/hls/manifest.m3u8?quality=720p&t=0"
+        )
+    }
+
+    func testHLSManifestInspectionCountsMediaRenditions() {
+        let manifest = """
+        #EXTM3U
+        #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="English",DEFAULT=YES,URI="audio/audio-1.m3u8"
+        #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="French",DEFAULT=NO,URI="subtitles/subtitle-3.m3u8"
+        #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="English CC",DEFAULT=NO,URI="/api/v1/playback/movies/42/subtitles/11"
+        #EXT-X-STREAM-INF:BANDWIDTH=2000000,AUDIO="audio",SUBTITLES="subs"
+        variant.m3u8
+        """
+
+        let inspection = URLSessionLuminaAPIClient.inspectHLSManifest(manifest)
+
+        XCTAssertEqual(inspection.audioRenditionCount, 1)
+        XCTAssertEqual(inspection.subtitleRenditionCount, 2)
+        XCTAssertEqual(inspection.nonPlaylistSubtitleRenditionCount, 1)
+    }
+
     func testBackendAuthErrorMapsToSafeServerError() throws {
         let json = """
         {
@@ -322,13 +434,52 @@ final class luminaTests: XCTestCase {
     }
 
     func testDiagnosticsRedactsSensitiveValues() {
-        let message = "Authorization=Bearer abc.def.ghi password=hunter2 path=/Users/example/private url=https://server/hls.m3u8?stream_token=secret"
+        let message = #"Authorization=Bearer abc.def.ghi password=hunter2 path=/Users/example/private file=file:///private/var/mobile/app.db json={"access_token":"secret","password":"hunter2"} url=https://server/hls.m3u8?stream_token=secret"#
         let redacted = DiagnosticsRecorder.redact(message)
 
         XCTAssertFalse(redacted.contains("abc.def.ghi"))
         XCTAssertFalse(redacted.contains("hunter2"))
         XCTAssertFalse(redacted.contains("/Users/example"))
+        XCTAssertFalse(redacted.contains("/private/var"))
+        XCTAssertFalse(redacted.contains("access_token"))
         XCTAssertFalse(redacted.contains("stream_token=secret"))
+    }
+
+    func testDiagnosticsRecordsStructuredSafeServerError() {
+        let recorder = DiagnosticsRecorder()
+        let error = LuminaClientError.server(
+            LuminaErrorEnvelope.Body(
+                code: "STREAM_TOKEN_EXPIRED",
+                category: "stream_token",
+                safeMessage: "The playback link expired. Try playing again.",
+                retryable: true,
+                correlationId: "req_123",
+                details: nil
+            )
+        )
+
+        recorder.record(error: error, operation: "load_playback_proof", phase: .playback, routeKey: "streamToken", statusCode: 410)
+
+        XCTAssertEqual(recorder.events.count, 1)
+        XCTAssertEqual(recorder.events.first?.operation, "load_playback_proof")
+        XCTAssertEqual(recorder.events.first?.phase, .playback)
+        XCTAssertEqual(recorder.events.first?.severity, .error)
+        XCTAssertEqual(recorder.events.first?.routeKey, "streamToken")
+        XCTAssertEqual(recorder.events.first?.statusCode, 410)
+        XCTAssertEqual(recorder.events.first?.correlationId, "req_123")
+        XCTAssertEqual(recorder.events.first?.message, "The playback link expired. Try playing again.")
+    }
+
+    func testURLSessionClientDefaultConfigurationIsExplicitForTV() {
+        let session = URLSessionLuminaAPIClient.makeDefaultSession()
+        let configuration = session.configuration
+
+        XCTAssertEqual(configuration.timeoutIntervalForRequest, URLSessionLuminaAPIClient.requestTimeout)
+        XCTAssertEqual(configuration.timeoutIntervalForResource, URLSessionLuminaAPIClient.resourceTimeout)
+        XCTAssertEqual(configuration.requestCachePolicy, .reloadIgnoringLocalCacheData)
+        XCTAssertFalse(configuration.waitsForConnectivity)
+        XCTAssertEqual(configuration.urlCache?.memoryCapacity, 8 * 1024 * 1024)
+        XCTAssertEqual(configuration.urlCache?.diskCapacity, 32 * 1024 * 1024)
     }
 
     func testCapabilities404ExplainsMissingRoute() {
@@ -349,12 +500,272 @@ final class luminaTests: XCTestCase {
         )
     }
 
+    func testUnauthorizedAndForbiddenExpireSession() {
+        XCTAssertEqual(LuminaClientError.fromHTTPStatus(401, path: "/api/v1/auth/me"), .sessionExpired)
+        XCTAssertEqual(LuminaClientError.fromHTTPStatus(403, path: "/api/v1/auth/me"), .sessionExpired)
+    }
+
     @MainActor
     func testServerURLNormalizationDefaultsToHTTPS() {
         let model = AppModel(tokenStore: InMemoryTokenStore())
 
         XCTAssertEqual(model.normalizeServerURL("lumina.local")?.absoluteString, "https://lumina.local")
         XCTAssertNil(model.normalizeServerURL(" "))
+    }
+
+    @MainActor
+    func testAppModelSignInStoresSessionAndLoadsCatalog() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let tokenStore = InMemoryTokenStore()
+        let settingsStore = InMemoryServerSettingsStore()
+        let hero = CatalogItem(id: "hero", title: "Hero")
+        let client = FakeLuminaAPIClient(
+            capabilities: capabilities,
+            loginResponse: LoginResponse(accessToken: "session-token", user: LuminaUser(id: "1", displayName: "Martin")),
+            user: LuminaUser(id: "1", displayName: "Martin"),
+            catalogHome: try catalogHomeFixture(hero: hero),
+            movies: [CatalogItem(id: "movie", title: "Movie")],
+            tvShows: [CatalogItem(id: "show", mediaType: "tv_show", title: "Show")]
+        )
+        let model = AppModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            apiClientFactory: { _, _ in client }
+        )
+        model.serverURLString = "lumina.example.test"
+        model.email = "martin@example.test"
+        model.password = "secret"
+
+        await model.signIn()
+
+        XCTAssertEqual(model.phase, .home)
+        XCTAssertEqual(model.currentUser?.displayName, "Martin")
+        XCTAssertEqual(try tokenStore.loadToken(), "session-token")
+        XCTAssertEqual(settingsStore.serverURLString, "https://lumina.example.test")
+        XCTAssertEqual(model.homeHeroItems, [hero])
+        XCTAssertEqual(model.movies.first?.id, "movie")
+        XCTAssertEqual(model.password, "")
+    }
+
+    @MainActor
+    func testAppModelRestoreSessionExpiredClearsTokenAndReturnsToSignIn() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let tokenStore = InMemoryTokenStore()
+        try tokenStore.saveToken("expired-token")
+        let settingsStore = InMemoryServerSettingsStore(serverURLString: "https://lumina.example.test")
+        let client = FakeLuminaAPIClient(
+            capabilities: capabilities,
+            currentUserError: .sessionExpired
+        )
+        let model = AppModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            apiClientFactory: { _, _ in client }
+        )
+
+        await model.restoreSession()
+
+        XCTAssertEqual(model.phase, .signIn)
+        XCTAssertEqual(model.statusMessage, LuminaClientError.sessionExpired.safeMessage)
+        XCTAssertNil(try tokenStore.loadToken())
+        XCTAssertNil(model.currentUser)
+    }
+
+    @MainActor
+    func testAppModelSignInMapsTokenStoreFailureToSafeMessage() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let tokenStore = FailingTokenStore(error: TokenStoreError.unexpectedStatus(errSecMissingEntitlement))
+        let settingsStore = InMemoryServerSettingsStore()
+        let client = FakeLuminaAPIClient(
+            capabilities: capabilities,
+            loginResponse: LoginResponse(accessToken: "session-token", user: LuminaUser(id: "1", displayName: "Martin")),
+            user: LuminaUser(id: "1", displayName: "Martin")
+        )
+        let model = AppModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            apiClientFactory: { _, _ in client }
+        )
+        model.serverURLString = "lumina.example.test"
+        model.email = "martin@example.test"
+        model.password = "secret"
+
+        await model.signIn()
+
+        XCTAssertEqual(model.phase, .signIn)
+        XCTAssertEqual(model.statusMessage, LuminaClientError.secureStorageUnavailable.safeMessage)
+        XCTAssertFalse(model.statusMessage?.contains("TokenStoreError") ?? true)
+    }
+
+    func testTokenStoreErrorHasUserSafeDescription() {
+        XCTAssertEqual(
+            TokenStoreError.unexpectedStatus(errSecMissingEntitlement).localizedDescription,
+            "Secure token storage is unavailable."
+        )
+    }
+
+    func testFallbackTokenStoreUsesMemoryWhenPrimaryFails() throws {
+        let store = FallbackTokenStore(
+            primary: FailingTokenStore(error: TokenStoreError.unexpectedStatus(errSecMissingEntitlement)),
+            fallback: InMemoryTokenStore()
+        )
+
+        try store.saveToken("simulator-token")
+
+        XCTAssertEqual(try store.loadToken(), "simulator-token")
+
+        try store.clearToken()
+
+        XCTAssertNil(try store.loadToken())
+    }
+
+    func testCatalogRepositoryBuildsHomeSnapshot() async throws {
+        let hero = CatalogItem(id: "hero", title: "Hero")
+        let sectionItem = CatalogItem(id: "fallback", title: "Fallback")
+        let movie = CatalogItem(id: "movie", title: "Movie")
+        let show = CatalogItem(id: "show", mediaType: "tv_show", title: "Show")
+        let catalogHome = try JSONDecoder().decode(
+            CatalogHomeResponse.self,
+            from: """
+            {
+              "hero": {
+                "items": [{"id": "hero", "title": "Hero", "media_type": "movie"}]
+              },
+              "sections": [
+                {
+                  "id": "continue",
+                  "title": "Continue",
+                  "items": [{"id": "fallback", "title": "Fallback", "media_type": "movie"}]
+                }
+              ]
+            }
+            """.data(using: .utf8)!
+        )
+        let client = FakeLuminaAPIClient(
+            catalogHome: catalogHome,
+            movies: [movie],
+            tvShows: [show]
+        )
+        let repository = CatalogRepository(client: client, token: "token")
+
+        let snapshot = try await repository.loadHome()
+
+        XCTAssertEqual(snapshot.heroItems, [hero])
+        XCTAssertEqual(snapshot.sections.first?.items, [sectionItem])
+        XCTAssertEqual(snapshot.movies, [movie])
+        XCTAssertEqual(snapshot.tvShows, [show])
+    }
+
+    func testCatalogRepositoryBuildsTVShowDetailWithFirstSeasonEpisodes() async throws {
+        let show = CatalogItem(id: "show-1", mediaType: "tv_show", title: "The Show")
+        let season = try JSONDecoder().decode(
+            TVSeasonSummary.self,
+            from: #"{"season_number":2,"title":"Season 2"}"#.data(using: .utf8)!
+        )
+        let episode = CatalogItem(id: "episode-1", mediaType: "episode", title: "Episode")
+        let client = FakeLuminaAPIClient(
+            tvShowDetail: show,
+            tvSeasons: [season],
+            tvEpisodes: [episode]
+        )
+        let repository = CatalogRepository(client: client, token: "token")
+
+        let snapshot = try await repository.tvShowDetail(showId: "show-1")
+
+        XCTAssertEqual(snapshot.show, show)
+        XCTAssertEqual(snapshot.seasons, [season])
+        XCTAssertEqual(snapshot.selectedSeasonNumber, 2)
+        XCTAssertEqual(snapshot.episodes, [episode])
+    }
+
+    func testPlaybackProofLoaderPropagatesSessionExpiredFromProgress() async throws {
+        let client = PlaybackProofFakeClient(movieProgressError: .sessionExpired)
+        let loader = PlaybackProofLoader()
+
+        do {
+            _ = try await loader.loadMovieProof(movieOverride: nil, token: "token", client: client)
+            XCTFail("Expected session expiration to propagate")
+        } catch let error as LuminaClientError {
+            XCTAssertEqual(error, .sessionExpired)
+        }
+    }
+
+    func testPlaybackProofLoaderStopsCreatedSessionWhenPreflightFails() async throws {
+        let client = PlaybackProofFakeClient(
+            playbackSession: PlaybackSessionResponse(id: "session-1", mediaId: "movie", mediaKind: "movie"),
+            preflightError: .transport("Manifest request returned HTTP 410.")
+        )
+        let loader = PlaybackProofLoader()
+
+        do {
+            _ = try await loader.loadMovieProof(movieOverride: nil, token: "token", client: client)
+            XCTFail("Expected preflight failure")
+        } catch let error as LuminaClientError {
+            XCTAssertEqual(error.safeMessage, "Manifest request returned HTTP 410.")
+        }
+
+        XCTAssertEqual(client.stoppedSessionIds, ["session-1"])
+        XCTAssertEqual(client.stoppedPositionSeconds, [123])
+    }
+
+    func testPlaybackProofLoaderCarriesMovieTracksWhenAvailable() async throws {
+        let tracksJSON = """
+        {
+          "tracks": {
+            "audio": [
+              {
+                "source_index": 1,
+                "source_kind": "embedded",
+                "track_type": "audio",
+                "codec": "aac",
+                "language": "eng",
+                "title": "English",
+                "channels": 2,
+                "is_default": true,
+                "is_forced": false,
+                "delivery_mode": "hls_audio"
+              }
+            ],
+            "subtitles": {
+              "embedded": [],
+              "external": [
+                {
+                  "id": 11,
+                  "source_kind": "external",
+                  "format": "vtt",
+                  "language": "eng",
+                  "title": "English CC",
+                  "is_default": false,
+                  "is_forced": false,
+                  "deliverable": true,
+                  "delivery_mode": "external_file"
+                }
+              ]
+            }
+          },
+          "probe": {"status": "ok", "error": null, "updated_at": "2026-06-06T10:00:00.000Z"},
+          "subtitle_probe": {"status": "ok", "error": null, "updated_at": "2026-06-06T10:00:00.000Z"}
+        }
+        """.data(using: .utf8)!
+        let client = PlaybackProofFakeClient(
+            playbackSession: PlaybackSessionResponse(id: "session-1", mediaId: "movie", mediaKind: "movie")
+        )
+        client.movieTracks = try JSONDecoder().decode(MediaTrackListing.self, from: tracksJSON)
+        client.manifestInspection = HLSManifestInspection(
+            audioRenditionCount: 1,
+            subtitleRenditionCount: 1,
+            nonPlaylistSubtitleRenditionCount: 1,
+            checkedVariantPlaylist: true,
+            checkedFirstSegment: true
+        )
+        let loader = PlaybackProofLoader()
+
+        let result = try await loader.loadMovieProof(movieOverride: nil, token: "token", client: client)
+
+        XCTAssertEqual(result.proof.tracks?.tracks.audio.first?.language, "eng")
+        XCTAssertEqual(result.proof.tracks?.tracks.subtitles.external.first?.id, "11")
+        XCTAssertEqual(result.proof.manifestInspection?.audioRenditionCount, 1)
+        XCTAssertEqual(result.proof.manifestInspection?.nonPlaylistSubtitleRenditionCount, 1)
     }
 
     private func decodeFixture<T: Decodable>(_ type: T.Type, name: String) throws -> T {
@@ -367,4 +778,287 @@ final class luminaTests: XCTestCase {
         let data = try JSONEncoder().encode(value)
         return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
+
+    private func catalogHomeFixture(hero: CatalogItem) throws -> CatalogHomeResponse {
+        let json = """
+        {
+          "hero": {
+            "items": [{"id": "\(hero.id)", "title": "\(hero.title)", "media_type": "\(hero.mediaType)"}]
+          },
+          "sections": []
+        }
+        """.data(using: .utf8)!
+        return try JSONDecoder().decode(CatalogHomeResponse.self, from: json)
+    }
+}
+
+private final class InMemoryServerSettingsStore: ServerSettingsStore {
+    var serverURLString: String?
+
+    init(serverURLString: String? = nil) {
+        self.serverURLString = serverURLString
+    }
+}
+
+private final class FailingTokenStore: TokenStore {
+    let error: Error
+
+    init(error: Error) {
+        self.error = error
+    }
+
+    func loadToken() throws -> String? {
+        throw error
+    }
+
+    func saveToken(_ token: String) throws {
+        throw error
+    }
+
+    func clearToken() throws {
+        throw error
+    }
+}
+
+private final class PlaybackProofFakeClient: LuminaAPIClient {
+    var playableMovie = PlayableMovie(
+        id: "movie",
+        title: "Movie",
+        resumePositionSeconds: 123,
+        durationSeconds: 3600,
+        hlsManifestPath: nil,
+        hasPlayableMedia: true
+    )
+    var movieProgress = MovieProgressResponse(positionSeconds: 123, durationSeconds: 3600, playState: "paused")
+    var movieTracks: MediaTrackListing?
+    var movieProgressError: LuminaClientError?
+    var playbackSession: PlaybackSessionResponse?
+    var preflightError: LuminaClientError?
+    var manifestInspection = HLSManifestInspection(
+        audioRenditionCount: 0,
+        subtitleRenditionCount: 0,
+        nonPlaylistSubtitleRenditionCount: 0,
+        checkedVariantPlaylist: true,
+        checkedFirstSegment: true
+    )
+    var stoppedSessionIds: [String] = []
+    var stoppedPositionSeconds: [Double] = []
+
+    init(
+        movieProgressError: LuminaClientError? = nil,
+        playbackSession: PlaybackSessionResponse? = nil,
+        preflightError: LuminaClientError? = nil
+    ) {
+        self.movieProgressError = movieProgressError
+        self.playbackSession = playbackSession
+        self.preflightError = preflightError
+    }
+
+    func fetchCapabilities() async throws -> ServerCapabilities {
+        throw LuminaClientError.unsupportedServer
+    }
+
+    func login(email: String, password: String) async throws -> LoginResponse {
+        throw LuminaClientError.missingToken
+    }
+
+    func currentUser(token: String) async throws -> LuminaUser {
+        throw LuminaClientError.missingToken
+    }
+
+    func fetchCatalogHome(token: String) async throws -> CatalogHomeResponse {
+        CatalogHomeResponse(hero: nil, sections: [])
+    }
+
+    func fetchMovies(token: String) async throws -> [CatalogItem] {
+        []
+    }
+
+    func fetchTVShows(token: String) async throws -> [CatalogItem] {
+        []
+    }
+
+    func searchCatalog(query: String, token: String) async throws -> [CatalogItem] {
+        []
+    }
+
+    func fetchMovieDetail(movieId: String, token: String) async throws -> CatalogItem {
+        throw LuminaClientError.decoding
+    }
+
+    func fetchTVShowDetail(showId: String, token: String) async throws -> CatalogItem {
+        throw LuminaClientError.decoding
+    }
+
+    func fetchTVSeasons(showId: String, token: String) async throws -> [TVSeasonSummary] {
+        []
+    }
+
+    func fetchTVEpisodes(showId: String, seasonNumber: Int, token: String) async throws -> [CatalogItem] {
+        []
+    }
+
+    func fetchPlayableMovie(token: String) async throws -> PlayableMovie {
+        playableMovie
+    }
+
+    func fetchMovieProgress(movieId: String, token: String) async throws -> MovieProgressResponse {
+        if let movieProgressError {
+            throw movieProgressError
+        }
+        return movieProgress
+    }
+
+    func fetchMovieTracks(movieId: String, token: String) async throws -> MediaTrackListing {
+        guard let movieTracks else {
+            throw LuminaClientError.transport("Track listing endpoint unavailable.")
+        }
+        return movieTracks
+    }
+
+    func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
+        guard let playbackSession else {
+            throw LuminaClientError.transport("Playback session endpoint unavailable.")
+        }
+        return playbackSession
+    }
+
+    func requestStreamToken(mediaType: String, mediaId: String, token: String) async throws -> String? {
+        "stream-token"
+    }
+
+    func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) -> URL {
+        URL(string: "https://lumina.example.test/manifest.m3u8")!
+    }
+
+    func preflightHLSManifest(url: URL) async throws -> HLSManifestInspection {
+        if let preflightError {
+            throw preflightError
+        }
+        return manifestInspection
+    }
+
+    func reportProgress(_ update: ProgressUpdateRequest, token: String) async throws {}
+
+    func updatePlaybackSession(sessionId: String, positionSeconds: Double, playState: String, token: String) async throws {}
+
+    func stopPlaybackSession(sessionId: String, positionSeconds: Double, token: String) async throws {
+        stoppedSessionIds.append(sessionId)
+        stoppedPositionSeconds.append(positionSeconds)
+    }
+}
+
+private struct FakeLuminaAPIClient: LuminaAPIClient {
+    var capabilities: ServerCapabilities?
+    var loginResponse: LoginResponse?
+    var user: LuminaUser?
+    var currentUserError: LuminaClientError?
+    var catalogHome = CatalogHomeResponse(hero: nil, sections: [])
+    var movies: [CatalogItem] = []
+    var tvShows: [CatalogItem] = []
+    var searchResults: [CatalogItem] = []
+    var movieDetail: CatalogItem?
+    var tvShowDetail: CatalogItem?
+    var tvSeasons: [TVSeasonSummary] = []
+    var tvEpisodes: [CatalogItem] = []
+    var playableMovie = PlayableMovie(id: "movie", title: "Movie")
+    var movieProgress = MovieProgressResponse(positionSeconds: nil, durationSeconds: nil, playState: nil)
+    var movieTracks: MediaTrackListing?
+    var playbackSession: PlaybackSessionResponse?
+    var streamToken: String?
+    var manifestInspection = HLSManifestInspection(
+        audioRenditionCount: 0,
+        subtitleRenditionCount: 0,
+        nonPlaylistSubtitleRenditionCount: 0,
+        checkedVariantPlaylist: true,
+        checkedFirstSegment: true
+    )
+
+    func fetchCapabilities() async throws -> ServerCapabilities {
+        guard let capabilities else { throw LuminaClientError.unsupportedServer }
+        return capabilities
+    }
+
+    func login(email: String, password: String) async throws -> LoginResponse {
+        guard let loginResponse else { throw LuminaClientError.missingToken }
+        return loginResponse
+    }
+
+    func currentUser(token: String) async throws -> LuminaUser {
+        if let currentUserError {
+            throw currentUserError
+        }
+        guard let user else { throw LuminaClientError.missingToken }
+        return user
+    }
+
+    func fetchCatalogHome(token: String) async throws -> CatalogHomeResponse {
+        catalogHome
+    }
+
+    func fetchMovies(token: String) async throws -> [CatalogItem] {
+        movies
+    }
+
+    func fetchTVShows(token: String) async throws -> [CatalogItem] {
+        tvShows
+    }
+
+    func searchCatalog(query: String, token: String) async throws -> [CatalogItem] {
+        searchResults
+    }
+
+    func fetchMovieDetail(movieId: String, token: String) async throws -> CatalogItem {
+        guard let movieDetail else { throw LuminaClientError.decoding }
+        return movieDetail
+    }
+
+    func fetchTVShowDetail(showId: String, token: String) async throws -> CatalogItem {
+        guard let tvShowDetail else { throw LuminaClientError.decoding }
+        return tvShowDetail
+    }
+
+    func fetchTVSeasons(showId: String, token: String) async throws -> [TVSeasonSummary] {
+        tvSeasons
+    }
+
+    func fetchTVEpisodes(showId: String, seasonNumber: Int, token: String) async throws -> [CatalogItem] {
+        tvEpisodes
+    }
+
+    func fetchPlayableMovie(token: String) async throws -> PlayableMovie {
+        playableMovie
+    }
+
+    func fetchMovieProgress(movieId: String, token: String) async throws -> MovieProgressResponse {
+        movieProgress
+    }
+
+    func fetchMovieTracks(movieId: String, token: String) async throws -> MediaTrackListing {
+        guard let movieTracks else { throw LuminaClientError.decoding }
+        return movieTracks
+    }
+
+    func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
+        guard let playbackSession else { throw LuminaClientError.decoding }
+        return playbackSession
+    }
+
+    func requestStreamToken(mediaType: String, mediaId: String, token: String) async throws -> String? {
+        streamToken
+    }
+
+    func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) -> URL {
+        URL(string: "https://lumina.example.test/manifest.m3u8")!
+    }
+
+    func preflightHLSManifest(url: URL) async throws -> HLSManifestInspection {
+        manifestInspection
+    }
+
+    func reportProgress(_ update: ProgressUpdateRequest, token: String) async throws {}
+
+    func updatePlaybackSession(sessionId: String, positionSeconds: Double, playState: String, token: String) async throws {}
+
+    func stopPlaybackSession(sessionId: String, positionSeconds: Double, token: String) async throws {}
 }

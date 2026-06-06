@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "swift-expert": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/swift-expert/SKILL.md",
+      "computedHash": "3486707c8581c84d35d3da765ad9afd3744f93e9d208505bcb91c093e70d95c1"
+    },
+    "tvos-design-guidelines": {
+      "source": "ehmo/platform-design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tvos/SKILL.md",
+      "computedHash": "7e8751618b4421617d083191150b6324eaa2bdf03509b3cc846763b770ff5b3f"
+    }
+  }
+}

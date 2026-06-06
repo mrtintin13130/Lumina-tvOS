@@ -37,23 +37,8 @@ struct HomeShellView: View {
                     Label("Settings", systemImage: "gearshape")
                 }
         }
-        .navigationDestination(isPresented: detailPageBinding) {
-            if let detail = appModel.selectedCatalogItem {
-                CatalogDetailPage(item: detail)
-            }
-        }
         .task {
             await appModel.loadCatalog()
-        }
-    }
-
-    private var detailPageBinding: Binding<Bool> {
-        Binding {
-            appModel.selectedCatalogItem != nil
-        } set: { isPresented in
-            if !isPresented {
-                appModel.closeCatalogDetail()
-            }
         }
     }
 }
@@ -139,6 +124,8 @@ private struct CatalogSearchView: View {
                 HStack(spacing: 18) {
                     TextField("Search your library", text: $appModel.searchQuery)
                         .textFieldStyle(.plain)
+                        .textContentType(.none)
+                        .submitLabel(.search)
                         .font(.title3)
                         .padding(18)
                         .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))

@@ -22,10 +22,16 @@ struct ServerSetupView: View {
 
                 TextField("https://lumina.local:3000", text: $appModel.serverURLString)
                     .textFieldStyle(.plain)
+                    .textContentType(.URL)
+                    .keyboardType(.URL)
+                    .submitLabel(.go)
                     .font(.title3)
                     .padding(18)
                     .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                     .frame(maxWidth: 760)
+                    .onSubmit {
+                        Task { await appModel.validateServer() }
+                    }
 
                 HStack(spacing: 18) {
                     Button {
@@ -64,6 +70,8 @@ struct SignInView: View {
     @EnvironmentObject private var appModel: AppModel
 
     var body: some View {
+        let isSigningIn = appModel.phase == .signingIn
+
         VStack(alignment: .leading, spacing: 24) {
             Text("Sign in to Lumina")
                 .font(.system(size: 48, weight: .bold))
@@ -72,28 +80,38 @@ struct SignInView: View {
                 .font(.title3)
                 .foregroundStyle(.white.opacity(0.68))
 
-            TextField("Username", text: $appModel.username)
+            TextField("Email", text: $appModel.email)
                 .textFieldStyle(.plain)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .submitLabel(.next)
                 .font(.title3)
                 .padding(18)
                 .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 640)
+                .disabled(isSigningIn)
 
             SecureField("Password", text: $appModel.password)
                 .textFieldStyle(.plain)
+                .textContentType(.password)
+                .submitLabel(.go)
                 .font(.title3)
                 .padding(18)
                 .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 .frame(maxWidth: 640)
+                .disabled(isSigningIn)
+                .onSubmit {
+                    Task { await appModel.signIn() }
+                }
 
             HStack(spacing: 18) {
                 Button {
                     Task { await appModel.signIn() }
                 } label: {
-                    Label(appModel.phase == .signingIn ? "Signing In" : "Sign In", systemImage: "person.badge.key")
+                    Label(isSigningIn ? "Signing In" : "Sign In", systemImage: "person.badge.key")
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(appModel.phase == .signingIn)
+                .disabled(isSigningIn)
 
                 Button {
                     appModel.resetServer()
@@ -101,9 +119,20 @@ struct SignInView: View {
                     Label("Change Server", systemImage: "server.rack")
                 }
                 .buttonStyle(.bordered)
+                .disabled(isSigningIn)
+
+                if isSigningIn {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("Signing in...")
+                            .font(.title3.weight(.semibold))
+                    }
+                    .foregroundStyle(.white.opacity(0.82))
+                    .accessibilityElement(children: .combine)
+                }
             }
 
-            StatusText(message: appModel.statusMessage)
+            StatusText(message: isSigningIn ? "Signing in..." : appModel.statusMessage)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 90)

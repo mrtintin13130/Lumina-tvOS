@@ -44,6 +44,7 @@ struct FeaturedCatalogButton: View {
             )
             .frame(maxWidth: .infinity)
             .frame(height: heroHeight)
+            .accessibilityHidden(true)
 
             LinearGradient(
                 colors: [
@@ -66,20 +67,20 @@ struct FeaturedCatalogButton: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(item.title)
-                    .font(.system(size: 44, weight: .bold))
+                    .font(.system(size: 48, weight: .bold))
                     .lineLimit(2)
                     .frame(maxWidth: 780, alignment: .leading)
 
                 if let overview = item.overview {
                     Text(overview)
-                        .font(.headline)
+                        .font(.system(size: 29, weight: .medium))
                         .foregroundStyle(.white.opacity(0.76))
                         .lineLimit(2)
                         .frame(maxWidth: 860, alignment: .leading)
                 }
 
-                Label("Play", systemImage: "play.fill")
-                    .font(.headline.weight(.semibold))
+                Label("Open Details", systemImage: "info.circle")
+                    .font(.system(size: 29, weight: .semibold))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
                     .background(.white.opacity(0.16), in: Capsule())
@@ -105,12 +106,16 @@ struct FeaturedCatalogButton: View {
         )
         .scaleEffect(isFocused ? focusedScale : 1)
         .animation(.easeOut(duration: 0.16), value: isFocused)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
         .focusable(true)
         .focused($isFocused)
-        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .focusEffectDisabled()
         .onTapGesture {
             Task { await appModel.openCatalogDetail(item) }
         }
+        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityHint("Opens details")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -160,12 +165,16 @@ struct CatalogPosterButton: View {
             )
             .zIndex(isFocused ? 10 : 0)
             .animation(.easeOut(duration: 0.16), value: isFocused)
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
             .focusable(true)
             .focused($isFocused)
-            .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .focusEffectDisabled()
             .onTapGesture {
                 Task { await appModel.openCatalogDetail(item) }
             }
+            .accessibilityLabel(item.accessibilitySummary)
+            .accessibilityHint("Opens details")
+            .accessibilityAddTraits(.isButton)
     }
 
     private var posterCard: some View {
@@ -191,12 +200,12 @@ struct CatalogPosterButton: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.title)
-                    .font(.headline.weight(.semibold))
+                    .font(.system(size: 25, weight: .semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 Text(item.subtitle ?? item.mediaTypeDisplayName)
-                    .font(.caption.weight(.medium))
+                    .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(.white.opacity(0.72))
                     .lineLimit(1)
 
@@ -219,6 +228,123 @@ struct CatalogPosterButton: View {
                     lineWidth: isFocused ? 3 : 1
                 )
         }
+    }
+}
+
+enum PersonCreditCardTextStyle {
+    case cast
+    case crew
+}
+
+struct PersonCreditButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let person: CatalogPersonCredit
+    let textStyle: PersonCreditCardTextStyle
+    let onSelect: (CatalogPersonCredit) -> Void
+
+    private let cardWidth: CGFloat = 206
+    private let imageHeight: CGFloat = 276
+    private let cardHeight: CGFloat = 384
+    private let focusedScale: CGFloat = 1.06
+    private let cornerRadius: CGFloat = 12
+
+    init(
+        person: CatalogPersonCredit,
+        textStyle: PersonCreditCardTextStyle,
+        onSelect: @escaping (CatalogPersonCredit) -> Void = { _ in }
+    ) {
+        self.person = person
+        self.textStyle = textStyle
+        self.onSelect = onSelect
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            CatalogArtwork(
+                url: appModel.artworkURL(for: person.profilePath, kind: .poster),
+                aspectRatio: 2 / 3
+            )
+            .frame(width: cardWidth, height: imageHeight)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius - 2))
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(primaryText)
+                    .font(.system(size: 25, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.86)
+
+                if let secondaryText {
+                    Text(secondaryText)
+                        .font(.system(size: 21, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.68))
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: cardWidth - 22, alignment: .leading)
+            .padding(.horizontal, 11)
+            .padding(.bottom, 12)
+        }
+        .frame(width: cardWidth, height: cardHeight, alignment: .top)
+        .background(.black.opacity(isFocused ? 0.46 : 0.28), in: RoundedRectangle(cornerRadius: cornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
+                    lineWidth: isFocused ? 3 : 1
+                )
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .scaleEffect(isFocused ? focusedScale : 1)
+        .shadow(
+            color: .black.opacity(isFocused ? 0.62 : 0.22),
+            radius: isFocused ? 22 : 10,
+            x: 0,
+            y: isFocused ? 14 : 6
+        )
+        .zIndex(isFocused ? 10 : 0)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onTapGesture {
+            onSelect(person)
+        }
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Opens person details")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var primaryText: String {
+        switch textStyle {
+        case .cast:
+            return person.role?.nonEmptyCreditText ?? person.name
+        case .crew:
+            return person.role?.nonEmptyCreditText
+                ?? person.department?.nonEmptyCreditText
+                ?? person.name
+        }
+    }
+
+    private var secondaryText: String? {
+        switch textStyle {
+        case .cast:
+            return primaryText == person.name ? person.department?.nonEmptyCreditText : person.name
+        case .crew:
+            return primaryText == person.name ? nil : person.name
+        }
+    }
+
+    private var accessibilityLabel: String {
+        if let secondaryText {
+            return "\(primaryText), \(secondaryText)"
+        }
+        return primaryText
     }
 }
 
@@ -274,12 +400,19 @@ struct CatalogArtwork: View {
     }
 }
 
+private extension String {
+    var nonEmptyCreditText: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
 struct EmptyCatalogState: View {
     let title: String
 
     var body: some View {
         Text(title)
-            .font(.title3)
+            .font(.system(size: 31, weight: .medium))
             .foregroundStyle(.white.opacity(0.62))
             .frame(maxWidth: .infinity, minHeight: 180, alignment: .leading)
     }
@@ -316,5 +449,16 @@ extension CatalogItem {
             values.append("\(Int(progressPercent.rounded()))% watched")
         }
         return values
+    }
+
+    var accessibilitySummary: String {
+        var parts = [mediaTypeDisplayName, title]
+        if let subtitle {
+            parts.append(subtitle)
+        }
+        if progressPercent > 0 {
+            parts.append("\(Int(progressPercent.rounded())) percent watched")
+        }
+        return parts.joined(separator: ", ")
     }
 }

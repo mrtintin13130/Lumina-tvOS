@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "NO_PLAYABLE_MOVIE",
+    "category": "missing_media",
+    "safeMessage": "No playable movie was found on this Lumina server.",
+    "retryable": true,
+    "correlationId": "support-no-playable-1",
+    "details": {}
+  }
+}

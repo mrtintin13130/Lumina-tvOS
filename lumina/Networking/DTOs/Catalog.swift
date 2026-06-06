@@ -165,6 +165,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         case watchlist
         case isFavorite = "is_favorite"
         case favorite
+        case listMembership = "list_membership"
         case primaryTrailer = "primary_trailer"
         case trailerPreview = "trailer_preview"
         case cast
@@ -211,6 +212,11 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     enum CreditsKeys: String, CodingKey {
         case cast
         case crew
+    }
+
+    enum ListMembershipKeys: String, CodingKey {
+        case inWatchlist = "in_watchlist"
+        case isFavorite = "is_favorite"
     }
 
     init(
@@ -311,11 +317,21 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
             ?? container.decodeIfPresent(Double.self, forKey: .voteAverage)
         contentRating = try container.decodeIfPresent(String.self, forKey: .contentRating)
         genres = CatalogItem.decodeGenres(from: container)
-        isWatchlisted = try container.decodeIfPresent(Bool.self, forKey: .isWatchlisted)
-            ?? container.decodeIfPresent(Bool.self, forKey: .inWatchlist)
-            ?? container.decodeIfPresent(Bool.self, forKey: .watchlist)
-        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite)
-            ?? container.decodeIfPresent(Bool.self, forKey: .favorite)
+        if let membership = try? container.nestedContainer(keyedBy: ListMembershipKeys.self, forKey: .listMembership) {
+            isWatchlisted = try container.decodeIfPresent(Bool.self, forKey: .isWatchlisted)
+                ?? container.decodeIfPresent(Bool.self, forKey: .inWatchlist)
+                ?? container.decodeIfPresent(Bool.self, forKey: .watchlist)
+                ?? membership.decodeIfPresent(Bool.self, forKey: .inWatchlist)
+            isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite)
+                ?? container.decodeIfPresent(Bool.self, forKey: .favorite)
+                ?? membership.decodeIfPresent(Bool.self, forKey: .isFavorite)
+        } else {
+            isWatchlisted = try container.decodeIfPresent(Bool.self, forKey: .isWatchlisted)
+                ?? container.decodeIfPresent(Bool.self, forKey: .inWatchlist)
+                ?? container.decodeIfPresent(Bool.self, forKey: .watchlist)
+            isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite)
+                ?? container.decodeIfPresent(Bool.self, forKey: .favorite)
+        }
         primaryTrailerTitle = CatalogItem.decodeTrailerTitle(from: container)
         cast = CatalogItem.decodeCredits(from: container, key: .cast)
         crew = CatalogItem.decodeCredits(from: container, key: .crew)
@@ -387,6 +403,15 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         if let direct = try? container.decode([CatalogPersonCredit].self, forKey: directKey) {
             return direct
         }
+        if let flatCredits = try? container.decode([CatalogPersonCredit].self, forKey: .credits) {
+            return flatCredits.filter { credit in
+                let type = credit.creditType?.lowercased()
+                if key == .cast {
+                    return type == nil || type == "cast"
+                }
+                return type != "cast"
+            }
+        }
         if let credits = try? container.nestedContainer(keyedBy: CreditsKeys.self, forKey: .credits),
            let nested = try? credits.decode([CatalogPersonCredit].self, forKey: key) {
             return nested
@@ -402,6 +427,7 @@ struct CatalogPersonCredit: Decodable, Equatable, Identifiable {
     let name: String
     let role: String?
     let department: String?
+    let creditType: String?
     let profilePath: String?
 
     enum CodingKeys: String, CodingKey {
@@ -413,6 +439,7 @@ struct CatalogPersonCredit: Decodable, Equatable, Identifiable {
         case role
         case job
         case department
+        case creditType = "credit_type"
         case profilePath = "profile_path"
         case photoPath = "photo_path"
         case imagePath = "image_path"
@@ -427,20 +454,21 @@ struct CatalogPersonCredit: Decodable, Equatable, Identifiable {
             ?? container.decodeIfPresent(String.self, forKey: .role)
             ?? container.decodeIfPresent(String.self, forKey: .job)
         department = try container.decodeIfPresent(String.self, forKey: .department)
+        creditType = try container.decodeIfPresent(String.self, forKey: .creditType)
         profilePath = try container.decodeIfPresent(String.self, forKey: .profilePath)
             ?? container.decodeIfPresent(String.self, forKey: .photoPath)
             ?? container.decodeIfPresent(String.self, forKey: .imagePath)
 
-        if let stringID = try container.decodeIfPresent(String.self, forKey: .id)
-            ?? container.decodeIfPresent(String.self, forKey: .personId)
-            ?? container.decodeIfPresent(String.self, forKey: .tmdbId) {
+        if let stringID = (try? container.decodeIfPresent(String.self, forKey: .id))
+            ?? (try? container.decodeIfPresent(String.self, forKey: .personId))
+            ?? (try? container.decodeIfPresent(String.self, forKey: .tmdbId)) {
             id = stringID
             return
         }
 
-        if let intID = try container.decodeIfPresent(Int.self, forKey: .id)
-            ?? container.decodeIfPresent(Int.self, forKey: .personId)
-            ?? container.decodeIfPresent(Int.self, forKey: .tmdbId) {
+        if let intID = (try? container.decodeIfPresent(Int.self, forKey: .id))
+            ?? (try? container.decodeIfPresent(Int.self, forKey: .personId))
+            ?? (try? container.decodeIfPresent(Int.self, forKey: .tmdbId)) {
             id = String(intID)
         } else {
             id = "\(name)-\(role ?? department ?? "credit")"

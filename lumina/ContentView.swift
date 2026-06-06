@@ -12,17 +12,23 @@ struct ContentView: View {
     @EnvironmentObject private var appModel: AppModel
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(colors: [Color.black, Color(red: 0.08, green: 0.1, blue: 0.12)], startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea()
+        ZStack {
+            LinearGradient(colors: [Color.black, Color(red: 0.08, green: 0.1, blue: 0.12)], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
 
-                content
+            content
+
+            if case .home = appModel.phase,
+               let detail = appModel.selectedCatalogItem {
+                CatalogDetailPage(item: detail)
+                    .transition(.opacity)
+                    .zIndex(10)
             }
-            .foregroundStyle(.white)
-            .task {
-                await appModel.restoreSession()
-            }
+        }
+        .foregroundStyle(.white)
+        .animation(.easeOut(duration: 0.16), value: appModel.selectedCatalogItem?.id)
+        .task {
+            await appModel.restoreSession()
         }
     }
 
@@ -60,34 +66,13 @@ private struct PlaybackProofView: View {
     let proof: PlaybackProof
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(proof.movie.title)
-                        .font(.system(size: 42, weight: .bold))
-                    Text("HLS playback proof")
-                        .font(.title3)
-                        .foregroundStyle(.white.opacity(0.68))
-                }
-
-                Spacer()
-
-                Button {
-                    Task { await appModel.reportPlaybackProgress(positionSeconds: proof.movie.resumePositionSeconds ?? 0, event: "exit") }
-                    appModel.exitPlayback()
-                } label: {
-                    Label("Exit", systemImage: "xmark.circle")
-                }
-                .buttonStyle(.bordered)
+        AVKitPlayerView(proof: proof)
+            .ignoresSafeArea()
+            .background(Color.black)
+            .onExitCommand {
+                appModel.exitPlayback()
             }
-
-            AVKitPlayerView(proof: proof)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            StatusText(message: appModel.statusMessage)
-        }
+        .background(Color.black.ignoresSafeArea())
     }
 }
 

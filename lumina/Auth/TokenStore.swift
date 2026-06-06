@@ -12,6 +12,33 @@ protocol TokenStore {
     func clearToken() throws
 }
 
+enum TokenStoreFactory {
+    static func defaultStore() -> TokenStore {
+        #if targetEnvironment(simulator)
+        return FallbackTokenStore(
+            primary: KeychainTokenStore(),
+            fallback: InMemoryTokenStore()
+        )
+        #else
+        return KeychainTokenStore()
+        #endif
+    }
+}
+
+enum TokenStoreError: LocalizedError, Equatable {
+    case unexpectedStatus(OSStatus)
+    case invalidTokenData
+
+    var errorDescription: String? {
+        switch self {
+        case .unexpectedStatus:
+            return "Secure token storage is unavailable."
+        case .invalidTokenData:
+            return "Stored sign-in data could not be read."
+        }
+    }
+}
+
 final class KeychainTokenStore: TokenStore {
     private let service = "com.nitramator.lumina.auth"
     private let account = "jwt"
@@ -26,26 +53,38 @@ final class KeychainTokenStore: TokenStore {
         if status == errSecItemNotFound {
             return nil
         }
-        guard status == errSecSuccess, let data = item as? Data else {
-            throw LuminaClientError.missingToken
+        guard status == errSecSuccess else {
+            throw TokenStoreError.unexpectedStatus(status)
         }
-        return String(data: data, encoding: .utf8)
+        guard let data = item as? Data, let token = String(data: data, encoding: .utf8) else {
+            throw TokenStoreError.invalidTokenData
+        }
+        return token
     }
 
     func saveToken(_ token: String) throws {
-        try clearToken()
-        var item = baseQuery()
-        item[kSecValueData as String] = Data(token.utf8)
-        let status = SecItemAdd(item as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw LuminaClientError.missingToken
+        let attributes = [kSecValueData as String: Data(token.utf8)]
+        let updateStatus = SecItemUpdate(baseQuery() as CFDictionary, attributes as CFDictionary)
+        if updateStatus == errSecSuccess {
+            return
         }
+        if updateStatus == errSecItemNotFound {
+            var item = baseQuery()
+            item[kSecValueData as String] = Data(token.utf8)
+            item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            let addStatus = SecItemAdd(item as CFDictionary, nil)
+            guard addStatus == errSecSuccess else {
+                throw TokenStoreError.unexpectedStatus(addStatus)
+            }
+            return
+        }
+        throw TokenStoreError.unexpectedStatus(updateStatus)
     }
 
     func clearToken() throws {
         let status = SecItemDelete(baseQuery() as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw LuminaClientError.missingToken
+            throw TokenStoreError.unexpectedStatus(status)
         }
     }
 
@@ -71,6 +110,59 @@ final class InMemoryTokenStore: TokenStore {
 
     func clearToken() throws {
         token = nil
+    }
+}
+
+final class FallbackTokenStore: TokenStore {
+    private let primary: TokenStore
+    private let fallback: TokenStore
+    private var isUsingFallback = false
+
+    init(primary: TokenStore, fallback: TokenStore) {
+        self.primary = primary
+        self.fallback = fallback
+    }
+
+    func loadToken() throws -> String? {
+        if isUsingFallback {
+            return try fallback.loadToken()
+        }
+        do {
+            return try primary.loadToken()
+        } catch {
+            isUsingFallback = true
+            return try fallback.loadToken()
+        }
+    }
+
+    func saveToken(_ token: String) throws {
+        if isUsingFallback {
+            try fallback.saveToken(token)
+            return
+        }
+        do {
+            try primary.saveToken(token)
+            try? fallback.clearToken()
+        } catch {
+            isUsingFallback = true
+            try fallback.saveToken(token)
+        }
+    }
+
+    func clearToken() throws {
+        let wasUsingFallback = isUsingFallback
+        let primaryResult = Result { try primary.clearToken() }
+        let fallbackResult = Result { try fallback.clearToken() }
+        isUsingFallback = false
+        if case .failure(let fallbackError) = fallbackResult {
+            throw fallbackError
+        }
+        if wasUsingFallback {
+            return
+        }
+        if case .failure(let primaryError) = primaryResult {
+            throw primaryError
+        }
     }
 }
 
