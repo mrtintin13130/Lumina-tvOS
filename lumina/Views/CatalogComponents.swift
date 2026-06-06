@@ -251,6 +251,8 @@ struct HomeCatalogSectionView: View {
         switch section.homeLayout {
         case .genrePills:
             GenrePillSection(title: section.title, items: section.items)
+        case .landscapeRail:
+            CatalogLandscapeShelfView(title: section.title, items: section.items)
         case .themedCards:
             ThemedCatalogSectionView(title: section.title, items: section.items, theme: section.presentation?.theme)
         case .posterRail:
@@ -261,6 +263,7 @@ struct HomeCatalogSectionView: View {
 
 private enum HomeSectionLayout {
     case genrePills
+    case landscapeRail
     case themedCards
     case posterRail
 }
@@ -272,7 +275,9 @@ private extension CatalogSection {
         }
 
         switch presentation?.layout {
-        case "cinematic_banner", "editorial_grid", "spotlight_rail":
+        case "spotlight_rail":
+            return .landscapeRail
+        case "cinematic_banner", "editorial_grid":
             return .themedCards
         default:
             return .posterRail
@@ -358,6 +363,107 @@ struct CatalogGenrePillButton: View {
         .focusEffectDisabled()
         .accessibilityLabel(item.linkCount.map { "\(item.title), \($0) titles" } ?? item.title)
         .accessibilityHint("Opens this genre")
+    }
+}
+
+struct CatalogLandscapeShelfView: View {
+    let title: String
+    let items: [CatalogItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.title2.bold())
+
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .center, spacing: 26) {
+                    ForEach(items) { item in
+                        CatalogLandscapeButton(item: item)
+                    }
+                }
+                .padding(.vertical, 22)
+                .padding(.horizontal, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+}
+
+struct CatalogLandscapeButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let item: CatalogItem
+
+    private let cardWidth: CGFloat = 420
+    private let cardHeight: CGFloat = 236
+    private let focusedScale: CGFloat = 1.055
+    private let cornerRadius: CGFloat = 12
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            CatalogArtwork(
+                url: appModel.artworkURL(
+                    for: item.backdropPath ?? item.posterPath,
+                    kind: .backdrop
+                ),
+                aspectRatio: 16 / 9
+            )
+            .frame(width: cardWidth, height: cardHeight)
+            .accessibilityHidden(true)
+
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .black.opacity(0.2),
+                    .black.opacity(0.86)
+                ],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(item.title)
+                    .font(.system(size: 27, weight: .semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Text(item.subtitle ?? item.mediaTypeDisplayName)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineLimit(1)
+            }
+            .padding(16)
+            .frame(width: cardWidth, alignment: .leading)
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
+                    lineWidth: isFocused ? 3 : 1
+                )
+        }
+        .scaleEffect(isFocused ? focusedScale : 1)
+        .shadow(
+            color: .black.opacity(isFocused ? 0.62 : 0.24),
+            radius: isFocused ? 22 : 10,
+            x: 0,
+            y: isFocused ? 14 : 6
+        )
+        .zIndex(isFocused ? 10 : 0)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onTapGesture {
+            Task { await appModel.openCatalogDetail(item) }
+        }
+        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityHint("Opens details")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
