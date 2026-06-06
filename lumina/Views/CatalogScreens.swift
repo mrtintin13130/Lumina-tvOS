@@ -49,32 +49,32 @@ private struct CatalogHomeView: View {
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 32) {
-                CatalogHeader(
-                    title: "Home",
-                    subtitle: "Signed in as \(appModel.currentUser?.displayName ?? "Lumina user")"
-                )
-
                 if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
                     ProgressView("Loading catalog")
+                        .padding(.horizontal, 72)
+                        .padding(.top, 72)
                 }
 
-                if let hero = appModel.homeHeroItems.first {
-                    FeaturedCatalogButton(item: hero)
+                if !appModel.homeHeroItems.isEmpty {
+                    FeaturedHeroCarousel(items: appModel.homeHeroItems)
                 }
 
-                ForEach(appModel.homeSections.filter { !$0.items.isEmpty }) { section in
-                    CatalogShelfView(title: section.title, items: section.items)
-                }
+                VStack(alignment: .leading, spacing: 40) {
+                    ForEach(appModel.homeSections.filter { !$0.items.isEmpty }) { section in
+                        HomeCatalogSectionView(section: section)
+                    }
 
-                if appModel.homeSections.isEmpty && !appModel.isCatalogLoading {
-                    EmptyCatalogState(title: "No catalog shelves yet")
-                }
+                    if appModel.homeSections.isEmpty && !appModel.isCatalogLoading {
+                        EmptyCatalogState(title: "No catalog shelves yet")
+                    }
 
-                StatusText(message: appModel.statusMessage)
+                    StatusText(message: appModel.statusMessage)
+                }
+                .padding(.horizontal, 72)
+                .padding(.bottom, 46)
             }
-            .padding(.horizontal, 72)
-            .padding(.vertical, 36)
         }
+        .ignoresSafeArea(edges: .top)
     }
 }
 

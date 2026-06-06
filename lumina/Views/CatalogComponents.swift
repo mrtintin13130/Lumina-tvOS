@@ -119,6 +119,353 @@ struct FeaturedCatalogButton: View {
     }
 }
 
+struct FeaturedHeroCarousel: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+    @State private var selectedIndex = 0
+
+    let items: [CatalogItem]
+
+    private let rotationTimer = Timer.publish(every: 7, on: .main, in: .common).autoconnect()
+    private let heroHeight: CGFloat = 720
+
+    var body: some View {
+        if let item = currentItem {
+            ZStack(alignment: .bottomLeading) {
+                CatalogArtwork(
+                    url: appModel.artworkURL(
+                        for: item.backdropPath ?? item.posterPath,
+                        kind: .backdrop
+                    ),
+                    aspectRatio: 16 / 9
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: heroHeight)
+                .clipped()
+                .accessibilityHidden(true)
+
+                LinearGradient(
+                    colors: [
+                        .black.opacity(0.88),
+                        .black.opacity(0.48),
+                        .black.opacity(0.08)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        .black.opacity(0.82)
+                    ],
+                    startPoint: .center,
+                    endPoint: .bottom
+                )
+
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Featured")
+                        .font(.system(size: 27, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.72))
+
+                    Text(item.title)
+                        .font(.system(size: 70, weight: .bold))
+                        .lineLimit(2)
+                        .frame(maxWidth: 900, alignment: .leading)
+
+                    if let overview = item.overview {
+                        Text(overview)
+                            .font(.system(size: 31, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.78))
+                            .lineLimit(2)
+                            .frame(maxWidth: 940, alignment: .leading)
+                    }
+
+                    Label("Open Details", systemImage: "info.circle.fill")
+                        .font(.system(size: 31, weight: .semibold))
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 12)
+                        .background(.white.opacity(isFocused ? 0.24 : 0.16), in: Capsule())
+                        .overlay {
+                            Capsule()
+                                .stroke(isFocused ? .white.opacity(0.9) : .white.opacity(0.22), lineWidth: isFocused ? 3 : 1)
+                        }
+                    .padding(.top, 8)
+                }
+                .padding(.leading, 76)
+                .padding(.bottom, 74)
+
+                if items.count > 1 {
+                    HStack(spacing: 12) {
+                        ForEach(items.indices, id: \.self) { index in
+                            Capsule()
+                                .fill(index == selectedIndex ? .white : .white.opacity(0.34))
+                                .frame(width: index == selectedIndex ? 42 : 18, height: 8)
+                        }
+                    }
+                    .padding(.trailing, 76)
+                    .padding(.bottom, 78)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .accessibilityHidden(true)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: heroHeight)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(isFocused ? .white.opacity(0.88) : .clear)
+                    .frame(height: 5)
+            }
+            .contentShape(Rectangle())
+            .focusable(true)
+            .focused($isFocused)
+            .focusEffectDisabled()
+            .onTapGesture {
+                Task { await appModel.openCatalogDetail(item) }
+            }
+            .onReceive(rotationTimer) { _ in
+                guard items.count > 1 else { return }
+                withAnimation(.easeInOut(duration: 0.45)) {
+                    selectedIndex = (selectedIndex + 1) % items.count
+                }
+            }
+            .onChange(of: items) { _, newItems in
+                selectedIndex = min(selectedIndex, max(newItems.count - 1, 0))
+            }
+            .accessibilityLabel(item.accessibilitySummary)
+            .accessibilityHint("Opens details")
+            .accessibilityAddTraits(.isButton)
+        }
+    }
+
+    private var currentItem: CatalogItem? {
+        guard !items.isEmpty else { return nil }
+        return items[min(selectedIndex, items.count - 1)]
+    }
+}
+
+struct HomeCatalogSectionView: View {
+    let section: CatalogSection
+
+    var body: some View {
+        switch section.homeLayout {
+        case .genrePills:
+            GenrePillSection(title: section.title, items: section.items)
+        case .themedCards:
+            ThemedCatalogSectionView(title: section.title, items: section.items, theme: section.presentation?.theme)
+        case .posterRail:
+            CatalogShelfView(title: section.title, items: section.items)
+        }
+    }
+}
+
+private enum HomeSectionLayout {
+    case genrePills
+    case themedCards
+    case posterRail
+}
+
+private extension CatalogSection {
+    var homeLayout: HomeSectionLayout {
+        if type == "genre_links" || presentation?.layout == "genre_pills" {
+            return .genrePills
+        }
+
+        switch presentation?.layout {
+        case "cinematic_banner", "editorial_grid", "spotlight_rail":
+            return .themedCards
+        default:
+            return .posterRail
+        }
+    }
+}
+
+struct GenrePillSection: View {
+    let title: String
+    let items: [CatalogItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(title)
+                .font(.title2.bold())
+
+            ScrollView(.horizontal) {
+                LazyHStack(spacing: 18) {
+                    ForEach(items) { item in
+                        CatalogGenrePillButton(item: item)
+                    }
+                }
+                .padding(.vertical, 18)
+                .padding(.horizontal, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+}
+
+struct CatalogGenrePillButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let item: CatalogItem
+
+    var body: some View {
+        Button {
+            appModel.openCatalogLink(item)
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "square.grid.2x2.fill")
+                    .font(.system(size: 25, weight: .semibold))
+
+                Text(item.title)
+                    .font(.system(size: 31, weight: .semibold))
+                    .lineLimit(1)
+
+                if let count = item.linkCount {
+                    Text("\(count)")
+                        .font(.system(size: 25, weight: .bold))
+                        .foregroundStyle(.black.opacity(0.72))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(.white.opacity(0.86), in: Capsule())
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 28)
+            .frame(height: 86)
+            .background(
+                LinearGradient(
+                    colors: [
+                        .white.opacity(isFocused ? 0.28 : 0.15),
+                        .white.opacity(isFocused ? 0.15 : 0.08)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: Capsule()
+            )
+            .overlay {
+                Capsule()
+                    .stroke(isFocused ? .white.opacity(0.95) : .white.opacity(0.18), lineWidth: isFocused ? 3 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isFocused ? 1.07 : 1)
+        .shadow(color: .black.opacity(isFocused ? 0.48 : 0.2), radius: isFocused ? 18 : 8, x: 0, y: isFocused ? 12 : 5)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .accessibilityLabel(item.linkCount.map { "\(item.title), \($0) titles" } ?? item.title)
+        .accessibilityHint("Opens this genre")
+    }
+}
+
+struct ThemedCatalogSectionView: View {
+    let title: String
+    let items: [CatalogItem]
+    let theme: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(title)
+                .font(.title2.bold())
+
+            LazyVStack(spacing: 22) {
+                ForEach(items) { item in
+                    ThemedCatalogCardButton(item: item, theme: theme)
+                }
+            }
+        }
+    }
+}
+
+struct ThemedCatalogCardButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let item: CatalogItem
+    let theme: String?
+
+    private let cardHeight: CGFloat = 330
+    private let cornerRadius: CGFloat = 14
+
+    var body: some View {
+        Button {
+            Task { await appModel.openCatalogDetail(item) }
+        } label: {
+            ZStack(alignment: .leading) {
+                CatalogArtwork(
+                    url: appModel.artworkURL(
+                        for: item.backdropPath ?? item.posterPath,
+                        kind: .backdrop
+                    ),
+                    aspectRatio: 16 / 9
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: cardHeight)
+                .clipped()
+                .accessibilityHidden(true)
+
+                LinearGradient(
+                    colors: themedGradientColors,
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(item.title)
+                        .font(.system(size: 44, weight: .bold))
+                        .lineLimit(2)
+                        .frame(maxWidth: 820, alignment: .leading)
+
+                    if let overview = item.overview {
+                        Text(overview)
+                            .font(.system(size: 27, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.76))
+                            .lineLimit(2)
+                            .frame(maxWidth: 900, alignment: .leading)
+                    } else {
+                        Text(item.subtitle ?? item.mediaTypeDisplayName)
+                            .font(.system(size: 27, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+                }
+                .padding(.horizontal, 34)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: cardHeight)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(isFocused ? .white.opacity(0.95) : .white.opacity(0.1), lineWidth: isFocused ? 3 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isFocused ? 1.025 : 1)
+        .shadow(color: .black.opacity(isFocused ? 0.58 : 0.24), radius: isFocused ? 24 : 10, x: 0, y: isFocused ? 16 : 7)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityHint("Opens details")
+    }
+
+    private var themedGradientColors: [Color] {
+        switch theme {
+        case "warm":
+            return [.black.opacity(0.86), .red.opacity(0.34), .clear]
+        case "cool":
+            return [.black.opacity(0.86), .teal.opacity(0.28), .clear]
+        case "muted":
+            return [.black.opacity(0.88), .gray.opacity(0.28), .clear]
+        default:
+            return [.black.opacity(0.86), .black.opacity(0.36), .clear]
+        }
+    }
+}
+
 struct CatalogShelfView: View {
     let title: String
     let items: [CatalogItem]

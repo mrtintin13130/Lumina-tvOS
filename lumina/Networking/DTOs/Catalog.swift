@@ -138,6 +138,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     let isWatchlisted: Bool?
     let isFavorite: Bool?
     let primaryTrailerTitle: String?
+    let linkCount: Int?
+    let href: String?
     let cast: [CatalogPersonCredit]
     let crew: [CatalogPersonCredit]
 
@@ -168,6 +170,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         case listMembership = "list_membership"
         case primaryTrailer = "primary_trailer"
         case trailerPreview = "trailer_preview"
+        case count
+        case href
         case cast
         case crew
         case credits
@@ -239,6 +243,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         isWatchlisted: Bool? = nil,
         isFavorite: Bool? = nil,
         primaryTrailerTitle: String? = nil,
+        linkCount: Int? = nil,
+        href: String? = nil,
         cast: [CatalogPersonCredit] = [],
         crew: [CatalogPersonCredit] = []
     ) {
@@ -261,6 +267,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         self.isWatchlisted = isWatchlisted
         self.isFavorite = isFavorite
         self.primaryTrailerTitle = primaryTrailerTitle
+        self.linkCount = linkCount
+        self.href = href
         self.cast = cast
         self.crew = crew
     }
@@ -333,6 +341,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
                 ?? container.decodeIfPresent(Bool.self, forKey: .favorite)
         }
         primaryTrailerTitle = CatalogItem.decodeTrailerTitle(from: container)
+        linkCount = try container.decodeIfPresent(Int.self, forKey: .count)
+        href = try container.decodeIfPresent(String.self, forKey: .href)
         cast = CatalogItem.decodeCredits(from: container, key: .cast)
         crew = CatalogItem.decodeCredits(from: container, key: .crew)
         if let direct = try container.decodeIfPresent(Bool.self, forKey: .hasPlayableMedia) {
@@ -479,24 +489,51 @@ struct CatalogPersonCredit: Decodable, Equatable, Identifiable {
 struct CatalogSection: Decodable, Equatable, Identifiable {
     let id: String
     let title: String
+    let type: String?
     let mediaType: String?
+    let presentation: CatalogPresentation?
     let items: [CatalogItem]
 
     enum CodingKeys: String, CodingKey {
         case id
         case title
+        case type
         case mediaType = "media_type"
+        case presentation
         case items
     }
 }
 
 struct CatalogHomeResponse: Decodable, Equatable {
     struct Hero: Decodable, Equatable {
+        let title: String?
+        let presentation: CatalogPresentation?
         let items: [CatalogItem]
     }
 
     let hero: Hero?
     let sections: [CatalogSection]
+}
+
+struct CatalogPresentation: Decodable, Equatable {
+    let layout: String?
+    let emphasis: String?
+    let theme: String?
+    let autoplay: Bool?
+    let viewAll: CatalogPresentationLink?
+
+    enum CodingKeys: String, CodingKey {
+        case layout
+        case emphasis
+        case theme
+        case autoplay
+        case viewAll = "view_all"
+    }
+}
+
+struct CatalogPresentationLink: Decodable, Equatable {
+    let label: String?
+    let href: String?
 }
 
 struct CatalogListResponse: Decodable, Equatable {

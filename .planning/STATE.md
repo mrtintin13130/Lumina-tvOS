@@ -134,6 +134,7 @@ Items acknowledged and carried forward from previous milestone close:
 | 2026-06-06 | person-card-size-tweak | Slightly increased reusable person credit cards for better tvOS readability while preserving the existing focus behavior; generic tvOS build passed with code signing disabled. |
 | 2026-06-06 | physical-apple-tv-keychain-fix | Removed unnecessary Keychain access-group entitlement and simplified Keychain query attributes so physical Apple TV sign-in can use the app's default secure storage; generic tvOS build passed with code signing disabled. |
 | 2026-06-06 | native-player-overlay-exit | Removed the custom playback top overlay, provided the movie title through AVKit metadata, and handled remote Back/Menu as an in-app playback exit; generic tvOS build passed with code signing disabled. |
+| 2026-06-06 | home-catalog-page-refresh | Replaced the Home signed-in header with a full-bleed rotating featured carousel, decoded backend Home presentation metadata, rendered genre links as pills, and rendered featured/themed sections as full-width cards; generic tvOS build and build-for-testing passed with code signing disabled. |
 | 2026-05-30 | catalog-home-shell | Added native tvOS catalog tabs, home shelves, browse grids, search, catalog API loading, and artwork-backed cards. |
 
 ## Session Continuity

@@ -309,6 +309,11 @@ final class AppModel: ObservableObject {
         diagnostics.record(operation: "catalog_trailer", message: "Trailer selected for \(item.mediaType) \(item.id)")
     }
 
+    func openCatalogLink(_ item: CatalogItem) {
+        statusMessage = "\(item.title) browsing is not wired yet."
+        diagnostics.record(operation: "catalog_link", message: "Catalog link selected: \(item.id)")
+    }
+
     func loadPlaybackProof() async {
         await loadPlaybackProof(movieOverride: nil)
     }

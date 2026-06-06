@@ -105,6 +105,11 @@ final class luminaTests: XCTestCase {
         let json = """
         {
           "hero": {
+            "title": "Featured",
+            "presentation": {
+              "layout": "cinematic_carousel",
+              "autoplay": true
+            },
             "items": [
               {
                 "media_type": "movie",
@@ -130,12 +135,83 @@ final class luminaTests: XCTestCase {
         let response = try JSONDecoder().decode(CatalogHomeResponse.self, from: json)
         let item = try XCTUnwrap(response.hero?.items.first)
 
+        XCTAssertEqual(response.hero?.title, "Featured")
+        XCTAssertEqual(response.hero?.presentation?.layout, "cinematic_carousel")
+        XCTAssertEqual(response.hero?.presentation?.autoplay, true)
         XCTAssertEqual(item.id, "8")
         XCTAssertEqual(item.subtitle, "2026")
         XCTAssertEqual(item.posterPath, "/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg")
         XCTAssertEqual(item.backdropPath, "/etfKck6BHfGc4Q9ScDIECjomLYO.jpg")
         XCTAssertEqual(item.progressPercent, 25)
         XCTAssertEqual(item.hasPlayableMedia, true)
+    }
+
+    func testCatalogHomeDecodesPresentationSectionsAndGenreLinks() throws {
+        let json = """
+        {
+          "hero": {
+            "items": []
+          },
+          "sections": [
+            {
+              "id": "recent_movies",
+              "title": "Recent Movies",
+              "type": "catalog_row",
+              "media_type": "movie",
+              "presentation": {
+                "layout": "spotlight_rail",
+                "emphasis": "featured",
+                "theme": "default",
+                "view_all": {
+                  "label": "View All",
+                  "href": "/movies"
+                }
+              },
+              "items": [
+                {
+                  "id": 42,
+                  "media_type": "movie",
+                  "title": "Heat"
+                }
+              ]
+            },
+            {
+              "id": "genre_links",
+              "title": "Genres",
+              "type": "genre_links",
+              "media_type": "mixed",
+              "presentation": {
+                "layout": "genre_pills",
+                "emphasis": "utility",
+                "theme": "default"
+              },
+              "items": [
+                {
+                  "id": 80,
+                  "name": "Crime",
+                  "count": 4,
+                  "href": "/genres/80"
+                }
+              ]
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(CatalogHomeResponse.self, from: json)
+        let mediaSection = try XCTUnwrap(response.sections.first)
+        let genreSection = try XCTUnwrap(response.sections.last)
+        let genre = try XCTUnwrap(genreSection.items.first)
+
+        XCTAssertEqual(mediaSection.type, "catalog_row")
+        XCTAssertEqual(mediaSection.presentation?.layout, "spotlight_rail")
+        XCTAssertEqual(mediaSection.presentation?.emphasis, "featured")
+        XCTAssertEqual(mediaSection.presentation?.viewAll?.href, "/movies")
+        XCTAssertEqual(genreSection.type, "genre_links")
+        XCTAssertEqual(genreSection.presentation?.layout, "genre_pills")
+        XCTAssertEqual(genre.title, "Crime")
+        XCTAssertEqual(genre.linkCount, 4)
+        XCTAssertEqual(genre.href, "/genres/80")
     }
 
     func testCatalogMovieDetailDecodesNestedMetadata() throws {
