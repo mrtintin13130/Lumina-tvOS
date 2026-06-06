@@ -253,6 +253,8 @@ struct HomeCatalogSectionView: View {
             GenrePillSection(title: section.title, items: section.items)
         case .landscapeRail:
             CatalogLandscapeShelfView(title: section.title, items: section.items)
+        case .editorialBanner:
+            EditorialBannerSectionView(section: section)
         case .themedCards:
             ThemedCatalogSectionView(title: section.title, items: section.items, theme: section.presentation?.theme)
         case .posterRail:
@@ -264,6 +266,7 @@ struct HomeCatalogSectionView: View {
 private enum HomeSectionLayout {
     case genrePills
     case landscapeRail
+    case editorialBanner
     case themedCards
     case posterRail
 }
@@ -277,7 +280,9 @@ private extension CatalogSection {
         switch presentation?.layout {
         case "spotlight_rail":
             return .landscapeRail
-        case "cinematic_banner", "editorial_grid":
+        case "cinematic_banner":
+            return .editorialBanner
+        case "editorial_grid":
             return .themedCards
         default:
             return .posterRail
@@ -464,6 +469,223 @@ struct CatalogLandscapeButton: View {
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint("Opens details")
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+struct EditorialBannerSectionView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let section: CatalogSection
+
+    private let bannerHeight: CGFloat = 360
+    private let cornerRadius: CGFloat = 14
+
+    var body: some View {
+        Button {
+            Task { await appModel.openEditorialSection(section) }
+        } label: {
+            ZStack(alignment: .leading) {
+                CatalogArtwork(
+                    url: appModel.artworkURL(
+                        for: section.items.first?.backdropPath ?? section.items.first?.posterPath,
+                        kind: .backdrop
+                    ),
+                    aspectRatio: 16 / 9
+                )
+                .frame(maxWidth: .infinity)
+                .frame(height: bannerHeight)
+                .clipped()
+                .accessibilityHidden(true)
+
+                LinearGradient(
+                    colors: editorialGradientColors,
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+
+                VStack(alignment: .leading, spacing: 13) {
+                    if let eyebrow = section.eyebrow {
+                        Text(eyebrow)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.74))
+                            .textCase(.uppercase)
+                    }
+
+                    Text(section.title)
+                        .font(.system(size: 50, weight: .bold))
+                        .lineLimit(2)
+                        .frame(maxWidth: 820, alignment: .leading)
+
+                    if let subtitle = section.subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.78))
+                            .lineLimit(2)
+                            .frame(maxWidth: 880, alignment: .leading)
+                    }
+
+                    if !section.tags.isEmpty {
+                        HStack(spacing: 10) {
+                            ForEach(section.tags.prefix(3), id: \.self) { tag in
+                                Text(tag)
+                                    .font(.system(size: 21, weight: .semibold))
+                                    .padding(.horizontal, 13)
+                                    .padding(.vertical, 6)
+                                    .background(.white.opacity(0.16), in: Capsule())
+                            }
+                        }
+                    }
+
+                    Label(section.presentation?.viewAll?.label ?? "View Collection", systemImage: "rectangle.stack.fill")
+                        .font(.system(size: 27, weight: .semibold))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(.white.opacity(isFocused ? 0.25 : 0.16), in: Capsule())
+                        .overlay {
+                            Capsule()
+                                .stroke(isFocused ? .white.opacity(0.92) : .white.opacity(0.18), lineWidth: isFocused ? 3 : 1)
+                        }
+                        .padding(.top, 4)
+                }
+                .padding(.horizontal, 36)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: bannerHeight)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(isFocused ? .white.opacity(0.96) : .white.opacity(0.1), lineWidth: isFocused ? 3 : 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .scaleEffect(isFocused ? 1.018 : 1)
+        .shadow(color: .black.opacity(isFocused ? 0.58 : 0.24), radius: isFocused ? 24 : 10, x: 0, y: isFocused ? 15 : 7)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .accessibilityLabel([section.eyebrow, section.title, section.subtitle].compactMap { $0 }.joined(separator: ", "))
+        .accessibilityHint("Opens this editorial collection")
+    }
+
+    private var editorialGradientColors: [Color] {
+        switch section.presentation?.theme {
+        case "warm":
+            return [.black.opacity(0.9), .red.opacity(0.36), .black.opacity(0.12)]
+        case "cool":
+            return [.black.opacity(0.9), .cyan.opacity(0.26), .black.opacity(0.08)]
+        case "muted":
+            return [.black.opacity(0.9), .gray.opacity(0.32), .black.opacity(0.1)]
+        default:
+            return [.black.opacity(0.9), .black.opacity(0.42), .black.opacity(0.06)]
+        }
+    }
+}
+
+struct CatalogEditorialPage: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isCloseFocused: Bool
+
+    let section: CatalogSection
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            CatalogArtwork(
+                url: appModel.artworkURL(
+                    for: section.items.first?.backdropPath ?? section.items.first?.posterPath,
+                    kind: .backdrop
+                ),
+                aspectRatio: 16 / 9
+            )
+            .ignoresSafeArea()
+            .accessibilityHidden(true)
+
+            LinearGradient(
+                colors: [.black.opacity(0.86), .black.opacity(0.62), .black.opacity(0.92)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 30) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if let eyebrow = section.eyebrow {
+                                Text(eyebrow)
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundStyle(.white.opacity(0.74))
+                                    .textCase(.uppercase)
+                            }
+
+                            Text(section.title)
+                                .font(.system(size: 64, weight: .bold))
+                                .lineLimit(2)
+                                .frame(maxWidth: 1000, alignment: .leading)
+
+                            if let subtitle = section.subtitle {
+                                Text(subtitle)
+                                    .font(.system(size: 30, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.78))
+                                    .lineLimit(2)
+                                    .frame(maxWidth: 980, alignment: .leading)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button {
+                            appModel.closeEditorialSection()
+                        } label: {
+                            Label("Close", systemImage: "xmark.circle.fill")
+                                .labelStyle(.iconOnly)
+                                .font(.system(size: 44, weight: .semibold))
+                                .frame(width: 74, height: 74)
+                        }
+                        .buttonStyle(.plain)
+                        .background(.white.opacity(isCloseFocused ? 0.25 : 0.12), in: Circle())
+                        .overlay {
+                            Circle()
+                                .stroke(isCloseFocused ? .white.opacity(0.95) : .white.opacity(0.16), lineWidth: isCloseFocused ? 3 : 1)
+                        }
+                        .scaleEffect(isCloseFocused ? 1.08 : 1)
+                        .focused($isCloseFocused)
+                        .focusEffectDisabled()
+                        .accessibilityLabel("Close editorial collection")
+                    }
+
+                    if !section.tags.isEmpty {
+                        HStack(spacing: 12) {
+                            ForEach(section.tags.prefix(5), id: \.self) { tag in
+                                Text(tag)
+                                    .font(.system(size: 23, weight: .semibold))
+                                    .padding(.horizontal, 15)
+                                    .padding(.vertical, 7)
+                                    .background(.white.opacity(0.14), in: Capsule())
+                            }
+                        }
+                    }
+
+                    if appModel.isEditorialLoading {
+                        ProgressView("Loading collection")
+                            .padding(.top, 18)
+                    } else if section.items.isEmpty {
+                        EmptyCatalogState(title: "No titles in this collection yet")
+                    } else {
+                        CatalogLandscapeShelfView(title: "Titles", items: section.items)
+                    }
+
+                    StatusText(message: appModel.statusMessage)
+                }
+                .padding(.horizontal, 72)
+                .padding(.top, 64)
+                .padding(.bottom, 56)
+            }
+        }
+        .onExitCommand {
+            appModel.closeEditorialSection()
+        }
     }
 }
 

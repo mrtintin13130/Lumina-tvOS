@@ -19,6 +19,13 @@ struct ContentView: View {
             content
 
             if case .home = appModel.phase,
+               let section = appModel.selectedEditorialSection {
+                CatalogEditorialPage(section: section)
+                    .transition(.opacity)
+                    .zIndex(9)
+            }
+
+            if case .home = appModel.phase,
                let detail = appModel.selectedCatalogItem {
                 CatalogDetailPage(item: detail)
                     .transition(.opacity)
@@ -26,6 +33,7 @@ struct ContentView: View {
             }
         }
         .foregroundStyle(.white)
+        .animation(.easeOut(duration: 0.16), value: appModel.selectedEditorialSection?.id)
         .animation(.easeOut(duration: 0.16), value: appModel.selectedCatalogItem?.id)
         .task {
             await appModel.restoreSession()

@@ -491,6 +491,10 @@ struct CatalogSection: Decodable, Equatable, Identifiable {
     let title: String
     let type: String?
     let mediaType: String?
+    let genreId: Int?
+    let eyebrow: String?
+    let subtitle: String?
+    let tags: [String]
     let presentation: CatalogPresentation?
     let items: [CatalogItem]
 
@@ -499,20 +503,92 @@ struct CatalogSection: Decodable, Equatable, Identifiable {
         case title
         case type
         case mediaType = "media_type"
+        case genreId = "genre_id"
+        case eyebrow
+        case subtitle
+        case tags
         case presentation
         case items
+    }
+
+    init(
+        id: String,
+        title: String,
+        type: String? = nil,
+        mediaType: String? = nil,
+        genreId: Int? = nil,
+        eyebrow: String? = nil,
+        subtitle: String? = nil,
+        tags: [String] = [],
+        presentation: CatalogPresentation? = nil,
+        items: [CatalogItem] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.type = type
+        self.mediaType = mediaType
+        self.genreId = genreId
+        self.eyebrow = eyebrow
+        self.subtitle = subtitle
+        self.tags = tags
+        self.presentation = presentation
+        self.items = items
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        type = try container.decodeIfPresent(String.self, forKey: .type)
+        mediaType = try container.decodeIfPresent(String.self, forKey: .mediaType)
+        genreId = try container.decodeIfPresent(Int.self, forKey: .genreId)
+        eyebrow = try container.decodeIfPresent(String.self, forKey: .eyebrow)
+        subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        presentation = try container.decodeIfPresent(CatalogPresentation.self, forKey: .presentation)
+        items = try container.decodeIfPresent([CatalogItem].self, forKey: .items) ?? []
     }
 }
 
 struct CatalogHomeResponse: Decodable, Equatable {
     struct Hero: Decodable, Equatable {
         let title: String?
+        let subtitle: String?
         let presentation: CatalogPresentation?
         let items: [CatalogItem]
+
+        init(
+            title: String? = nil,
+            subtitle: String? = nil,
+            presentation: CatalogPresentation? = nil,
+            items: [CatalogItem] = []
+        ) {
+            self.title = title
+            self.subtitle = subtitle
+            self.presentation = presentation
+            self.items = items
+        }
     }
 
     let hero: Hero?
+    let layout: CatalogHomeLayout?
     let sections: [CatalogSection]
+
+    init(hero: Hero? = nil, layout: CatalogHomeLayout? = nil, sections: [CatalogSection] = []) {
+        self.hero = hero
+        self.layout = layout
+        self.sections = sections
+    }
+}
+
+struct CatalogHomeLayout: Decodable, Equatable {
+    let version: String?
+    let generatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case version
+        case generatedAt = "generated_at"
+    }
 }
 
 struct CatalogPresentation: Decodable, Equatable {

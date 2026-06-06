@@ -37,7 +37,9 @@ final class AppModel: ObservableObject {
     @Published var selectedTVSeasons: [TVSeasonSummary] = []
     @Published var selectedTVEpisodes: [CatalogItem] = []
     @Published var selectedSeasonNumber: Int?
+    @Published var selectedEditorialSection: CatalogSection?
     @Published var isDetailLoading = false
+    @Published var isEditorialLoading = false
 
     private let tokenStore: TokenStore
     private let settingsStore: ServerSettingsStore
@@ -47,6 +49,7 @@ final class AppModel: ObservableObject {
     private var playbackLoadID: UUID?
     private var searchLoadID: UUID?
     private var detailLoadID: UUID?
+    private var editorialLoadID: UUID?
 
     init(
         tokenStore: TokenStore = TokenStoreFactory.defaultStore(),
@@ -162,8 +165,11 @@ final class AppModel: ObservableObject {
         playbackLoadID = nil
         searchLoadID = nil
         detailLoadID = nil
+        editorialLoadID = nil
         authSessionRepository().signOut()
         currentUser = nil
+        selectedEditorialSection = nil
+        isEditorialLoading = false
         password = ""
         phase = .signIn
         statusMessage = "Signed out."
@@ -294,6 +300,45 @@ final class AppModel: ObservableObject {
         selectedTVSeasons = []
         selectedTVEpisodes = []
         selectedSeasonNumber = nil
+    }
+
+    func openEditorialSection(_ section: CatalogSection) async {
+        guard let url = normalizeServerURL(serverURLString) else {
+            statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            return
+        }
+        let loadID = UUID()
+        editorialLoadID = loadID
+        selectedEditorialSection = section
+        isEditorialLoading = true
+        defer {
+            if editorialLoadID == loadID {
+                isEditorialLoading = false
+            }
+        }
+
+        do {
+            let token = try authSessionRepository().token()
+            let repository = catalogRepository(for: url, token: token)
+            let editorialSection = try await repository.editorialSection(sectionId: section.id)
+            guard editorialLoadID == loadID else { return }
+            selectedEditorialSection = editorialSection
+            statusMessage = nil
+        } catch let error as LuminaClientError {
+            guard editorialLoadID == loadID else { return }
+            diagnostics.record(error: error, operation: "catalog_editorial", phase: .catalog)
+            handleSessionError(error)
+        } catch {
+            guard editorialLoadID == loadID else { return }
+            diagnostics.record(operation: "catalog_editorial", message: "\(error)")
+            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+        }
+    }
+
+    func closeEditorialSection() {
+        editorialLoadID = nil
+        selectedEditorialSection = nil
+        isEditorialLoading = false
     }
 
     func playCatalogMovie(_ item: CatalogItem) async {
@@ -510,6 +555,7 @@ final class AppModel: ObservableObject {
         playbackLoadID = nil
         searchLoadID = nil
         detailLoadID = nil
+        editorialLoadID = nil
         try? tokenStore.clearToken()
         settingsStore.serverURLString = nil
         capabilities = nil
@@ -524,6 +570,8 @@ final class AppModel: ObservableObject {
         selectedTVSeasons = []
         selectedTVEpisodes = []
         selectedSeasonNumber = nil
+        selectedEditorialSection = nil
+        isEditorialLoading = false
         playbackProof = nil
         email = ""
         password = ""

@@ -40,6 +40,10 @@ struct CatalogRepository {
         try await client.searchCatalog(query: query, token: token)
     }
 
+    func editorialSection(sectionId: String) async throws -> CatalogSection {
+        try await client.fetchEditorialSection(sectionId: sectionId, token: token)
+    }
+
     func movieDetail(movieId: String) async throws -> CatalogItem {
         try await client.fetchMovieDetail(movieId: movieId, token: token)
     }

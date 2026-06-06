@@ -10,6 +10,7 @@ protocol LuminaAPIClient {
     func login(email: String, password: String) async throws -> LoginResponse
     func currentUser(token: String) async throws -> LuminaUser
     func fetchCatalogHome(token: String) async throws -> CatalogHomeResponse
+    func fetchEditorialSection(sectionId: String, token: String) async throws -> CatalogSection
     func fetchMovies(token: String) async throws -> [CatalogItem]
     func fetchTVShows(token: String) async throws -> [CatalogItem]
     func searchCatalog(query: String, token: String) async throws -> [CatalogItem]
@@ -93,6 +94,19 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
                 URLQueryItem(name: "include_presentation", value: "true"),
                 URLQueryItem(name: "include_badges", value: "true")
             ],
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+    }
+
+    func fetchEditorialSection(sectionId: String, token: String) async throws -> CatalogSection {
+        try await send(
+            path: route(
+                key: "catalogEditorialSection",
+                fallback: "/api/v1/catalog/editorial/:sectionId",
+                sectionId: sectionId
+            ),
             method: "GET",
             token: token,
             body: Optional<Data>.none
@@ -490,7 +504,8 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         movieId: String? = nil,
         showId: String? = nil,
         seasonNumber: Int? = nil,
-        sessionId: String? = nil
+        sessionId: String? = nil,
+        sectionId: String? = nil
     ) -> String {
         var parameters: [String: String] = [:]
         if let movieId {
@@ -505,6 +520,10 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         }
         if let sessionId {
             parameters["sessionId"] = sessionId
+        }
+        if let sectionId {
+            parameters["sectionId"] = sectionId
+            parameters["id"] = sectionId
         }
         return routeTemplates.path(key: key, fallback: fallback, parameters: parameters)
     }

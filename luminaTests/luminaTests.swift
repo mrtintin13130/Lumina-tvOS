@@ -150,7 +150,12 @@ final class luminaTests: XCTestCase {
         let json = """
         {
           "hero": {
+            "subtitle": "Hand-picked from your library",
             "items": []
+          },
+          "layout": {
+            "version": "catalog-home-layout-v1",
+            "generated_at": "2026-05-24T00:00:00.000Z"
           },
           "sections": [
             {
@@ -172,6 +177,33 @@ final class luminaTests: XCTestCase {
                   "id": 42,
                   "media_type": "movie",
                   "title": "Heat"
+                }
+              ]
+            },
+            {
+              "id": "sci_fi_epics",
+              "title": "Sci-Fi Epics",
+              "type": "catalog_row",
+              "media_type": "movie",
+              "genre_id": 878,
+              "eyebrow": "Journey's Beyond Imagination",
+              "subtitle": "Epic worlds. Infinite possibilities.",
+              "tags": ["Space Opera", "Dystopian Futures"],
+              "presentation": {
+                "layout": "cinematic_banner",
+                "emphasis": "featured",
+                "theme": "cool",
+                "view_all": {
+                  "label": "View All",
+                  "href": "/editorial/sci_fi_epics"
+                }
+              },
+              "items": [
+                {
+                  "id": 10,
+                  "media_type": "movie",
+                  "title": "Arrival",
+                  "backdrop_path": "/arrival-bg.jpg"
                 }
               ]
             },
@@ -200,13 +232,24 @@ final class luminaTests: XCTestCase {
 
         let response = try JSONDecoder().decode(CatalogHomeResponse.self, from: json)
         let mediaSection = try XCTUnwrap(response.sections.first)
+        let editorialSection = try XCTUnwrap(response.sections.dropFirst().first)
         let genreSection = try XCTUnwrap(response.sections.last)
         let genre = try XCTUnwrap(genreSection.items.first)
 
+        XCTAssertEqual(response.hero?.subtitle, "Hand-picked from your library")
+        XCTAssertEqual(response.layout?.version, "catalog-home-layout-v1")
+        XCTAssertEqual(response.layout?.generatedAt, "2026-05-24T00:00:00.000Z")
         XCTAssertEqual(mediaSection.type, "catalog_row")
         XCTAssertEqual(mediaSection.presentation?.layout, "spotlight_rail")
         XCTAssertEqual(mediaSection.presentation?.emphasis, "featured")
         XCTAssertEqual(mediaSection.presentation?.viewAll?.href, "/movies")
+        XCTAssertEqual(editorialSection.id, "sci_fi_epics")
+        XCTAssertEqual(editorialSection.genreId, 878)
+        XCTAssertEqual(editorialSection.eyebrow, "Journey's Beyond Imagination")
+        XCTAssertEqual(editorialSection.subtitle, "Epic worlds. Infinite possibilities.")
+        XCTAssertEqual(editorialSection.tags, ["Space Opera", "Dystopian Futures"])
+        XCTAssertEqual(editorialSection.presentation?.layout, "cinematic_banner")
+        XCTAssertEqual(editorialSection.presentation?.viewAll?.href, "/editorial/sci_fi_epics")
         XCTAssertEqual(genreSection.type, "genre_links")
         XCTAssertEqual(genreSection.presentation?.layout, "genre_pills")
         XCTAssertEqual(genre.title, "Crime")
@@ -732,6 +775,27 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(snapshot.tvShows, [show])
     }
 
+    func testCatalogRepositoryFetchesEditorialSection() async throws {
+        let editorialSection = CatalogSection(
+            id: "sci_fi_epics",
+            title: "Sci-Fi Epics",
+            type: "catalog_row",
+            mediaType: "movie",
+            eyebrow: "Journey's Beyond Imagination",
+            subtitle: "Epic worlds. Infinite possibilities.",
+            tags: ["Space Opera"],
+            items: [CatalogItem(id: "movie", title: "Arrival")]
+        )
+        let client = FakeLuminaAPIClient(editorialSection: editorialSection)
+        let repository = CatalogRepository(client: client, token: "token")
+
+        let section = try await repository.editorialSection(sectionId: "sci_fi_epics")
+
+        XCTAssertEqual(section.id, "sci_fi_epics")
+        XCTAssertEqual(section.eyebrow, "Journey's Beyond Imagination")
+        XCTAssertEqual(section.items.first?.title, "Arrival")
+    }
+
     func testCatalogRepositoryBuildsTVShowDetailWithFirstSeasonEpisodes() async throws {
         let show = CatalogItem(id: "show-1", mediaType: "tv_show", title: "The Show")
         let season = try JSONDecoder().decode(
@@ -946,6 +1010,10 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
         CatalogHomeResponse(hero: nil, sections: [])
     }
 
+    func fetchEditorialSection(sectionId: String, token: String) async throws -> CatalogSection {
+        CatalogSection(id: sectionId, title: "Editorial")
+    }
+
     func fetchMovies(token: String) async throws -> [CatalogItem] {
         []
     }
@@ -1030,6 +1098,7 @@ private struct FakeLuminaAPIClient: LuminaAPIClient {
     var user: LuminaUser?
     var currentUserError: LuminaClientError?
     var catalogHome = CatalogHomeResponse(hero: nil, sections: [])
+    var editorialSection: CatalogSection?
     var movies: [CatalogItem] = []
     var tvShows: [CatalogItem] = []
     var searchResults: [CatalogItem] = []
@@ -1070,6 +1139,11 @@ private struct FakeLuminaAPIClient: LuminaAPIClient {
 
     func fetchCatalogHome(token: String) async throws -> CatalogHomeResponse {
         catalogHome
+    }
+
+    func fetchEditorialSection(sectionId: String, token: String) async throws -> CatalogSection {
+        guard let editorialSection else { throw LuminaClientError.decoding }
+        return editorialSection
     }
 
     func fetchMovies(token: String) async throws -> [CatalogItem] {
