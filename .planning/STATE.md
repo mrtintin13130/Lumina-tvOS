@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-30)
 Phase: 10 of 10 (physical movie playback proof)
 Plan: 10-03 — Evidence review and follow-up gaps
 Status: Physical Apple TV playback start proven; Phase 10 gaps found
-Last activity: 2026-06-07 — aligned Home editorial cinematic banners with the updated catalog API contract, including full editorial section loading and a tvOS collection overlay; progress/resume proof gaps remain
+Last activity: 2026-06-07 — made Home section rendering follow `presentation.layout` explicitly, including portrait Recent Movies via `poster_rail`, continue-watching cards, compact poster rails, logo cards, spotlight rails, genre pills, and cinematic banners; progress/resume proof gaps remain
 
 Progress: [██████████] 100%
 
@@ -137,6 +137,7 @@ Items acknowledged and carried forward from previous milestone close:
 | 2026-06-06 | home-catalog-page-refresh | Replaced the Home signed-in header with a full-bleed rotating featured carousel, decoded backend Home presentation metadata, rendered genre links as pills, and rendered featured/themed sections as full-width cards; generic tvOS build and build-for-testing passed with code signing disabled. |
 | 2026-06-06 | home-spotlight-landscape-rail | Changed Home `spotlight_rail` sections such as Recent Movies to horizontal shelves with landscape media cards instead of full-width themed stacks; generic tvOS build and build-for-testing passed with code signing disabled. |
 | 2026-06-07 | editorial-banners-api-contract | Aligned cinematic editorial banners with the updated catalog API contract, decoded section/layout metadata, added authenticated editorial section loading, and introduced a tvOS collection overlay; generic tvOS build and build-for-testing passed with code signing disabled. |
+| 2026-06-07 | api-driven-home-section-layouts | Made Home shelves render from `presentation.layout`, changed the Recent Movies fixture to `poster_rail`, and added explicit continue-watching, compact poster, logo card, spotlight, genre pill, and cinematic banner layout mapping; generic tvOS build and build-for-testing passed with code signing disabled. |
 | 2026-05-30 | catalog-home-shell | Added native tvOS catalog tabs, home shelves, browse grids, search, catalog API loading, and artwork-backed cards. |
 
 ## Session Continuity

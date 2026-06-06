@@ -164,8 +164,8 @@ final class luminaTests: XCTestCase {
               "type": "catalog_row",
               "media_type": "movie",
               "presentation": {
-                "layout": "spotlight_rail",
-                "emphasis": "featured",
+                "layout": "poster_rail",
+                "emphasis": "standard",
                 "theme": "default",
                 "view_all": {
                   "label": "View All",
@@ -240,8 +240,8 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(response.layout?.version, "catalog-home-layout-v1")
         XCTAssertEqual(response.layout?.generatedAt, "2026-05-24T00:00:00.000Z")
         XCTAssertEqual(mediaSection.type, "catalog_row")
-        XCTAssertEqual(mediaSection.presentation?.layout, "spotlight_rail")
-        XCTAssertEqual(mediaSection.presentation?.emphasis, "featured")
+        XCTAssertEqual(mediaSection.presentation?.layout, "poster_rail")
+        XCTAssertEqual(mediaSection.presentation?.emphasis, "standard")
         XCTAssertEqual(mediaSection.presentation?.viewAll?.href, "/movies")
         XCTAssertEqual(editorialSection.id, "sci_fi_epics")
         XCTAssertEqual(editorialSection.genreId, 878)
@@ -255,6 +255,18 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(genre.title, "Crime")
         XCTAssertEqual(genre.linkCount, 4)
         XCTAssertEqual(genre.href, "/genres/80")
+    }
+
+    func testHomeSectionLayoutFollowsPresentationLayout() {
+        XCTAssertEqual(section(layout: "cinematic_carousel").homeLayout, .heroCarousel)
+        XCTAssertEqual(section(layout: "continue_landscape").homeLayout, .continueLandscape)
+        XCTAssertEqual(section(layout: "poster_rail").homeLayout, .posterRail)
+        XCTAssertEqual(section(layout: "spotlight_rail").homeLayout, .landscapeRail)
+        XCTAssertEqual(section(layout: "compact_rail").homeLayout, .compactRail)
+        XCTAssertEqual(section(layout: "genre_pills").homeLayout, .genrePills)
+        XCTAssertEqual(section(layout: "logo_card_rail").homeLayout, .logoCardRail)
+        XCTAssertEqual(section(layout: "cinematic_banner").homeLayout, .editorialBanner)
+        XCTAssertEqual(section(layout: nil).homeLayout, .posterRail)
     }
 
     func testCatalogMovieDetailDecodesNestedMetadata() throws {
@@ -929,6 +941,20 @@ final class luminaTests: XCTestCase {
         }
         """.data(using: .utf8)!
         return try JSONDecoder().decode(CatalogHomeResponse.self, from: json)
+    }
+
+    private func section(layout: String?) -> CatalogSection {
+        CatalogSection(
+            id: layout ?? "fallback",
+            title: "Section",
+            presentation: CatalogPresentation(
+                layout: layout,
+                emphasis: nil,
+                theme: nil,
+                autoplay: nil,
+                viewAll: nil
+            )
+        )
     }
 }
 

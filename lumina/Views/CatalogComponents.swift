@@ -249,41 +249,56 @@ struct HomeCatalogSectionView: View {
 
     var body: some View {
         switch section.homeLayout {
+        case .heroCarousel:
+            FeaturedHeroCarousel(items: section.items)
+        case .continueLandscape:
+            ContinueWatchingShelfView(title: section.title, items: section.items)
         case .genrePills:
             GenrePillSection(title: section.title, items: section.items)
+        case .compactRail:
+            CompactCatalogShelfView(title: section.title, items: section.items)
+        case .logoCardRail:
+            LogoCardShelfView(title: section.title, items: section.items)
         case .landscapeRail:
             CatalogLandscapeShelfView(title: section.title, items: section.items)
         case .editorialBanner:
             EditorialBannerSectionView(section: section)
-        case .themedCards:
-            ThemedCatalogSectionView(title: section.title, items: section.items, theme: section.presentation?.theme)
         case .posterRail:
             CatalogShelfView(title: section.title, items: section.items)
         }
     }
 }
 
-private enum HomeSectionLayout {
+enum HomeSectionLayout: Equatable {
+    case heroCarousel
+    case continueLandscape
     case genrePills
+    case compactRail
+    case logoCardRail
     case landscapeRail
     case editorialBanner
-    case themedCards
     case posterRail
 }
 
-private extension CatalogSection {
+extension CatalogSection {
     var homeLayout: HomeSectionLayout {
-        if type == "genre_links" || presentation?.layout == "genre_pills" {
-            return .genrePills
-        }
-
         switch presentation?.layout {
+        case "cinematic_carousel":
+            return .heroCarousel
+        case "continue_landscape":
+            return .continueLandscape
+        case "poster_rail":
+            return .posterRail
         case "spotlight_rail":
             return .landscapeRail
+        case "compact_rail":
+            return .compactRail
+        case "genre_pills":
+            return .genrePills
+        case "logo_card_rail":
+            return .logoCardRail
         case "cinematic_banner":
             return .editorialBanner
-        case "editorial_grid":
-            return .themedCards
         default:
             return .posterRail
         }
@@ -368,6 +383,107 @@ struct CatalogGenrePillButton: View {
         .focusEffectDisabled()
         .accessibilityLabel(item.linkCount.map { "\(item.title), \($0) titles" } ?? item.title)
         .accessibilityHint("Opens this genre")
+    }
+}
+
+struct ContinueWatchingShelfView: View {
+    let title: String
+    let items: [CatalogItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.title2.bold())
+
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .center, spacing: 26) {
+                    ForEach(items) { item in
+                        ContinueWatchingCardButton(item: item)
+                    }
+                }
+                .padding(.vertical, 22)
+                .padding(.horizontal, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+}
+
+struct ContinueWatchingCardButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let item: CatalogItem
+
+    private let cardWidth: CGFloat = 430
+    private let cardHeight: CGFloat = 242
+    private let focusedScale: CGFloat = 1.055
+    private let cornerRadius: CGFloat = 12
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            CatalogArtwork(
+                url: appModel.artworkURL(
+                    for: item.backdropPath ?? item.posterPath,
+                    kind: .backdrop
+                ),
+                aspectRatio: 16 / 9
+            )
+            .frame(width: cardWidth, height: cardHeight)
+            .accessibilityHidden(true)
+
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .black.opacity(0.18),
+                    .black.opacity(0.88)
+                ],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(item.title)
+                    .font(.system(size: 27, weight: .semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Text(item.subtitle ?? "Continue watching")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.74))
+                    .lineLimit(1)
+
+                ProgressView(value: min(max(item.progressPercent / 100, 0), 1))
+                    .progressViewStyle(.linear)
+                    .frame(width: cardWidth - 34, height: 6)
+                    .padding(.top, 4)
+            }
+            .padding(17)
+            .frame(width: cardWidth, alignment: .leading)
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
+                    lineWidth: isFocused ? 3 : 1
+                )
+        }
+        .scaleEffect(isFocused ? focusedScale : 1)
+        .shadow(color: .black.opacity(isFocused ? 0.62 : 0.24), radius: isFocused ? 22 : 10, x: 0, y: isFocused ? 14 : 6)
+        .zIndex(isFocused ? 10 : 0)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onTapGesture {
+            Task { await appModel.openCatalogDetail(item) }
+        }
+        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityHint("Opens details")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -814,6 +930,182 @@ struct CatalogShelfView: View {
             }
             .scrollClipDisabled()
         }
+    }
+}
+
+struct CompactCatalogShelfView: View {
+    let title: String
+    let items: [CatalogItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.title2.bold())
+
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .center, spacing: 22) {
+                    ForEach(items) { item in
+                        CompactCatalogPosterButton(item: item)
+                    }
+                }
+                .padding(.vertical, 20)
+                .padding(.horizontal, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+}
+
+struct CompactCatalogPosterButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let item: CatalogItem
+
+    private let cardWidth: CGFloat = 172
+    private let cardHeight: CGFloat = 258
+    private let focusedScale: CGFloat = 1.065
+    private let cornerRadius: CGFloat = 10
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            CatalogArtwork(
+                url: appModel.artworkURL(
+                    for: item.posterPath ?? item.backdropPath,
+                    kind: .poster
+                ),
+                aspectRatio: 2 / 3
+            )
+            .frame(width: cardWidth, height: cardHeight)
+            .accessibilityHidden(true)
+
+            LinearGradient(
+                colors: [
+                    .clear,
+                    .black.opacity(0.1),
+                    .black.opacity(0.82)
+                ],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
+            Text(item.title)
+                .font(.system(size: 21, weight: .semibold))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .padding(12)
+                .frame(width: cardWidth, alignment: .leading)
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
+                    lineWidth: isFocused ? 3 : 1
+                )
+        }
+        .scaleEffect(isFocused ? focusedScale : 1)
+        .shadow(color: .black.opacity(isFocused ? 0.62 : 0.22), radius: isFocused ? 20 : 9, x: 0, y: isFocused ? 13 : 6)
+        .zIndex(isFocused ? 10 : 0)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onTapGesture {
+            Task { await appModel.openCatalogDetail(item) }
+        }
+        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityHint("Opens details")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+struct LogoCardShelfView: View {
+    let title: String
+    let items: [CatalogItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.title2.bold())
+
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .center, spacing: 24) {
+                    ForEach(items) { item in
+                        LogoCardButton(item: item)
+                    }
+                }
+                .padding(.vertical, 20)
+                .padding(.horizontal, 8)
+            }
+            .scrollClipDisabled()
+        }
+    }
+}
+
+struct LogoCardButton: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var isFocused: Bool
+
+    let item: CatalogItem
+
+    private let cardWidth: CGFloat = 300
+    private let cardHeight: CGFloat = 168
+    private let focusedScale: CGFloat = 1.055
+    private let cornerRadius: CGFloat = 12
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(.white.opacity(isFocused ? 0.18 : 0.1))
+
+            CatalogArtwork(
+                url: appModel.artworkURL(
+                    for: item.logoPath ?? item.backdropPath ?? item.posterPath,
+                    kind: item.logoPath == nil ? .backdrop : .logo
+                ),
+                aspectRatio: 16 / 9
+            )
+            .frame(width: cardWidth, height: cardHeight)
+            .opacity(item.logoPath == nil ? 0.42 : 0.9)
+            .accessibilityHidden(true)
+
+            Text(item.title)
+                .font(.system(size: 27, weight: .bold))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.horizontal, 18)
+                .shadow(color: .black.opacity(0.75), radius: 8, x: 0, y: 3)
+        }
+        .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .stroke(
+                    isFocused ? .white.opacity(0.95) : .white.opacity(0.12),
+                    lineWidth: isFocused ? 3 : 1
+                )
+        }
+        .scaleEffect(isFocused ? focusedScale : 1)
+        .shadow(color: .black.opacity(isFocused ? 0.56 : 0.2), radius: isFocused ? 20 : 9, x: 0, y: isFocused ? 13 : 6)
+        .zIndex(isFocused ? 10 : 0)
+        .animation(.easeOut(duration: 0.16), value: isFocused)
+        .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .focusable(true)
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onTapGesture {
+            if item.href != nil {
+                appModel.openCatalogLink(item)
+            } else {
+                Task { await appModel.openCatalogDetail(item) }
+            }
+        }
+        .accessibilityLabel(item.title)
+        .accessibilityHint(item.href == nil ? "Opens details" : "Opens this collection")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
