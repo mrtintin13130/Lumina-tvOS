@@ -47,6 +47,8 @@ struct ContentView: View {
             ProgressView(L10n.text("Restoring Lumina"))
         case .setup, .validating:
             ServerSetupView()
+        case .serverUnavailable:
+            ServerUnavailableView()
         case .signIn, .signingIn:
             SignInView()
         case .home:

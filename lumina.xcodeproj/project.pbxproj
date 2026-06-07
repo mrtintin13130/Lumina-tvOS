@@ -41,6 +41,9 @@
 		5BD000272FCA500000000001 /* Auth/AuthSessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000282FCA500000000001 /* Auth/AuthSessionRepository.swift */; };
 		5BD0002A2FCA500000000001 /* App/L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0002B2FCA500000000001 /* App/L10n.swift */; };
 		5BD0002C2FCA500000000001 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5BD0002D2FCA500000000001 /* Localizable.strings */; };
+		5BD000302FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000332FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift */; };
+		5BD000312FCA500000000001 /* Discovery/LuminaServerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000342FCA500000000001 /* Discovery/LuminaServerDiscovery.swift */; };
+		5BD000322FCA500000000001 /* Networking/ServerConnectionTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000352FCA500000000001 /* Networking/ServerConnectionTester.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +104,9 @@
 		5BD0002B2FCA500000000001 /* App/L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/L10n.swift; sourceTree = "<group>"; };
 		5BD0002E2FCA500000000001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5BD0002F2FCA500000000001 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5BD000332FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery/LuminaDiscoveredServer.swift; sourceTree = "<group>"; };
+		5BD000342FCA500000000001 /* Discovery/LuminaServerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery/LuminaServerDiscovery.swift; sourceTree = "<group>"; };
+		5BD000352FCA500000000001 /* Networking/ServerConnectionTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/ServerConnectionTester.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,9 +167,12 @@
 				5BD0000C2FCA500000000001 /* Networking/APIError.swift */,
 				5BD000262FCA500000000001 /* Networking/CatalogRepository.swift */,
 				5BD000222FCA500000000001 /* Networking/RouteTemplateResolver.swift */,
+				5BD000352FCA500000000001 /* Networking/ServerConnectionTester.swift */,
 				5BD0000E2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift */,
 				5BD000282FCA500000000001 /* Auth/AuthSessionRepository.swift */,
 				5BD000102FCA500000000001 /* Auth/TokenStore.swift */,
+				5BD000332FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift */,
+				5BD000342FCA500000000001 /* Discovery/LuminaServerDiscovery.swift */,
 				5BD0002B2FCA500000000001 /* App/L10n.swift */,
 				5BD000122FCA500000000001 /* App/AppModel.swift */,
 				5BD000202FCA500000000001 /* App/ArtworkURLResolver.swift */,
@@ -367,9 +376,12 @@
 				5BD0000B2FCA500000000001 /* Networking/APIError.swift in Sources */,
 				5BD000252FCA500000000001 /* Networking/CatalogRepository.swift in Sources */,
 				5BD000212FCA500000000001 /* Networking/RouteTemplateResolver.swift in Sources */,
+				5BD000322FCA500000000001 /* Networking/ServerConnectionTester.swift in Sources */,
 				5BD0000D2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift in Sources */,
 				5BD000272FCA500000000001 /* Auth/AuthSessionRepository.swift in Sources */,
 				5BD0000F2FCA500000000001 /* Auth/TokenStore.swift in Sources */,
+				5BD000302FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift in Sources */,
+				5BD000312FCA500000000001 /* Discovery/LuminaServerDiscovery.swift in Sources */,
 				5BD0002A2FCA500000000001 /* App/L10n.swift in Sources */,
 				5BD000112FCA500000000001 /* App/AppModel.swift in Sources */,
 				5BD0001F2FCA500000000001 /* App/ArtworkURLResolver.swift in Sources */,

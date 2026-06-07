@@ -640,7 +640,8 @@ final class luminaTests: XCTestCase {
     func testServerURLNormalizationDefaultsToHTTPS() {
         let model = AppModel(tokenStore: InMemoryTokenStore())
 
-        XCTAssertEqual(model.normalizeServerURL("lumina.local")?.absoluteString, "https://lumina.local")
+        XCTAssertEqual(model.normalizeServerURL("lumina.local:3000")?.absoluteString, "http://lumina.local:3000")
+        XCTAssertEqual(model.normalizeServerURL("https://lumina.example.test")?.absoluteString, "https://lumina.example.test")
         XCTAssertNil(model.normalizeServerURL(" "))
     }
 
@@ -661,7 +662,8 @@ final class luminaTests: XCTestCase {
         let model = AppModel(
             tokenStore: tokenStore,
             settingsStore: settingsStore,
-            apiClientFactory: { _, _ in client }
+            apiClientFactory: { _, _ in client },
+            serverConnectionTester: FakeServerConnectionTester(capabilities: capabilities)
         )
         model.serverURLString = "lumina.example.test"
         model.email = "martin@example.test"
@@ -672,7 +674,7 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(model.phase, .home)
         XCTAssertEqual(model.currentUser?.displayName, "Martin")
         XCTAssertEqual(try tokenStore.loadToken(), "session-token")
-        XCTAssertEqual(settingsStore.serverURLString, "https://lumina.example.test")
+        XCTAssertEqual(settingsStore.serverURLString, "http://lumina.example.test")
         XCTAssertEqual(model.homeHeroItems, [hero])
         XCTAssertEqual(model.movies.first?.id, "movie")
         XCTAssertEqual(model.password, "")
@@ -691,7 +693,8 @@ final class luminaTests: XCTestCase {
         let model = AppModel(
             tokenStore: tokenStore,
             settingsStore: settingsStore,
-            apiClientFactory: { _, _ in client }
+            apiClientFactory: { _, _ in client },
+            serverConnectionTester: FakeServerConnectionTester(capabilities: capabilities)
         )
 
         await model.restoreSession()
@@ -715,7 +718,8 @@ final class luminaTests: XCTestCase {
         let model = AppModel(
             tokenStore: tokenStore,
             settingsStore: settingsStore,
-            apiClientFactory: { _, _ in client }
+            apiClientFactory: { _, _ in client },
+            serverConnectionTester: FakeServerConnectionTester(capabilities: capabilities)
         )
         model.serverURLString = "lumina.example.test"
         model.email = "martin@example.test"
@@ -726,6 +730,23 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(model.phase, .signIn)
         XCTAssertEqual(model.statusMessage, LuminaClientError.secureStorageUnavailable.safeMessage)
         XCTAssertFalse(model.statusMessage?.contains("TokenStoreError") ?? true)
+    }
+
+    @MainActor
+    func testAppModelRestoreShowsServerUnavailableWithoutClearingSavedServer() async throws {
+        let tokenStore = InMemoryTokenStore()
+        let settingsStore = InMemoryServerSettingsStore(serverURLString: "http://lumina.example.test")
+        let model = AppModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            serverConnectionTester: FakeServerConnectionTester(error: .transport("Server offline."))
+        )
+
+        await model.restoreSession()
+
+        XCTAssertEqual(model.phase, .serverUnavailable)
+        XCTAssertEqual(model.statusMessage, "Server offline.")
+        XCTAssertEqual(settingsStore.serverURLString, "http://lumina.example.test")
     }
 
     func testTokenStoreErrorHasUserSafeDescription() {
@@ -983,6 +1004,28 @@ private final class FailingTokenStore: TokenStore {
 
     func clearToken() throws {
         throw error
+    }
+}
+
+private struct FakeServerConnectionTester: ServerConnectionTesting {
+    var capabilities: ServerCapabilities?
+    var error: LuminaClientError?
+
+    func validateServer(baseURL: URL) async throws -> ServerCapabilities {
+        if let error {
+            throw error
+        }
+        guard let capabilities else {
+            throw LuminaClientError.unsupportedServer
+        }
+        return capabilities
+    }
+
+    func fetchHealth(baseURL: URL) async throws -> LuminaHealthResponse {
+        if let error {
+            throw error
+        }
+        return LuminaHealthResponse(status: "ok", app: "Lumina", version: "1.0.0")
     }
 }
 

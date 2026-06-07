@@ -16,6 +16,7 @@ struct AuthSessionRepository {
     let tokenStore: TokenStore
     let settingsStore: ServerSettingsStore
     let apiClientFactory: (URL, ServerCapabilities?) -> LuminaAPIClient
+    let serverConnectionTester: ServerConnectionTesting
 
     func restore(normalizeServerURL: (String) -> URL?) async throws -> AuthSession? {
         guard let storedServer = settingsStore.serverURLString,
@@ -47,10 +48,7 @@ struct AuthSessionRepository {
     }
 
     func validateServer(_ serverURL: URL) async throws -> ServerCapabilities {
-        let capabilities = try await apiClientFactory(serverURL, nil).fetchCapabilities()
-        guard capabilities.isTvMVPCompatible else {
-            throw LuminaClientError.unsupportedServer
-        }
+        let capabilities = try await serverConnectionTester.validateServer(baseURL: serverURL)
         settingsStore.serverURLString = serverURL.absoluteString
         return capabilities
     }

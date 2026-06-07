@@ -74,7 +74,6 @@ private struct CatalogHomeView: View {
                 .padding(.bottom, 46)
             }
         }
-        .ignoresSafeArea(edges: .top)
     }
 }
 

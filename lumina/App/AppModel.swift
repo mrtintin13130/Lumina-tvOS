@@ -9,6 +9,7 @@ enum AppPhase: Equatable {
     case restoring
     case setup
     case validating
+    case serverUnavailable
     case signIn
     case signingIn
     case home
@@ -46,6 +47,7 @@ final class AppModel: ObservableObject {
     private let diagnostics: DiagnosticsRecorder
     private let playbackProofLoader: PlaybackProofLoader
     private let apiClientFactory: (URL, ServerCapabilities?) -> LuminaAPIClient
+    private let serverConnectionTester: ServerConnectionTesting
     private var playbackLoadID: UUID?
     private var searchLoadID: UUID?
     private var detailLoadID: UUID?
@@ -58,27 +60,32 @@ final class AppModel: ObservableObject {
         playbackProofLoader: PlaybackProofLoader = PlaybackProofLoader(),
         apiClientFactory: @escaping (URL, ServerCapabilities?) -> LuminaAPIClient = {
             URLSessionLuminaAPIClient(baseURL: $0, capabilities: $1)
-        }
+        },
+        serverConnectionTester: ServerConnectionTesting? = nil
     ) {
         self.tokenStore = tokenStore
         self.settingsStore = settingsStore
         self.diagnostics = diagnostics
         self.playbackProofLoader = playbackProofLoader
         self.apiClientFactory = apiClientFactory
+        self.serverConnectionTester = serverConnectionTester
+            ?? ServerConnectionTester(apiClientFactory: apiClientFactory)
         self.serverURLString = settingsStore.serverURLString ?? ""
         self.phase = .setup
     }
 
     func restoreSession() async {
-        guard phase == .restoring || phase == .setup else {
+        guard phase == .restoring || phase == .setup || phase == .serverUnavailable else {
             return
         }
-        guard let storedServer = settingsStore.serverURLString, normalizeServerURL(storedServer) != nil else {
+        guard let storedServer = settingsStore.serverURLString,
+              let storedServerURL = normalizeServerURL(storedServer) else {
             phase = .setup
             return
         }
-        serverURLString = storedServer
+        serverURLString = storedServerURL.absoluteString
         do {
+            capabilities = try await serverConnectionTester.validateServer(baseURL: storedServerURL)
             guard let session = try await authSessionRepository().restore(normalizeServerURL: normalizeServerURL) else {
                 phase = .signIn
                 return
@@ -91,11 +98,17 @@ final class AppModel: ObservableObject {
             await loadCatalog()
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "restore_session", phase: .auth)
-            handleSessionError(error, fallbackPhase: .signIn)
+            switch error {
+            case .sessionExpired, .missingToken:
+                handleSessionError(error, fallbackPhase: .signIn)
+            default:
+                statusMessage = error.safeMessage
+                phase = .serverUnavailable
+            }
         } catch {
             diagnostics.record(operation: "restore_session", message: "\(error)")
-            statusMessage = L10n.text("Sign in again to continue.")
-            phase = .signIn
+            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            phase = .serverUnavailable
         }
     }
 
@@ -108,7 +121,8 @@ final class AppModel: ObservableObject {
 
         phase = .validating
         do {
-            let capabilities = try await authSessionRepository().validateServer(url)
+            let capabilities = try await serverConnectionTester.validateServer(baseURL: url)
+            settingsStore.serverURLString = url.absoluteString
             self.capabilities = capabilities
             serverURLString = url.absoluteString
             statusMessage = nil
@@ -122,6 +136,31 @@ final class AppModel: ObservableObject {
             statusMessage = LuminaClientError.fromTransport(error).safeMessage
             phase = .setup
         }
+    }
+
+    func chooseDiscoveredServer(_ server: LuminaDiscoveredServer) async {
+        guard let url = server.baseURL else {
+            statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            phase = .setup
+            return
+        }
+        serverURLString = url.absoluteString
+        await validateServer()
+    }
+
+    func retrySavedServer() async {
+        guard let storedServer = settingsStore.serverURLString else {
+            phase = .setup
+            return
+        }
+        serverURLString = storedServer
+        phase = .restoring
+        await restoreSession()
+    }
+
+    func searchForServer() {
+        statusMessage = nil
+        phase = .setup
     }
 
     func signIn() async {
@@ -580,13 +619,7 @@ final class AppModel: ObservableObject {
     }
 
     func normalizeServerURL(_ value: String) -> URL? {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        let candidate = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
-        guard let url = URL(string: candidate), url.host != nil else {
-            return nil
-        }
-        return url
+        ServerURLNormalizer.normalize(value)
     }
 
     private func apiClient(for url: URL) -> LuminaAPIClient {
@@ -601,7 +634,8 @@ final class AppModel: ObservableObject {
         AuthSessionRepository(
             tokenStore: tokenStore,
             settingsStore: settingsStore,
-            apiClientFactory: apiClientFactory
+            apiClientFactory: apiClientFactory,
+            serverConnectionTester: serverConnectionTester
         )
     }
 

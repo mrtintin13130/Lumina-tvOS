@@ -25,8 +25,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_lumina._tcp</string>
+	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Lumina connects to your self-hosted server on your local network.</string>
+	<string>Lumina searches for your server on the local network.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIUserInterfaceStyle</key>

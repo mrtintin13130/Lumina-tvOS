@@ -127,7 +127,6 @@ struct FeaturedHeroCarousel: View {
     let items: [CatalogItem]
 
     private let rotationTimer = Timer.publish(every: 7, on: .main, in: .common).autoconnect()
-    private let heroHeight: CGFloat = 720
 
     var body: some View {
         if let item = currentItem {
@@ -139,8 +138,7 @@ struct FeaturedHeroCarousel: View {
                     ),
                     aspectRatio: 16 / 9
                 )
-                .frame(maxWidth: .infinity)
-                .frame(height: heroHeight)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
                 .accessibilityHidden(true)
 
@@ -210,7 +208,7 @@ struct FeaturedHeroCarousel: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: heroHeight)
+            .aspectRatio(16 / 9, contentMode: .fit)
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(isFocused ? .white.opacity(0.88) : .clear)
@@ -223,11 +221,21 @@ struct FeaturedHeroCarousel: View {
             .onTapGesture {
                 Task { await appModel.openCatalogDetail(item) }
             }
+            .onMoveCommand { direction in
+                guard isFocused, items.count > 1 else { return }
+
+                switch direction {
+                case .left:
+                    showPreviousSlide()
+                case .right:
+                    showNextSlide()
+                default:
+                    break
+                }
+            }
             .onReceive(rotationTimer) { _ in
                 guard items.count > 1 else { return }
-                withAnimation(.easeInOut(duration: 0.45)) {
-                    selectedIndex = (selectedIndex + 1) % items.count
-                }
+                showNextSlide()
             }
             .onChange(of: items) { _, newItems in
                 selectedIndex = min(selectedIndex, max(newItems.count - 1, 0))
@@ -241,6 +249,18 @@ struct FeaturedHeroCarousel: View {
     private var currentItem: CatalogItem? {
         guard !items.isEmpty else { return nil }
         return items[min(selectedIndex, items.count - 1)]
+    }
+
+    private func showPreviousSlide() {
+        withAnimation(.easeInOut(duration: 0.35)) {
+            selectedIndex = (selectedIndex - 1 + items.count) % items.count
+        }
+    }
+
+    private func showNextSlide() {
+        withAnimation(.easeInOut(duration: 0.35)) {
+            selectedIndex = (selectedIndex + 1) % items.count
+        }
     }
 }
 
