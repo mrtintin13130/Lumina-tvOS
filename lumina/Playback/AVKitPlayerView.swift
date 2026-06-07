@@ -157,7 +157,7 @@ struct AVKitPlayerView: UIViewControllerRepresentable {
                 } catch {
                     await MainActor.run {
                         self.appModel.recordPlaybackMediaOptionsUnavailable(
-                            "AVKit media selection groups were not available."
+                            L10n.text("AVKit media selection groups were not available.")
                         )
                     }
                 }
@@ -168,11 +168,11 @@ struct AVKitPlayerView: UIViewControllerRepresentable {
         private func reportFailure() {
             let error = item?.error ?? player?.error
             let statusError = item?.errorLog()?.events.last
-            let statusMessage = statusError.map { "Playback failed with status \($0.errorStatusCode)." }
+            let statusMessage = statusError.map { L10n.playbackStatusFailure($0.errorStatusCode) }
             let message = error?.localizedDescription
                 ?? statusError?.errorComment
                 ?? statusMessage
-                ?? "Playback failed before media became ready."
+                ?? L10n.text("Playback failed before media became ready.")
             appModel.recordPlaybackFailure(message)
             stopPlayback(event: "paused")
         }

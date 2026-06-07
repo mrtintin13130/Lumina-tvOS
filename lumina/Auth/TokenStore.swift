@@ -32,9 +32,9 @@ enum TokenStoreError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unexpectedStatus:
-            return "Secure token storage is unavailable."
+            return L10n.text("Secure token storage is unavailable.")
         case .invalidTokenData:
-            return "Stored sign-in data could not be read."
+            return L10n.text("Stored sign-in data could not be read.")
         }
     }
 }

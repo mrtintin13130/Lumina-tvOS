@@ -79,7 +79,7 @@ struct FeaturedCatalogButton: View {
                         .frame(maxWidth: 860, alignment: .leading)
                 }
 
-                Label("Open Details", systemImage: "info.circle")
+                Label(L10n.text("Open Details"), systemImage: "info.circle")
                     .font(.system(size: 29, weight: .semibold))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
@@ -114,7 +114,7 @@ struct FeaturedCatalogButton: View {
             Task { await appModel.openCatalogDetail(item) }
         }
         .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint("Opens details")
+        .accessibilityHint(L10n.text("Opens details"))
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -181,7 +181,7 @@ struct FeaturedHeroCarousel: View {
                             .frame(maxWidth: 940, alignment: .leading)
                     }
 
-                    Label("Open Details", systemImage: "info.circle.fill")
+                    Label(L10n.text("Open Details"), systemImage: "info.circle.fill")
                         .font(.system(size: 31, weight: .semibold))
                         .padding(.horizontal, 22)
                         .padding(.vertical, 12)
@@ -233,7 +233,7 @@ struct FeaturedHeroCarousel: View {
                 selectedIndex = min(selectedIndex, max(newItems.count - 1, 0))
             }
             .accessibilityLabel(item.accessibilitySummary)
-            .accessibilityHint("Opens details")
+            .accessibilityHint(L10n.text("Opens details"))
             .accessibilityAddTraits(.isButton)
         }
     }
@@ -381,8 +381,8 @@ struct CatalogGenrePillButton: View {
         .focusable(true)
         .focused($isFocused)
         .focusEffectDisabled()
-        .accessibilityLabel(item.linkCount.map { "\(item.title), \($0) titles" } ?? item.title)
-        .accessibilityHint("Opens this genre")
+        .accessibilityLabel(item.linkCount.map { "\(item.title), \(L10n.titleCount($0))" } ?? item.title)
+        .accessibilityHint(L10n.text("Opens this genre"))
     }
 }
 
@@ -448,7 +448,7 @@ struct ContinueWatchingCardButton: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
-                Text(item.subtitle ?? "Continue watching")
+                Text(item.subtitle ?? L10n.text("Continue watching"))
                     .font(.system(size: 22, weight: .medium))
                     .foregroundStyle(.white.opacity(0.74))
                     .lineLimit(1)
@@ -482,7 +482,7 @@ struct ContinueWatchingCardButton: View {
             Task { await appModel.openCatalogDetail(item) }
         }
         .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint("Opens details")
+        .accessibilityHint(L10n.text("Opens details"))
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -583,7 +583,7 @@ struct CatalogLandscapeButton: View {
             Task { await appModel.openCatalogDetail(item) }
         }
         .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint("Opens details")
+        .accessibilityHint(L10n.text("Opens details"))
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -653,7 +653,7 @@ struct EditorialBannerSectionView: View {
                         }
                     }
 
-                    Label(section.presentation?.viewAll?.label ?? "View Collection", systemImage: "rectangle.stack.fill")
+                    Label(section.presentation?.viewAll?.label ?? L10n.text("View Collection"), systemImage: "rectangle.stack.fill")
                         .font(.system(size: 27, weight: .semibold))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
@@ -682,7 +682,7 @@ struct EditorialBannerSectionView: View {
         .focused($isFocused)
         .focusEffectDisabled()
         .accessibilityLabel([section.eyebrow, section.title, section.subtitle].compactMap { $0 }.joined(separator: ", "))
-        .accessibilityHint("Opens this editorial collection")
+        .accessibilityHint(L10n.text("Opens this editorial collection"))
     }
 
     private var editorialGradientColors: [Color] {
@@ -754,7 +754,7 @@ struct CatalogEditorialPage: View {
                         Button {
                             appModel.closeEditorialSection()
                         } label: {
-                            Label("Close", systemImage: "xmark.circle.fill")
+                            Label(L10n.text("Close"), systemImage: "xmark.circle.fill")
                                 .labelStyle(.iconOnly)
                                 .font(.system(size: 44, weight: .semibold))
                                 .frame(width: 74, height: 74)
@@ -768,7 +768,7 @@ struct CatalogEditorialPage: View {
                         .scaleEffect(isCloseFocused ? 1.08 : 1)
                         .focused($isCloseFocused)
                         .focusEffectDisabled()
-                        .accessibilityLabel("Close editorial collection")
+                        .accessibilityLabel(L10n.text("Close editorial collection"))
                     }
 
                     if !section.tags.isEmpty {
@@ -784,12 +784,12 @@ struct CatalogEditorialPage: View {
                     }
 
                     if appModel.isEditorialLoading {
-                        ProgressView("Loading collection")
+                        ProgressView(L10n.text("Loading collection"))
                             .padding(.top, 18)
                     } else if section.items.isEmpty {
-                        EmptyCatalogState(title: "No titles in this collection yet")
+                        EmptyCatalogState(title: L10n.text("No titles in this collection yet"))
                     } else {
-                        CatalogLandscapeShelfView(title: "Titles", items: section.items)
+                        CatalogLandscapeShelfView(title: L10n.text("Titles"), items: section.items)
                     }
 
                     StatusText(message: appModel.statusMessage)
@@ -893,7 +893,7 @@ struct ThemedCatalogCardButton: View {
         .focused($isFocused)
         .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint("Opens details")
+        .accessibilityHint(L10n.text("Opens details"))
     }
 
     private var themedGradientColors: [Color] {
@@ -1017,7 +1017,7 @@ struct CompactCatalogPosterButton: View {
             Task { await appModel.openCatalogDetail(item) }
         }
         .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint("Opens details")
+        .accessibilityHint(L10n.text("Opens details"))
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -1066,8 +1066,10 @@ struct LogoCardButton: View {
                     for: item.logoPath ?? item.backdropPath ?? item.posterPath,
                     kind: item.logoPath == nil ? .backdrop : .logo
                 ),
-                aspectRatio: 16 / 9
+                aspectRatio: 16 / 9,
+                contentMode: item.logoPath == nil ? .fill : .fit
             )
+            .padding(item.logoPath == nil ? 0 : 30)
             .frame(width: cardWidth, height: cardHeight)
             .opacity(item.logoPath == nil ? 0.42 : 0.9)
             .accessibilityHidden(true)
@@ -1104,7 +1106,7 @@ struct LogoCardButton: View {
             }
         }
         .accessibilityLabel(item.title)
-        .accessibilityHint(item.href == nil ? "Opens details" : "Opens this collection")
+        .accessibilityHint(item.href == nil ? L10n.text("Opens details") : L10n.text("Opens this collection"))
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -1140,7 +1142,7 @@ struct CatalogPosterButton: View {
                 Task { await appModel.openCatalogDetail(item) }
             }
             .accessibilityLabel(item.accessibilitySummary)
-            .accessibilityHint("Opens details")
+            .accessibilityHint(L10n.text("Opens details"))
             .accessibilityAddTraits(.isButton)
     }
 
@@ -1283,7 +1285,7 @@ struct PersonCreditButton: View {
             onSelect(person)
         }
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("Opens person details")
+        .accessibilityHint(L10n.text("Opens person details"))
         .accessibilityAddTraits(.isButton)
     }
 
@@ -1318,6 +1320,13 @@ struct PersonCreditButton: View {
 struct CatalogArtwork: View {
     let url: URL?
     let aspectRatio: CGFloat
+    let contentMode: ContentMode
+
+    init(url: URL?, aspectRatio: CGFloat, contentMode: ContentMode = .fill) {
+        self.url = url
+        self.aspectRatio = aspectRatio
+        self.contentMode = contentMode
+    }
 
     var body: some View {
         ZStack {
@@ -1339,7 +1348,7 @@ struct CatalogArtwork: View {
                     case .success(let image):
                         image
                             .resizable()
-                            .scaledToFill()
+                            .aspectRatio(contentMode: contentMode)
 
                     case .failure:
                         placeholderIcon("photo")
@@ -1389,11 +1398,11 @@ extension CatalogItem {
     var mediaTypeDisplayName: String {
         switch mediaType {
         case "tv_show":
-            return "TV Show"
+            return L10n.text("TV Show")
         case "episode":
-            return "Episode"
+            return L10n.text("Episode")
         default:
-            return "Movie"
+            return L10n.text("Movie")
         }
     }
 
@@ -1403,7 +1412,7 @@ extension CatalogItem {
             values.append(String(year))
         }
         if let runtimeMinutes {
-            values.append("\(runtimeMinutes) min")
+            values.append(L10n.format("%d min", runtimeMinutes))
         }
         if let rating {
             values.append(String(format: "%.1f", rating))
@@ -1413,7 +1422,7 @@ extension CatalogItem {
         }
         values.append(contentsOf: genres.prefix(3))
         if progressPercent > 0 {
-            values.append("\(Int(progressPercent.rounded()))% watched")
+            values.append(L10n.watchedPercent(Int(progressPercent.rounded())))
         }
         return values
     }
@@ -1424,7 +1433,7 @@ extension CatalogItem {
             parts.append(subtitle)
         }
         if progressPercent > 0 {
-            parts.append("\(Int(progressPercent.rounded())) percent watched")
+            parts.append(L10n.watchedPercentAccessibility(Int(progressPercent.rounded())))
         }
         return parts.joined(separator: ", ")
     }

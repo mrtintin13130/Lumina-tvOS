@@ -138,6 +138,8 @@ Items acknowledged and carried forward from previous milestone close:
 | 2026-06-06 | home-spotlight-landscape-rail | Changed Home `spotlight_rail` sections such as Recent Movies to horizontal shelves with landscape media cards instead of full-width themed stacks; generic tvOS build and build-for-testing passed with code signing disabled. |
 | 2026-06-07 | editorial-banners-api-contract | Aligned cinematic editorial banners with the updated catalog API contract, decoded section/layout metadata, added authenticated editorial section loading, and introduced a tvOS collection overlay; generic tvOS build and build-for-testing passed with code signing disabled. |
 | 2026-06-07 | api-driven-home-section-layouts | Made Home shelves render from `presentation.layout`, changed the Recent Movies fixture to `poster_rail`, and added explicit continue-watching, compact poster, logo card, spotlight, genre pill, and cinematic banner layout mapping; generic tvOS build and build-for-testing passed with code signing disabled. |
+| 2026-06-07 | localize-en-fr-ui | Added English and French localization resources, localized app-owned tvOS UI/status/error/accessibility copy, packaged both language bundles, and passed a generic tvOS build with code signing disabled. |
+| 2026-06-07 | contain-home-studio-logos | Updated Home logo cards so real studio/network logo artwork is contained inside the card instead of cropped, while fallback artwork still covers the card. |
 | 2026-05-30 | catalog-home-shell | Added native tvOS catalog tabs, home shelves, browse grids, search, catalog API loading, and artwork-backed cards. |
 
 ## Session Continuity

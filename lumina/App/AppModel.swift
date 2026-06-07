@@ -94,7 +94,7 @@ final class AppModel: ObservableObject {
             handleSessionError(error, fallbackPhase: .signIn)
         } catch {
             diagnostics.record(operation: "restore_session", message: "\(error)")
-            statusMessage = "Sign in again to continue."
+            statusMessage = L10n.text("Sign in again to continue.")
             phase = .signIn
         }
     }
@@ -132,7 +132,7 @@ final class AppModel: ObservableObject {
         }
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !email.isEmpty, !password.isEmpty else {
-            statusMessage = "Enter your Lumina email and password."
+            statusMessage = L10n.text("Enter your Lumina email and password.")
             phase = .signIn
             return
         }
@@ -172,7 +172,7 @@ final class AppModel: ObservableObject {
         isEditorialLoading = false
         password = ""
         phase = .signIn
-        statusMessage = "Signed out."
+        statusMessage = L10n.text("Signed out.")
     }
 
     func loadCatalog() async {
@@ -219,7 +219,7 @@ final class AppModel: ObservableObject {
             let results = try await repository.search(query: query)
             guard searchLoadID == loadID else { return }
             searchResults = results
-            statusMessage = searchResults.isEmpty ? "No catalog results found." : nil
+            statusMessage = searchResults.isEmpty ? L10n.text("No catalog results found.") : nil
         } catch let error as LuminaClientError {
             guard searchLoadID == loadID else { return }
             diagnostics.record(error: error, operation: "catalog_search", phase: .catalog)
@@ -285,7 +285,7 @@ final class AppModel: ObservableObject {
             let token = try authSessionRepository().token()
             let repository = catalogRepository(for: url, token: token)
             selectedTVEpisodes = try await repository.episodes(showId: show.id, seasonNumber: season.seasonNumber)
-            statusMessage = selectedTVEpisodes.isEmpty ? "No episodes found for this season." : nil
+            statusMessage = selectedTVEpisodes.isEmpty ? L10n.text("No episodes found for this season.") : nil
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "catalog_tv_episodes", phase: .catalog)
             handleSessionError(error)
@@ -343,19 +343,19 @@ final class AppModel: ObservableObject {
 
     func playCatalogMovie(_ item: CatalogItem) async {
         guard item.mediaType == "movie" else {
-            statusMessage = "Episode playback from catalog shelves is not wired yet."
+            statusMessage = L10n.text("Episode playback from catalog shelves is not wired yet.")
             return
         }
         await loadPlaybackProof(movieOverride: item.playableMovie)
     }
 
     func openTrailer(_ item: CatalogItem) {
-        statusMessage = "Trailer playback is not wired yet."
+        statusMessage = L10n.text("Trailer playback is not wired yet.")
         diagnostics.record(operation: "catalog_trailer", message: "Trailer selected for \(item.mediaType) \(item.id)")
     }
 
     func openCatalogLink(_ item: CatalogItem) {
-        statusMessage = "\(item.title) browsing is not wired yet."
+        statusMessage = L10n.browsingNotReady(item.title)
         diagnostics.record(operation: "catalog_link", message: "Catalog link selected: \(item.id)")
     }
 

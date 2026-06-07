@@ -17,12 +17,12 @@ struct HomeShellView: View {
                     Label("Home", systemImage: "house")
                 }
 
-            CatalogGridView(title: "Movies", items: appModel.movies, emptyTitle: "No movies found")
+            CatalogGridView(title: L10n.text("Movies"), items: appModel.movies, emptyTitle: L10n.text("No movies found"))
                 .tabItem {
                     Label("Movies", systemImage: "film")
                 }
 
-            CatalogGridView(title: "TV Shows", items: appModel.tvShows, emptyTitle: "No TV shows found")
+            CatalogGridView(title: L10n.text("TV Shows"), items: appModel.tvShows, emptyTitle: L10n.text("No TV shows found"))
                 .tabItem {
                     Label("TV Shows", systemImage: "tv")
                 }
@@ -50,7 +50,7 @@ private struct CatalogHomeView: View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 32) {
                 if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
-                    ProgressView("Loading catalog")
+                    ProgressView(L10n.text("Loading catalog"))
                         .padding(.horizontal, 72)
                         .padding(.top, 72)
                 }
@@ -65,7 +65,7 @@ private struct CatalogHomeView: View {
                     }
 
                     if appModel.homeSections.isEmpty && !appModel.isCatalogLoading {
-                        EmptyCatalogState(title: "No catalog shelves yet")
+                        EmptyCatalogState(title: L10n.text("No catalog shelves yet"))
                     }
 
                     StatusText(message: appModel.statusMessage)
@@ -91,10 +91,10 @@ private struct CatalogGridView: View {
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 30) {
-                CatalogHeader(title: title, subtitle: "\(items.count) titles")
+                CatalogHeader(title: title, subtitle: L10n.titleCount(items.count))
 
                 if items.isEmpty && appModel.isCatalogLoading {
-                    ProgressView("Loading \(title.lowercased())")
+                    ProgressView(L10n.loading(title))
                 } else if items.isEmpty {
                     EmptyCatalogState(title: emptyTitle)
                 } else {
@@ -119,10 +119,10 @@ private struct CatalogSearchView: View {
     var body: some View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 28) {
-                CatalogHeader(title: "Search", subtitle: "Find movies and TV shows")
+                CatalogHeader(title: L10n.text("Search"), subtitle: L10n.text("Find movies and TV shows"))
 
                 HStack(spacing: 18) {
-                    TextField("Search your library", text: $appModel.searchQuery)
+                    TextField(L10n.text("Search your library"), text: $appModel.searchQuery)
                         .textFieldStyle(.plain)
                         .textContentType(.none)
                         .submitLabel(.search)
@@ -137,17 +137,17 @@ private struct CatalogSearchView: View {
                     Button {
                         Task { await appModel.runSearch() }
                     } label: {
-                        Label("Search", systemImage: "magnifyingglass")
+                        Label(L10n.text("Search"), systemImage: "magnifyingglass")
                     }
                     .buttonStyle(.borderedProminent)
                 }
 
                 if appModel.isCatalogLoading && appModel.searchResults.isEmpty {
-                    ProgressView("Searching")
+                    ProgressView(L10n.text("Searching"))
                 } else if appModel.searchResults.isEmpty {
-                    EmptyCatalogState(title: "Search results appear here")
+                    EmptyCatalogState(title: L10n.text("Search results appear here"))
                 } else {
-                    CatalogShelfView(title: "Results", items: appModel.searchResults)
+                    CatalogShelfView(title: L10n.text("Results"), items: appModel.searchResults)
                 }
 
                 StatusText(message: appModel.statusMessage)

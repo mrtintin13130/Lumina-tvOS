@@ -44,7 +44,7 @@ struct ContentView: View {
     private var content: some View {
         switch appModel.phase {
         case .restoring:
-            ProgressView("Restoring Lumina")
+            ProgressView(L10n.text("Restoring Lumina"))
         case .setup, .validating:
             ServerSetupView()
         case .signIn, .signingIn:
@@ -53,11 +53,11 @@ struct ContentView: View {
             HomeShellView()
         case .loadingPlayback:
             VStack(spacing: 24) {
-                ProgressView("Preparing playback")
+                ProgressView(L10n.text("Preparing playback"))
                 Button {
                     appModel.exitPlayback()
                 } label: {
-                    Label("Cancel", systemImage: "xmark.circle")
+                    Label(L10n.text("Cancel"), systemImage: "xmark.circle")
                 }
                 .buttonStyle(.bordered)
             }
@@ -92,22 +92,22 @@ struct SettingsView: View {
             Text("Settings")
                 .font(.system(size: 48, weight: .bold))
 
-            ContractBadge(title: "Server", value: appModel.serverURLString)
-            ContractBadge(title: "User", value: appModel.currentUser?.displayName ?? "Unknown")
-            ContractBadge(title: "Validation", value: appModel.capabilities?.isTvMVPCompatible == true ? "Compatible" : "Not validated")
+            ContractBadge(title: L10n.text("Server"), value: appModel.serverURLString)
+            ContractBadge(title: L10n.text("User"), value: appModel.currentUser?.displayName ?? L10n.text("Unknown"))
+            ContractBadge(title: L10n.text("Validation"), value: appModel.capabilities?.isTvMVPCompatible == true ? L10n.text("Compatible") : L10n.text("Not validated"))
 
             HStack(spacing: 18) {
                 Button {
                     Task { await appModel.validateServer() }
                 } label: {
-                    Label("Revalidate", systemImage: "arrow.clockwise")
+                    Label(L10n.text("Revalidate"), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.bordered)
 
                 Button(role: .destructive) {
                     appModel.signOut()
                 } label: {
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    Label(L10n.text("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                 }
                 .buttonStyle(.borderedProminent)
             }

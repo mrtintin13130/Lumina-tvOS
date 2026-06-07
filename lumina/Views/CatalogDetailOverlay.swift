@@ -56,7 +56,7 @@ struct CatalogDetailPage: View {
                         }
 
                         if appModel.isDetailLoading {
-                            ProgressView("Loading details")
+                            ProgressView(L10n.text("Loading details"))
                                 .font(.headline)
                                 .padding(.vertical, 8)
                         }
@@ -128,7 +128,7 @@ private struct DetailHero: View {
                     .disabled(item.hasPlayableMedia == false)
                     .focused($focusedAction, equals: .play)
                     .modifier(DetailActionFocusModifier(isFocused: focusedAction == .play))
-                    .accessibilityHint("Starts playback")
+                    .accessibilityHint(L10n.text("Starts playback"))
                 }
 
                 if item.primaryTrailerTitle != nil {
@@ -142,7 +142,7 @@ private struct DetailHero: View {
                     .buttonStyle(DetailActionButtonStyle(isPrimary: false))
                     .focused($focusedAction, equals: .trailer)
                     .modifier(DetailActionFocusModifier(isFocused: focusedAction == .trailer))
-                    .accessibilityHint("Opens trailer playback")
+                    .accessibilityHint(L10n.text("Opens trailer playback"))
                 }
             }
         }
@@ -231,11 +231,11 @@ private struct DetailMembershipRow: View {
         if item.isWatchlisted == true || item.isFavorite == true {
             HStack(spacing: 10) {
                 if item.isWatchlisted == true {
-                    Label("Watchlist", systemImage: "bookmark.fill")
+                    Label(L10n.text("Watchlist"), systemImage: "bookmark.fill")
                 }
 
                 if item.isFavorite == true {
-                    Label("Favorite", systemImage: "heart.fill")
+                    Label(L10n.text("Favorite"), systemImage: "heart.fill")
                 }
             }
             .font(.callout.weight(.semibold))
@@ -251,7 +251,7 @@ private struct DetailHeroProgress: View {
     var body: some View {
         if item.progressPercent > 0 {
             VStack(alignment: .leading, spacing: 8) {
-                Text("\(Int(item.progressPercent.rounded()))% watched")
+                Text(L10n.watchedPercent(Int(item.progressPercent.rounded())))
                     .font(.callout.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.7))
 
@@ -272,7 +272,7 @@ private struct DetailPeopleShelves: View {
         VStack(alignment: .leading, spacing: 34) {
             if !item.cast.isEmpty {
                 DetailPersonShelf(
-                    title: "Cast",
+                    title: L10n.text("Cast"),
                     people: item.cast,
                     textStyle: .cast
                 )
@@ -280,7 +280,7 @@ private struct DetailPeopleShelves: View {
 
             if !item.behindTheScenesPeople.isEmpty {
                 DetailPersonShelf(
-                    title: "Behind the Scenes",
+                    title: L10n.text("Behind the Scenes"),
                     people: item.behindTheScenesPeople,
                     textStyle: .crew
                 )
@@ -341,7 +341,7 @@ private struct DetailPersonShelf: View {
                 LazyHStack(spacing: 24) {
                     ForEach(people.prefix(18)) { person in
                         PersonCreditButton(person: person, textStyle: textStyle) { selectedPerson in
-                            appModel.statusMessage = "\(selectedPerson.name) details are not wired yet."
+                            appModel.statusMessage = L10n.personDetailsNotReady(selectedPerson.name)
                         }
                     }
                 }
@@ -397,7 +397,7 @@ private struct TVSeasonEpisodeSection: View {
                 .font(.title2.bold())
 
             if appModel.selectedTVSeasons.isEmpty && !appModel.isDetailLoading {
-                EmptyCatalogState(title: "No seasons found")
+                EmptyCatalogState(title: L10n.text("No seasons found"))
             } else {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 14) {
@@ -414,9 +414,9 @@ private struct TVSeasonEpisodeSection: View {
             }
 
             if !appModel.selectedTVEpisodes.isEmpty {
-                CatalogShelfView(title: "Episodes", items: appModel.selectedTVEpisodes)
+                CatalogShelfView(title: L10n.text("Episodes"), items: appModel.selectedTVEpisodes)
             } else if appModel.selectedSeasonNumber != nil && !appModel.isDetailLoading {
-                EmptyCatalogState(title: "No episodes found")
+                EmptyCatalogState(title: L10n.text("No episodes found"))
             }
         }
     }
@@ -463,13 +463,13 @@ private struct DetailSeasonButton: View {
 private extension CatalogItem {
     var primaryActionTitle: String {
         if progressPercent > 0 {
-            return "Resume"
+            return L10n.text("Resume")
         }
-        return "Play"
+        return L10n.text("Play")
     }
 
     var trailerActionTitle: String {
-        "Trailer"
+        L10n.text("Trailer")
     }
 
     var behindTheScenesPeople: [CatalogPersonCredit] {

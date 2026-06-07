@@ -39,6 +39,8 @@
 		5BD000232FCA500000000001 /* Playback/PlaybackProofLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000242FCA500000000001 /* Playback/PlaybackProofLoader.swift */; };
 		5BD000252FCA500000000001 /* Networking/CatalogRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000262FCA500000000001 /* Networking/CatalogRepository.swift */; };
 		5BD000272FCA500000000001 /* Auth/AuthSessionRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000282FCA500000000001 /* Auth/AuthSessionRepository.swift */; };
+		5BD0002A2FCA500000000001 /* App/L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0002B2FCA500000000001 /* App/L10n.swift */; };
+		5BD0002C2FCA500000000001 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5BD0002D2FCA500000000001 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +98,9 @@
 		5BD000262FCA500000000001 /* Networking/CatalogRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/CatalogRepository.swift; sourceTree = "<group>"; };
 		5BD000282FCA500000000001 /* Auth/AuthSessionRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth/AuthSessionRepository.swift; sourceTree = "<group>"; };
 		5BD000292FCA500000000001 /* lumina.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = lumina.entitlements; sourceTree = "<group>"; };
+		5BD0002B2FCA500000000001 /* App/L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/L10n.swift; sourceTree = "<group>"; };
+		5BD0002E2FCA500000000001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5BD0002F2FCA500000000001 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +164,7 @@
 				5BD0000E2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift */,
 				5BD000282FCA500000000001 /* Auth/AuthSessionRepository.swift */,
 				5BD000102FCA500000000001 /* Auth/TokenStore.swift */,
+				5BD0002B2FCA500000000001 /* App/L10n.swift */,
 				5BD000122FCA500000000001 /* App/AppModel.swift */,
 				5BD000202FCA500000000001 /* App/ArtworkURLResolver.swift */,
 				5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */,
@@ -170,6 +176,7 @@
 				5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */,
 				5BD000292FCA500000000001 /* lumina.entitlements */,
 				5BC0000C2FCA500000000001 /* Info.plist */,
+				5BD0002D2FCA500000000001 /* Localizable.strings */,
 				5B3255662FCA363E00A23693 /* Assets.xcassets */,
 				5B3255682FCA363E00A23693 /* Preview Content */,
 			);
@@ -299,6 +306,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				fr,
 				Base,
 			);
 			mainGroup = 5B3255562FCA363A00A23693;
@@ -318,6 +326,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5BD0002C2FCA500000000001 /* Localizable.strings in Resources */,
 				5B32556A2FCA363E00A23693 /* Preview Assets.xcassets in Resources */,
 				5B3255672FCA363E00A23693 /* Assets.xcassets in Resources */,
 			);
@@ -361,6 +370,7 @@
 				5BD0000D2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift in Sources */,
 				5BD000272FCA500000000001 /* Auth/AuthSessionRepository.swift in Sources */,
 				5BD0000F2FCA500000000001 /* Auth/TokenStore.swift in Sources */,
+				5BD0002A2FCA500000000001 /* App/L10n.swift in Sources */,
 				5BD000112FCA500000000001 /* App/AppModel.swift in Sources */,
 				5BD0001F2FCA500000000001 /* App/ArtworkURLResolver.swift in Sources */,
 				5BD000132FCA500000000001 /* Views/CatalogDetailOverlay.swift in Sources */,
@@ -405,6 +415,18 @@
 			targetProxy = 5B32557A2FCA363F00A23693 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		5BD0002D2FCA500000000001 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5BD0002E2FCA500000000001 /* en */,
+				5BD0002F2FCA500000000001 /* fr */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		5B3255812FCA363F00A23693 /* Debug */ = {

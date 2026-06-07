@@ -37,7 +37,7 @@ struct ServerSetupView: View {
                     Button {
                         Task { await appModel.validateServer() }
                     } label: {
-                        Label(appModel.phase == .validating ? "Validating" : "Validate Server", systemImage: "checkmark.shield")
+                        Label(appModel.phase == .validating ? L10n.text("Validating") : L10n.text("Validate Server"), systemImage: "checkmark.shield")
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(appModel.phase == .validating)
@@ -45,7 +45,7 @@ struct ServerSetupView: View {
                     Button {
                         appModel.resetServer()
                     } label: {
-                        Label("Clear", systemImage: "xmark.circle")
+                        Label(L10n.text("Clear"), systemImage: "xmark.circle")
                     }
                     .buttonStyle(.bordered)
                 }
@@ -54,10 +54,10 @@ struct ServerSetupView: View {
             }
 
             VStack(alignment: .leading, spacing: 18) {
-                ContractBadge(title: "Manual URL", value: "MVP")
-                ContractBadge(title: "Auth", value: "Password JWT")
-                ContractBadge(title: "Playback", value: "HLS Preferred")
-                ContractBadge(title: "Storage", value: "Keychain Tokens")
+                ContractBadge(title: L10n.text("Manual URL"), value: "MVP")
+                ContractBadge(title: L10n.text("Auth"), value: L10n.text("Password JWT"))
+                ContractBadge(title: L10n.text("Playback"), value: L10n.text("HLS Preferred"))
+                ContractBadge(title: L10n.text("Storage"), value: L10n.text("Keychain Tokens"))
             }
             .frame(width: 360, alignment: .leading)
         }
@@ -80,7 +80,7 @@ struct SignInView: View {
                 .font(.title3)
                 .foregroundStyle(.white.opacity(0.68))
 
-            TextField("Email", text: $appModel.email)
+            TextField(L10n.text("Email"), text: $appModel.email)
                 .textFieldStyle(.plain)
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
@@ -91,7 +91,7 @@ struct SignInView: View {
                 .frame(maxWidth: 640)
                 .disabled(isSigningIn)
 
-            SecureField("Password", text: $appModel.password)
+            SecureField(L10n.text("Password"), text: $appModel.password)
                 .textFieldStyle(.plain)
                 .textContentType(.password)
                 .submitLabel(.go)
@@ -108,7 +108,7 @@ struct SignInView: View {
                 Button {
                     Task { await appModel.signIn() }
                 } label: {
-                    Label(isSigningIn ? "Signing In" : "Sign In", systemImage: "person.badge.key")
+                    Label(isSigningIn ? L10n.text("Signing In") : L10n.text("Sign In"), systemImage: "person.badge.key")
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isSigningIn)
@@ -116,7 +116,7 @@ struct SignInView: View {
                 Button {
                     appModel.resetServer()
                 } label: {
-                    Label("Change Server", systemImage: "server.rack")
+                    Label(L10n.text("Change Server"), systemImage: "server.rack")
                 }
                 .buttonStyle(.bordered)
                 .disabled(isSigningIn)
@@ -132,7 +132,7 @@ struct SignInView: View {
                 }
             }
 
-            StatusText(message: isSigningIn ? "Signing in..." : appModel.statusMessage)
+            StatusText(message: isSigningIn ? L10n.text("Signing in...") : appModel.statusMessage)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 90)
