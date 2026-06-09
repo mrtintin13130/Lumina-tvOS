@@ -15,6 +15,32 @@ Physical Apple TV can connect, but Home and detail navigation are not working we
 - Detail page navigation is unreliable.
 - Cast/person cards on the detail page cannot be navigated.
 
+## Regression Notes
+
+- The custom Home top navigation fixed the trap but regressed the native tvOS menu look and behavior.
+- The Home hero now appears vertically cropped, with the bottom content not visible enough.
+- Detail pages should rely on the remote back/Menu behavior instead of adding an extra close icon.
+- Focus styling became too uniformly white/gray because most custom card buttons suppress native focus effects and draw similar custom backgrounds.
+
+## Revised Direction
+
+- Restore native tvOS tab chrome as the top-level Home menu.
+- Keep the hero artwork full-bleed, but avoid turning the entire hero into a giant focus target.
+- Prefer native `Button` and `TabView` behavior, preserving system focus effects where they fit.
+- Use custom focus styling only for large media artwork where the app needs a clear poster/card treatment.
+- Keep `onExitCommand` for detail dismissal and remove the custom close icon.
+- Align with Apple's tvOS media catalog guidance: native section navigation, large media imagery, focus-driven selection, and system back/Menu behavior.
+
+## Regression Fixes
+
+- Restored `TabView(selection:)` and native tab items for Home, Movies, TV Shows, Search, and Settings.
+- Removed the custom Home chrome and all related custom focus state.
+- Removed custom `onMoveCommand` handling from the Home hero CTA so the native focus engine owns directional navigation.
+- Increased Home hero height and bottom-aligns backdrop artwork so the banner no longer appears to crop away the lower image/content.
+- Removed the detail close icon; detail dismissal now relies on the remote back/Menu command through `onExitCommand`.
+- Removed `.focusEffectDisabled()` from catalog/detail components touched in this pass so native tvOS focus effects can participate again.
+- Kept the real `Button` conversion for media and person cards because it is the native control semantics needed for focus and Select.
+
 ## Expected Behavior
 
 - Home hero should visually fill the first viewport as a full-bleed banner.
@@ -53,6 +79,7 @@ Physical Apple TV can connect, but Home and detail navigation are not working we
 - `xcodebuild -project lumina.xcodeproj -scheme lumina -destination generic/platform=tvOS -derivedDataPath .derived-data-focus-fix-tests CODE_SIGNING_ALLOWED=NO -jobs 1 build-for-testing`
 - Result: passed after the Home/detail focus refactor.
 - Result: passed again after converting remaining selectable card surfaces to real buttons.
+- Result: passed after restoring native `TabView`, removing the detail close icon, and re-enabling native focus effects.
 
 ## Eliminated
 

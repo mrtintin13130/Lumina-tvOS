@@ -69,52 +69,17 @@ struct CatalogDetailPage: View {
                 .padding(.bottom, 70)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            Button {
-                appModel.closeCatalogDetail()
-            } label: {
-                Label(L10n.text("Close"), systemImage: "xmark.circle.fill")
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 46, weight: .semibold))
-                    .frame(width: 78, height: 78)
-                    .background(.black.opacity(focusedAction == .close ? 0.62 : 0.34), in: Circle())
-                    .overlay {
-                        Circle()
-                            .stroke(
-                                focusedAction == .close ? .white.opacity(0.96) : .white.opacity(0.2),
-                                lineWidth: focusedAction == .close ? 3 : 1
-                            )
-                    }
-            }
-            .buttonStyle(.plain)
-            .focusEffectDisabled()
-            .focused($focusedAction, equals: .close)
-            .scaleEffect(focusedAction == .close ? 1.08 : 1)
-            .shadow(color: .black.opacity(0.46), radius: 16, x: 0, y: 8)
-            .onMoveCommand { direction in
-                guard direction == .down, isPlayableMovie else { return }
-                focusedAction = .play
-            }
-            .padding(.top, 58)
-            .padding(.trailing, 72)
-            .frame(maxWidth: .infinity, alignment: .topTrailing)
-            .accessibilityLabel(L10n.text("Close"))
         }
         .background(Color.black.ignoresSafeArea())
         .onExitCommand {
             appModel.closeCatalogDetail()
         }
         .onAppear {
-            focusedAction = initialFocus
+            if isPlayableMovie {
+                focusedAction = .play
+            }
         }
-        .defaultFocus($focusedAction, .close)
-    }
-
-    private var initialFocus: DetailAction {
-        if isPlayableMovie {
-            return .play
-        }
-        return .close
+        .defaultFocus($focusedAction, .play)
     }
 
     private var isPlayableMovie: Bool {
@@ -123,7 +88,6 @@ struct CatalogDetailPage: View {
 }
 
 private enum DetailAction: Hashable {
-    case close
     case play
 }
 
@@ -166,10 +130,6 @@ private struct DetailHero: View {
                     .disabled(item.hasPlayableMedia == false)
                     .focused($focusedAction, equals: .play)
                     .modifier(DetailActionFocusModifier(isFocused: focusedAction == .play))
-                    .onMoveCommand { direction in
-                        guard direction == .up else { return }
-                        focusedAction = .close
-                    }
                     .accessibilityHint(L10n.text("Starts playback"))
                 }
 

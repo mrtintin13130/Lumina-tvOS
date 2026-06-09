@@ -9,30 +9,48 @@ import SwiftUI
 
 struct HomeShellView: View {
     @EnvironmentObject private var appModel: AppModel
-    @FocusState private var focusedChrome: HomeChromeFocus?
 
     var body: some View {
-        ZStack(alignment: .top) {
-            selectedTabContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        TabView(selection: $appModel.selectedHomeTab) {
+            CatalogHomeView()
+                .tag(HomeTab.home)
+                .tabItem {
+                    Label(L10n.text("Home"), systemImage: "house")
+                }
 
-            LinearGradient(
-                colors: [.black.opacity(0.78), .black.opacity(0.42), .clear],
-                startPoint: .top,
-                endPoint: .bottom
+            CatalogGridView(
+                title: L10n.text("Movies"),
+                items: appModel.movies,
+                emptyTitle: L10n.text("No movies found"),
+                topPadding: 46
             )
-            .frame(height: 170)
-            .ignoresSafeArea(.container, edges: [.top, .horizontal])
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+            .tag(HomeTab.movies)
+            .tabItem {
+                Label(L10n.text("Movies"), systemImage: "film")
+            }
 
-            HomeTopNavigationBar(
-                selection: $appModel.selectedHomeTab,
-                focusedChrome: $focusedChrome
+            CatalogGridView(
+                title: L10n.text("TV Shows"),
+                items: appModel.tvShows,
+                emptyTitle: L10n.text("No TV shows found"),
+                topPadding: 46
             )
-            .padding(.horizontal, 72)
-            .padding(.top, 36)
-            .zIndex(20)
+            .tag(HomeTab.tvShows)
+            .tabItem {
+                Label(L10n.text("TV Shows"), systemImage: "tv")
+            }
+
+            CatalogSearchView(topPadding: 46)
+                .tag(HomeTab.search)
+                .tabItem {
+                    Label(L10n.text("Search"), systemImage: "magnifyingglass")
+                }
+
+            SettingsView(topPadding: 70)
+                .tag(HomeTab.settings)
+                .tabItem {
+                    Label(L10n.text("Settings"), systemImage: "gearshape")
+                }
         }
         .task {
             if appModel.automaticCatalogRefreshEnabled {
@@ -40,128 +58,10 @@ struct HomeShellView: View {
             }
         }
     }
-
-    @ViewBuilder
-    private var selectedTabContent: some View {
-        switch appModel.selectedHomeTab {
-        case .home:
-            CatalogHomeView(focusTopNavigation: focusSelectedTab)
-        case .movies:
-            CatalogGridView(
-                title: L10n.text("Movies"),
-                items: appModel.movies,
-                emptyTitle: L10n.text("No movies found"),
-                topPadding: 148
-            )
-        case .tvShows:
-            CatalogGridView(
-                title: L10n.text("TV Shows"),
-                items: appModel.tvShows,
-                emptyTitle: L10n.text("No TV shows found"),
-                topPadding: 148
-            )
-        case .search:
-            CatalogSearchView(topPadding: 148)
-        case .settings:
-            SettingsView(topPadding: 148)
-        }
-    }
-
-    private func focusSelectedTab() {
-        focusedChrome = .tab(appModel.selectedHomeTab)
-    }
-}
-
-private enum HomeChromeFocus: Hashable {
-    case tab(HomeTab)
-}
-
-private struct HomeTopNavigationBar: View {
-    @Binding var selection: HomeTab
-    @FocusState.Binding var focusedChrome: HomeChromeFocus?
-
-    private let tabs: [HomeTab] = [.home, .movies, .tvShows, .search, .settings]
-
-    var body: some View {
-        HStack(spacing: 14) {
-            ForEach(tabs, id: \.self) { tab in
-                HomeTopNavigationButton(
-                    tab: tab,
-                    isSelected: selection == tab,
-                    isFocused: focusedChrome == .tab(tab)
-                ) {
-                    selection = tab
-                }
-                .focused($focusedChrome, equals: .tab(tab))
-            }
-        }
-        .padding(8)
-        .background(.black.opacity(0.42), in: Capsule())
-        .overlay {
-            Capsule()
-                .stroke(.white.opacity(0.12), lineWidth: 1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct HomeTopNavigationButton: View {
-    let tab: HomeTab
-    let isSelected: Bool
-    let isFocused: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Label(L10n.text(tab.titleKey), systemImage: tab.systemImage)
-                .font(.system(size: 27, weight: .bold))
-                .labelStyle(.titleAndIcon)
-                .foregroundStyle(isSelected ? .black : .white.opacity(0.86))
-                .padding(.horizontal, 22)
-                .frame(height: 58)
-                .background(
-                    isSelected ? .white.opacity(0.94) : .white.opacity(isFocused ? 0.18 : 0.06),
-                    in: Capsule()
-                )
-                .overlay {
-                    Capsule()
-                        .stroke(isFocused ? .white.opacity(0.95) : .white.opacity(0.08), lineWidth: isFocused ? 3 : 1)
-                }
-        }
-        .buttonStyle(.plain)
-        .focusEffectDisabled()
-        .scaleEffect(isFocused ? 1.06 : 1)
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0), radius: 16, x: 0, y: 8)
-        .animation(.easeOut(duration: 0.15), value: isFocused)
-        .accessibilityLabel(L10n.text(tab.titleKey))
-    }
-}
-
-private extension HomeTab {
-    var titleKey: String.LocalizationValue {
-        switch self {
-        case .home: return "Home"
-        case .movies: return "Movies"
-        case .tvShows: return "TV Shows"
-        case .search: return "Search"
-        case .settings: return "Settings"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .home: return "house"
-        case .movies: return "film"
-        case .tvShows: return "tv"
-        case .search: return "magnifyingglass"
-        case .settings: return "gearshape"
-        }
-    }
 }
 
 private struct CatalogHomeView: View {
     @EnvironmentObject private var appModel: AppModel
-    let focusTopNavigation: () -> Void
 
     var body: some View {
         GeometryReader { proxy in
@@ -176,11 +76,9 @@ private struct CatalogHomeView: View {
                     if !appModel.homeHeroItems.isEmpty {
                         FeaturedHeroCarousel(
                             items: appModel.homeHeroItems,
-                            heroHeight: heroHeight(for: proxy),
-                            focusTopNavigation: focusTopNavigation
+                            heroHeight: heroHeight(for: proxy)
                         )
                             .frame(width: proxy.size.width)
-                            .padding(.top, -proxy.safeAreaInsets.top)
                             .ignoresSafeArea(.container, edges: [.top, .horizontal])
                     }
 
@@ -204,7 +102,7 @@ private struct CatalogHomeView: View {
     }
 
     private func heroHeight(for proxy: GeometryProxy) -> CGFloat {
-        min(max(proxy.size.height * 0.7, 580), 760)
+        min(max(proxy.size.height * 0.78, 640), 840)
     }
 }
 

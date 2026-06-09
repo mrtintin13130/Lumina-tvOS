@@ -112,7 +112,6 @@ struct FeaturedCatalogButton: View {
         .scaleEffect(isFocused ? focusedScale : 1)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -125,18 +124,15 @@ struct FeaturedHeroCarousel: View {
 
     let items: [CatalogItem]
     let heroHeight: CGFloat
-    let focusTopNavigation: (() -> Void)?
 
     private let rotationTimer = Timer.publish(every: 7, on: .main, in: .common).autoconnect()
 
     init(
         items: [CatalogItem],
-        heroHeight: CGFloat = 660,
-        focusTopNavigation: (() -> Void)? = nil
+        heroHeight: CGFloat = 660
     ) {
         self.items = items
         self.heroHeight = heroHeight
-        self.focusTopNavigation = focusTopNavigation
     }
 
     var body: some View {
@@ -147,7 +143,8 @@ struct FeaturedHeroCarousel: View {
                         for: item.backdropPath ?? item.posterPath,
                         kind: .backdrop
                     ),
-                    aspectRatio: 16 / 9
+                    aspectRatio: 16 / 9,
+                    alignment: .bottom
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
@@ -197,32 +194,14 @@ struct FeaturedHeroCarousel: View {
                             .font(.system(size: 31, weight: .semibold))
                             .padding(.horizontal, 22)
                             .padding(.vertical, 12)
-                            .background(.white.opacity(isFocused ? 0.26 : 0.16), in: Capsule())
+                            .background(.white.opacity(0.16), in: Capsule())
                             .overlay {
                                 Capsule()
-                                    .stroke(isFocused ? .white.opacity(0.95) : .white.opacity(0.22), lineWidth: isFocused ? 3 : 1)
+                                    .stroke(.white.opacity(0.22), lineWidth: 1)
                             }
                     }
                     .buttonStyle(.plain)
-                    .focusEffectDisabled()
                     .focused($isFocused)
-                    .scaleEffect(isFocused ? 1.06 : 1)
-                    .shadow(color: .white.opacity(isFocused ? 0.28 : 0), radius: 16, x: 0, y: 0)
-                    .animation(.easeOut(duration: 0.16), value: isFocused)
-                    .onMoveCommand { direction in
-                        switch direction {
-                        case .up:
-                            focusTopNavigation?()
-                        case .left:
-                            guard items.count > 1 else { return }
-                            showPreviousSlide()
-                        case .right:
-                            guard items.count > 1 else { return }
-                            showNextSlide()
-                        default:
-                            break
-                        }
-                    }
                     .padding(.top, 8)
                     .accessibilityLabel(item.accessibilitySummary)
                     .accessibilityHint(L10n.text("Opens details"))
@@ -491,7 +470,6 @@ struct ContinueWatchingCardButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -591,7 +569,6 @@ struct CatalogLandscapeButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -688,7 +665,6 @@ struct EditorialBannerSectionView: View {
         .shadow(color: .black.opacity(isFocused ? 0.58 : 0.24), radius: isFocused ? 24 : 10, x: 0, y: isFocused ? 15 : 7)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel([section.eyebrow, section.title, section.subtitle].compactMap { $0 }.joined(separator: ", "))
         .accessibilityHint(L10n.text("Opens this editorial collection"))
     }
@@ -775,7 +751,6 @@ struct CatalogEditorialPage: View {
                         }
                         .scaleEffect(isCloseFocused ? 1.08 : 1)
                         .focused($isCloseFocused)
-                        .focusEffectDisabled()
                         .accessibilityLabel(L10n.text("Close editorial collection"))
                     }
 
@@ -899,7 +874,6 @@ struct ThemedCatalogCardButton: View {
         .shadow(color: .black.opacity(isFocused ? 0.58 : 0.24), radius: isFocused ? 24 : 10, x: 0, y: isFocused ? 16 : 7)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -1023,7 +997,6 @@ struct CompactCatalogPosterButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -1109,7 +1082,6 @@ struct LogoCardButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.title)
         .accessibilityHint(item.href == nil ? L10n.text("Opens details") : L10n.text("Collection browsing unavailable"))
     }
@@ -1144,7 +1116,6 @@ struct CatalogPosterButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
-        .focusEffectDisabled()
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -1235,7 +1206,6 @@ struct PersonCreditButton: View {
             cardContent
         }
         .buttonStyle(.plain)
-        .focusEffectDisabled()
         .focused($isFocused)
         .scaleEffect(isFocused ? 1.06 : 1)
         .shadow(
@@ -1324,15 +1294,22 @@ struct CatalogArtwork: View {
     let url: URL?
     let aspectRatio: CGFloat
     let contentMode: ContentMode
+    let alignment: Alignment
 
-    init(url: URL?, aspectRatio: CGFloat, contentMode: ContentMode = .fill) {
+    init(
+        url: URL?,
+        aspectRatio: CGFloat,
+        contentMode: ContentMode = .fill,
+        alignment: Alignment = .center
+    ) {
         self.url = url
         self.aspectRatio = aspectRatio
         self.contentMode = contentMode
+        self.alignment = alignment
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: alignment) {
             Rectangle()
                 .fill(
                     LinearGradient(
@@ -1352,6 +1329,7 @@ struct CatalogArtwork: View {
                         image
                             .resizable()
                             .aspectRatio(contentMode: contentMode)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
 
                     case .failure:
                         placeholderIcon("photo")
