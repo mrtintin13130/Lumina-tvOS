@@ -455,6 +455,22 @@ struct CatalogPersonCredit: Decodable, Equatable, Identifiable {
         case imagePath = "image_path"
     }
 
+    init(
+        id: String,
+        name: String,
+        role: String? = nil,
+        department: String? = nil,
+        creditType: String? = nil,
+        profilePath: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.role = role
+        self.department = department
+        self.creditType = creditType
+        self.profilePath = profilePath
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 

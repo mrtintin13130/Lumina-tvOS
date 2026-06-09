@@ -32,12 +32,14 @@ struct ServerConnectionTester: ServerConnectionTesting {
 
     func validateServer(baseURL: URL) async throws -> ServerCapabilities {
         let health = try await fetchHealth(baseURL: baseURL)
-        guard health.status == "ok", health.app == "Lumina", !health.version.isEmpty else {
+        guard health.status.localizedCaseInsensitiveCompare("ok") == .orderedSame,
+              health.app == "Lumina",
+              !health.version.isEmpty else {
             throw LuminaClientError.unsupportedServer
         }
 
         let capabilities = try await apiClientFactory(baseURL, nil).fetchCapabilities()
-        guard capabilities.server.name == "Lumina", capabilities.api.version == "v1" else {
+        guard capabilities.server.name == "Lumina" else {
             throw LuminaClientError.unsupportedServer
         }
         guard capabilities.isTvMVPCompatible else {

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Backend Contract Alignment And Hardware Playback Proof
-status: gaps_found
-stopped_at: Phase 10 physical Apple TV playback start succeeded, but progress/resume proof and detail navigation gaps remain.
-last_updated: "2026-06-04T00:00:00.000Z"
-last_activity: 2026-06-07
+milestone: v1.2
+milestone_name: Stability, Usability, And Beta Hardening
+status: Milestone v1.2 initialized from senior review
+stopped_at: Milestone v1.1 initialized and ready to plan Phase 8.
+last_updated: "2026-06-08T21:41:51.984Z"
+last_activity: 2026-06-08
 progress:
-  total_phases: 3
-  completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 20
+  completed_plans: 20
   percent: 100
 ---
 
@@ -18,25 +18,25 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-30)
+See: .planning/PROJECT.md (updated 2026-06-08)
 
 **Core value:** One authenticated Apple TV client can connect to a Lumina server, play HLS video through native AVKit on physical Apple TV, report progress, and resume reliably.
-**Current focus:** Phase 10: Physical Movie Playback Proof
+**Current focus:** Phase 11: Architecture And State Hardening
 
 ## Current Position
 
-Phase: 10 of 10 (physical movie playback proof)
-Plan: 10-03 — Evidence review and follow-up gaps
-Status: Physical Apple TV playback start proven; Phase 10 gaps found
-Last activity: 2026-06-07 — made Home section rendering follow `presentation.layout` explicitly, including portrait Recent Movies via `poster_rail`, continue-watching cards, compact poster rails, logo cards, spotlight rails, genre pills, and cinematic banners; progress/resume proof gaps remain
+Phase: 15
+Plan: Not started
+Status: Milestone v1.2 initialized from senior review
+Last activity: 2026-06-08
 
-Progress: [██████████] 100%
+Progress: [----------] 0%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 20
 - Average duration: N/A
 - Total execution time: 0.0 hours
 
@@ -44,9 +44,11 @@ Progress: [██████████] 100%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 8 | 3/3 | - | - |
-| 9 | 4/4 | - | - |
-| 10 | 3/3 | - | - |
+| 11 | 4 | - | - |
+| 12 | 4 | - | - |
+| 13 | 5 | - | - |
+| 14 | 3 | - | - |
+| 15 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -71,10 +73,13 @@ Recent decisions affecting current work:
 - Phase 8: Reconciled route keys, payload shapes, AVKit stream-token transport, safe errors, and additive backend gaps.
 - Phase 9: Aligned Swift proof API client with real v1.1 auth, catalog, session, progress, stream-token, HLS, and redaction behavior.
 - Phase 10: Physical Apple TV login, navigation, movie selection, and playback start were proven; final phase has client focus and progress/resume evidence gaps.
+- v1.2: Senior review found the app is promising and builds, but should harden architecture, tvOS focus, playback lifecycle, diagnostics, UI tests, and beta evidence before feature expansion.
+- v1.2: Roadmap numbering continues from Phase 11 to preserve v1.1 traceability.
 
 ### Pending Todos
 
-None yet.
+- Discuss and plan Phase 11: Architecture And State Hardening.
+- Preserve existing dirty worktree changes while planning/executing v1.2.
 
 ### Blockers/Concerns
 
@@ -83,6 +88,7 @@ None yet.
 - `TVOS_CLIENT_PRD.md` is currently untracked and should be included or intentionally ignored before PR preparation.
 - Milestone audit found blocking human-verification gaps: physical Apple TV playback proof, backend progress/resume evidence, full catalog/playback/library-action validation, and TestFlight readiness evidence remain incomplete.
 - AVKit HLS token transport must be verified against manifests, playlists, segments, and subtitles so protected playback works on physical Apple TV.
+- GSD SDK command was not available locally when v1.2 was initialized, so milestone files were updated manually in the established GSD format and prior phase directories were not archived or cleared.
 
 ## Deferred Items
 
@@ -142,6 +148,11 @@ Items acknowledged and carried forward from previous milestone close:
 | 2026-06-07 | contain-home-studio-logos | Updated Home logo cards so real studio/network logo artwork is contained inside the card instead of cropped, while fallback artwork still covers the card. |
 | 2026-06-07 | home-hero-full-width | Updated the Home hero carousel so its 16:9 frame expands to the available screen width, remote Up can move toward the app menu, and remote Left/Right changes the selected slide while focused. |
 | 2026-06-07 | lumina-server-discovery | Added Bonjour server discovery, `/health` plus capabilities validation, manual URL fallback, saved-server unavailable handling, localized setup copy, and generic tvOS build/build-for-testing verification. |
+| 2026-06-07 | setup-auth-ui-polish | Reworked setup, server unavailable, and sign-in screens into a production-ready tvOS onboarding shell with stronger focus states, larger controls, side-panel context, and localized copy; generic tvOS build passed with code signing disabled. |
+| 2026-06-07 | setup-auth-ui-simplify | Removed the setup/auth implementation-detail right rail, kept only concise current-server context on sign-in/unavailable screens, and trimmed stale localization copy; verification was attempted but local Xcode Swift compilation stalled. |
+| 2026-06-08 | capabilities-contract-version-fix | Fixed setup validation rejecting current Lumina API servers by accepting the backend TV contract version `2026-05-tv`; generic tvOS build-for-testing was attempted but local Swift compilation stalled. |
+| 2026-06-08 | discovery-health-validation-fix | Fixed manual setup validation for the backend's uppercase health status and hardened Bonjour address resolution with retry plus numeric-address fallback; generic tvOS build-for-testing passed with code signing disabled. |
+| 2026-06-08 | home-hero-full-bleed | Made the Home hero carousel extend through the top and horizontal safe-area edges, removed the remaining left gutter, and stopped intercepting Up focus movement from the hero; generic tvOS build passed with code signing disabled. |
 | 2026-05-30 | catalog-home-shell | Added native tvOS catalog tabs, home shelves, browse grids, search, catalog API loading, and artwork-backed cards. |
 
 ## Session Continuity

@@ -6,6 +6,8 @@
 import Foundation
 
 struct ServerCapabilities: Codable, Equatable {
+    static let supportedAPIVersions: Set<String> = ["2026-05-tv"]
+
     struct Server: Codable, Equatable {
         let name: String
         let version: String
@@ -83,7 +85,8 @@ struct ServerCapabilities: Codable, Equatable {
     let limits: Limits
 
     var isTvMVPCompatible: Bool {
-        auth.modes.contains("password_jwt")
+        Self.supportedAPIVersions.contains(api.version)
+        && auth.modes.contains("password_jwt")
         && !auth.sessionValidationRoute.isEmpty
         && playback.hls.movies
         && playback.progress.supported

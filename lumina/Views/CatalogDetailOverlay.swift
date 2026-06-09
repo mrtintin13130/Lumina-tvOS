@@ -69,24 +69,62 @@ struct CatalogDetailPage: View {
                 .padding(.bottom, 70)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            Button {
+                appModel.closeCatalogDetail()
+            } label: {
+                Label(L10n.text("Close"), systemImage: "xmark.circle.fill")
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 46, weight: .semibold))
+                    .frame(width: 78, height: 78)
+                    .background(.black.opacity(focusedAction == .close ? 0.62 : 0.34), in: Circle())
+                    .overlay {
+                        Circle()
+                            .stroke(
+                                focusedAction == .close ? .white.opacity(0.96) : .white.opacity(0.2),
+                                lineWidth: focusedAction == .close ? 3 : 1
+                            )
+                    }
+            }
+            .buttonStyle(.plain)
+            .focusEffectDisabled()
+            .focused($focusedAction, equals: .close)
+            .scaleEffect(focusedAction == .close ? 1.08 : 1)
+            .shadow(color: .black.opacity(0.46), radius: 16, x: 0, y: 8)
+            .onMoveCommand { direction in
+                guard direction == .down, isPlayableMovie else { return }
+                focusedAction = .play
+            }
+            .padding(.top, 58)
+            .padding(.trailing, 72)
+            .frame(maxWidth: .infinity, alignment: .topTrailing)
+            .accessibilityLabel(L10n.text("Close"))
         }
         .background(Color.black.ignoresSafeArea())
         .onExitCommand {
             appModel.closeCatalogDetail()
         }
         .onAppear {
-            if item.mediaType == "movie", item.hasPlayableMedia != false {
-                focusedAction = .play
-            } else if item.primaryTrailerTitle != nil {
-                focusedAction = .trailer
-            }
+            focusedAction = initialFocus
         }
+        .defaultFocus($focusedAction, .close)
+    }
+
+    private var initialFocus: DetailAction {
+        if isPlayableMovie {
+            return .play
+        }
+        return .close
+    }
+
+    private var isPlayableMovie: Bool {
+        item.mediaType == "movie" && item.hasPlayableMedia != false
     }
 }
 
 private enum DetailAction: Hashable {
+    case close
     case play
-    case trailer
 }
 
 private struct DetailHero: View {
@@ -128,25 +166,33 @@ private struct DetailHero: View {
                     .disabled(item.hasPlayableMedia == false)
                     .focused($focusedAction, equals: .play)
                     .modifier(DetailActionFocusModifier(isFocused: focusedAction == .play))
+                    .onMoveCommand { direction in
+                        guard direction == .up else { return }
+                        focusedAction = .close
+                    }
                     .accessibilityHint(L10n.text("Starts playback"))
                 }
 
-                if item.primaryTrailerTitle != nil {
-                    Button {
-                        appModel.openTrailer(item)
-                    } label: {
-                        Label(item.trailerActionTitle, systemImage: "film.stack")
-                            .font(.system(size: 22, weight: .bold))
-                            .frame(minWidth: 150)
-                    }
-                    .buttonStyle(DetailActionButtonStyle(isPrimary: false))
-                    .focused($focusedAction, equals: .trailer)
-                    .modifier(DetailActionFocusModifier(isFocused: focusedAction == .trailer))
-                    .accessibilityHint(L10n.text("Opens trailer playback"))
-                }
+                TrailerUnavailableLabel(isVisible: item.primaryTrailerTitle != nil)
             }
         }
         .frame(maxWidth: 1040, alignment: .leading)
+    }
+}
+
+private struct TrailerUnavailableLabel: View {
+    let isVisible: Bool
+
+    var body: some View {
+        if isVisible {
+            Label(L10n.text("Trailer unavailable"), systemImage: "film.stack")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(.white.opacity(0.64))
+                .padding(.horizontal, 28)
+                .padding(.vertical, 16)
+                .background(.white.opacity(0.08), in: Capsule())
+                .accessibilityLabel(L10n.text("Trailer unavailable"))
+        }
     }
 }
 
@@ -326,8 +372,6 @@ private struct DetailActionFocusModifier: ViewModifier {
 }
 
 private struct DetailPersonShelf: View {
-    @EnvironmentObject private var appModel: AppModel
-
     let title: String
     let people: [CatalogPersonCredit]
     let textStyle: PersonCreditCardTextStyle
@@ -340,9 +384,7 @@ private struct DetailPersonShelf: View {
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 24) {
                     ForEach(people.prefix(18)) { person in
-                        PersonCreditButton(person: person, textStyle: textStyle) { selectedPerson in
-                            appModel.statusMessage = L10n.personDetailsNotReady(selectedPerson.name)
-                        }
+                        PersonCreditButton(person: person, textStyle: textStyle)
                     }
                 }
                 .padding(.vertical, 20)
@@ -455,7 +497,6 @@ private struct DetailSeasonButton: View {
             }
         }
         .buttonStyle(.plain)
-        .focusable(true)
         .focused($isFocused)
     }
 }

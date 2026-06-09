@@ -182,7 +182,7 @@ struct AVKitPlayerView: UIViewControllerRepresentable {
             guard !didSendFinalEvent else { return }
             didSendFinalEvent = true
             let position = currentPositionSeconds()
-            reportProgress(positionSeconds: position, event: event)
+            finishPlayback(positionSeconds: position, event: event)
             removeObservers()
         }
 
@@ -191,6 +191,14 @@ struct AVKitPlayerView: UIViewControllerRepresentable {
             guard positionSeconds.isFinite else { return }
             Task {
                 await appModel.reportPlaybackProgress(positionSeconds: max(0, positionSeconds), event: event)
+            }
+        }
+
+        @MainActor
+        private func finishPlayback(positionSeconds: Double, event: String) {
+            guard positionSeconds.isFinite else { return }
+            Task {
+                await appModel.finishPlayback(positionSeconds: max(0, positionSeconds), event: event)
             }
         }
 

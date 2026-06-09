@@ -44,6 +44,9 @@
 		5BD000302FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000332FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift */; };
 		5BD000312FCA500000000001 /* Discovery/LuminaServerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000342FCA500000000001 /* Discovery/LuminaServerDiscovery.swift */; };
 		5BD000322FCA500000000001 /* Networking/ServerConnectionTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000352FCA500000000001 /* Networking/ServerConnectionTester.swift */; };
+		5BD000362FCA500000000001 /* Auth/SessionStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000392FCA500000000001 /* Auth/SessionStateModel.swift */; };
+		5BD000372FCA500000000001 /* Networking/CatalogStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0003A2FCA500000000001 /* Networking/CatalogStateModel.swift */; };
+		5BD000382FCA500000000001 /* Playback/PlaybackStateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0003B2FCA500000000001 /* Playback/PlaybackStateModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +110,9 @@
 		5BD000332FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery/LuminaDiscoveredServer.swift; sourceTree = "<group>"; };
 		5BD000342FCA500000000001 /* Discovery/LuminaServerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discovery/LuminaServerDiscovery.swift; sourceTree = "<group>"; };
 		5BD000352FCA500000000001 /* Networking/ServerConnectionTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/ServerConnectionTester.swift; sourceTree = "<group>"; };
+		5BD000392FCA500000000001 /* Auth/SessionStateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth/SessionStateModel.swift; sourceTree = "<group>"; };
+		5BD0003A2FCA500000000001 /* Networking/CatalogStateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/CatalogStateModel.swift; sourceTree = "<group>"; };
+		5BD0003B2FCA500000000001 /* Playback/PlaybackStateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playback/PlaybackStateModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -165,11 +171,13 @@
 				5BD000082FCA500000000001 /* Networking/DTOs/Playback.swift */,
 				5BD0000A2FCA500000000001 /* Networking/DTOs/Catalog.swift */,
 				5BD0000C2FCA500000000001 /* Networking/APIError.swift */,
+				5BD0003A2FCA500000000001 /* Networking/CatalogStateModel.swift */,
 				5BD000262FCA500000000001 /* Networking/CatalogRepository.swift */,
 				5BD000222FCA500000000001 /* Networking/RouteTemplateResolver.swift */,
 				5BD000352FCA500000000001 /* Networking/ServerConnectionTester.swift */,
 				5BD0000E2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift */,
 				5BD000282FCA500000000001 /* Auth/AuthSessionRepository.swift */,
+				5BD000392FCA500000000001 /* Auth/SessionStateModel.swift */,
 				5BD000102FCA500000000001 /* Auth/TokenStore.swift */,
 				5BD000332FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift */,
 				5BD000342FCA500000000001 /* Discovery/LuminaServerDiscovery.swift */,
@@ -178,6 +186,7 @@
 				5BD000202FCA500000000001 /* App/ArtworkURLResolver.swift */,
 				5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */,
 				5BD000242FCA500000000001 /* Playback/PlaybackProofLoader.swift */,
+				5BD0003B2FCA500000000001 /* Playback/PlaybackStateModel.swift */,
 				5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */,
 				5BD000182FCA500000000001 /* Views/CatalogComponents.swift */,
 				5BD0001A2FCA500000000001 /* Views/StatusText.swift */,
@@ -375,10 +384,12 @@
 				5BD000092FCA500000000001 /* Networking/DTOs/Catalog.swift in Sources */,
 				5BD0000B2FCA500000000001 /* Networking/APIError.swift in Sources */,
 				5BD000252FCA500000000001 /* Networking/CatalogRepository.swift in Sources */,
+				5BD000372FCA500000000001 /* Networking/CatalogStateModel.swift in Sources */,
 				5BD000212FCA500000000001 /* Networking/RouteTemplateResolver.swift in Sources */,
 				5BD000322FCA500000000001 /* Networking/ServerConnectionTester.swift in Sources */,
 				5BD0000D2FCA500000000001 /* Networking/URLSessionLuminaAPIClient.swift in Sources */,
 				5BD000272FCA500000000001 /* Auth/AuthSessionRepository.swift in Sources */,
+				5BD000362FCA500000000001 /* Auth/SessionStateModel.swift in Sources */,
 				5BD0000F2FCA500000000001 /* Auth/TokenStore.swift in Sources */,
 				5BD000302FCA500000000001 /* Discovery/LuminaDiscoveredServer.swift in Sources */,
 				5BD000312FCA500000000001 /* Discovery/LuminaServerDiscovery.swift in Sources */,
@@ -387,6 +398,7 @@
 				5BD0001F2FCA500000000001 /* App/ArtworkURLResolver.swift in Sources */,
 				5BD000132FCA500000000001 /* Views/CatalogDetailOverlay.swift in Sources */,
 				5BD000232FCA500000000001 /* Playback/PlaybackProofLoader.swift in Sources */,
+				5BD000382FCA500000000001 /* Playback/PlaybackStateModel.swift in Sources */,
 				5BD000152FCA500000000001 /* Playback/AVKitPlayerView.swift in Sources */,
 				5BD000172FCA500000000001 /* Views/CatalogComponents.swift in Sources */,
 				5BD000192FCA500000000001 /* Views/StatusText.swift in Sources */,

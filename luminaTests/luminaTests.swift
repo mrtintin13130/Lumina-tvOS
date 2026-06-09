@@ -5,6 +5,7 @@
 //  Created by Martin Thomas on 29/05/2026.
 //
 
+import Darwin
 import XCTest
 @testable import lumina
 
@@ -30,6 +31,48 @@ final class luminaTests: XCTestCase {
 
         XCTAssertFalse(capabilities.isTvMVPCompatible)
         XCTAssertFalse(capabilities.playback.hls.movies)
+    }
+
+    func testServerConnectionTesterAcceptsBackendTVContractVersion() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        XCTAssertEqual(capabilities.api.version, "2026-05-tv")
+
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/v1/health")
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let data = #"{"status":"OK","app":"Lumina","version":"1.0.0"}"#.data(using: .utf8)!
+            return (response, data)
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let tester = ServerConnectionTester(
+            session: URLSession(configuration: configuration),
+            apiClientFactory: { _, _ in FakeLuminaAPIClient(capabilities: capabilities) }
+        )
+
+        let validated = try await tester.validateServer(baseURL: URL(string: "http://lumina.local:3000")!)
+
+        XCTAssertEqual(validated.api.version, "2026-05-tv")
+        XCTAssertTrue(validated.isTvMVPCompatible)
+    }
+
+    func testNetServiceAddressResolverUsesNumericIPv4Address() throws {
+        var ipv4 = sockaddr_in()
+        ipv4.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        ipv4.sin_family = sa_family_t(AF_INET)
+        ipv4.sin_port = in_port_t(3000).bigEndian
+        XCTAssertEqual(inet_pton(AF_INET, "192.168.1.42", &ipv4.sin_addr), 1)
+
+        let data = withUnsafeBytes(of: ipv4) { Data($0) }
+
+        XCTAssertEqual(NetServiceAddressResolver.host(from: [data]), "192.168.1.42")
     }
 
     func testErrorEnvelopeDecodesSafeMessage() throws {
@@ -565,7 +608,14 @@ final class luminaTests: XCTestCase {
     }
 
     func testDiagnosticsRedactsSensitiveValues() {
-        let message = #"Authorization=Bearer abc.def.ghi password=hunter2 path=/Users/example/private file=file:///private/var/mobile/app.db json={"access_token":"secret","password":"hunter2"} url=https://server/hls.m3u8?stream_token=secret"#
+        let message = """
+        Authorization=Bearer abc.def.ghi password=hunter2 path=/Users/example/private file=file:///private/var/mobile/app.db json={"access_token":"secret","password":"hunter2"} url=https://server/hls.m3u8?stream_token=secret
+        SELECT * FROM users WHERE email='private@example.test'
+        Thread 1: Fatal error: backend stack trace
+        #0 private symbol
+        Command line invocation:
+            raw subprocess output
+        """
         let redacted = DiagnosticsRecorder.redact(message)
 
         XCTAssertFalse(redacted.contains("abc.def.ghi"))
@@ -574,6 +624,10 @@ final class luminaTests: XCTestCase {
         XCTAssertFalse(redacted.contains("/private/var"))
         XCTAssertFalse(redacted.contains("access_token"))
         XCTAssertFalse(redacted.contains("stream_token=secret"))
+        XCTAssertFalse(redacted.localizedCaseInsensitiveContains("select"))
+        XCTAssertFalse(redacted.contains("Thread 1"))
+        XCTAssertFalse(redacted.contains("#0"))
+        XCTAssertFalse(redacted.contains("raw subprocess output"))
     }
 
     func testDiagnosticsRecordsStructuredSafeServerError() {
@@ -595,10 +649,47 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(recorder.events.first?.operation, "load_playback_proof")
         XCTAssertEqual(recorder.events.first?.phase, .playback)
         XCTAssertEqual(recorder.events.first?.severity, .error)
+        XCTAssertEqual(recorder.events.first?.category, "stream_token")
         XCTAssertEqual(recorder.events.first?.routeKey, "streamToken")
         XCTAssertEqual(recorder.events.first?.statusCode, 410)
         XCTAssertEqual(recorder.events.first?.correlationId, "req_123")
+        XCTAssertEqual(recorder.events.first?.supportId, "req_123")
         XCTAssertEqual(recorder.events.first?.message, "The playback link expired. Try playing again.")
+    }
+
+    @MainActor
+    func testSupportSummaryShowsSafeLocalSupportContext() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let recorder = DiagnosticsRecorder()
+        recorder.record(
+            operation: "load_playback_proof",
+            phase: .playback,
+            severity: .error,
+            category: "stream_token",
+            routeKey: "streamToken",
+            statusCode: 410,
+            correlationId: "req_123",
+            message: "Authorization: Bearer abc.def.ghi at /Users/martin/private"
+        )
+        let model = AppModel(
+            tokenStore: InMemoryTokenStore(),
+            settingsStore: InMemoryServerSettingsStore(serverURLString: "https://lumina.example.test"),
+            diagnostics: recorder,
+            apiClientFactory: { _, _ in FakeLuminaAPIClient(capabilities: capabilities) },
+            serverConnectionTester: FakeServerConnectionTester(capabilities: capabilities)
+        )
+        model.capabilities = capabilities
+        model.currentUser = LuminaUser(id: "1", displayName: "Martin")
+
+        let summary = model.supportSummary
+
+        XCTAssertTrue(summary.serverSummary.contains("Lumina"))
+        XCTAssertEqual(summary.validationSummary, "Compatible")
+        XCTAssertEqual(summary.userDisplayName, "Martin")
+        XCTAssertTrue(summary.diagnosticsSummary.contains("1 events"))
+        XCTAssertEqual(summary.lastSupportId, "req_123")
+        XCTAssertFalse(summary.lastSafeError.contains("abc.def.ghi"))
+        XCTAssertFalse(summary.lastSafeError.contains("/Users/martin/private"))
     }
 
     func testURLSessionClientDefaultConfigurationIsExplicitForTV() {
@@ -851,6 +942,67 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(snapshot.episodes, [episode])
     }
 
+    @MainActor
+    func testCatalogStateModelIgnoresStaleSearchResults() {
+        let state = CatalogStateModel()
+        state.searchQuery = "first"
+        let first = state.beginSearch()
+        state.searchQuery = "second"
+        let second = state.beginSearch()
+        let staleResult = CatalogItem(id: "stale", title: "Stale")
+        let freshResult = CatalogItem(id: "fresh", title: "Fresh")
+
+        XCTAssertNotNil(first)
+        XCTAssertNotNil(second)
+        XCTAssertFalse(state.completeSearch(loadID: first!.loadID, results: [staleResult]))
+        XCTAssertTrue(state.searchResults.isEmpty)
+        XCTAssertTrue(state.completeSearch(loadID: second!.loadID, results: [freshResult]))
+        XCTAssertEqual(state.searchResults, [freshResult])
+        XCTAssertFalse(state.isCatalogLoading)
+    }
+
+    @MainActor
+    func testCatalogStateModelResetInvalidatesDetailAndEditorialLoads() {
+        let state = CatalogStateModel()
+        let detailLoadID = state.beginDetail(CatalogItem(id: "movie", title: "Movie"))
+        let editorialLoadID = state.beginEditorial(CatalogSection(id: "section", title: "Section"))
+
+        state.reset()
+
+        XCTAssertFalse(state.applyMovieDetail(loadID: detailLoadID, item: CatalogItem(id: "late", title: "Late")))
+        XCTAssertFalse(state.completeEditorial(loadID: editorialLoadID, section: CatalogSection(id: "late-section", title: "Late")))
+        XCTAssertNil(state.selectedCatalogItem)
+        XCTAssertNil(state.selectedEditorialSection)
+        XCTAssertFalse(state.isDetailLoading)
+        XCTAssertFalse(state.isEditorialLoading)
+    }
+
+    @MainActor
+    func testPlaybackStateModelIgnoresLateProofAndRedactsFailure() {
+        let recorder = DiagnosticsRecorder()
+        let state = PlaybackStateModel(playbackProofLoader: PlaybackProofLoader(), diagnostics: recorder)
+        let firstLoadID = state.beginLoad()
+        _ = state.beginLoad()
+        let proof = PlaybackProof(
+            movie: PlayableMovie(id: "movie", title: "Movie"),
+            streamURL: URL(string: "https://lumina.example.test/movie.m3u8?token=secret")!,
+            authorizationHeader: nil,
+            sessionId: nil,
+            tracks: nil,
+            manifestInspection: nil
+        )
+        let result = PlaybackProofLoadResult(proof: proof, resumePositionSeconds: 0, session: nil)
+
+        XCTAssertFalse(state.applyLoadedProof(result, loadID: firstLoadID))
+        XCTAssertNil(state.playbackProof)
+
+        let safeMessage = state.recordFailure("Authorization: Bearer abc.def.ghi at /Users/martin/private")
+
+        XCTAssertFalse(safeMessage.contains("abc.def.ghi"))
+        XCTAssertFalse(safeMessage.contains("/Users/martin/private"))
+        XCTAssertEqual(recorder.events.first?.operation, "avkit_playback")
+    }
+
     func testPlaybackProofLoaderPropagatesSessionExpiredFromProgress() async throws {
         let client = PlaybackProofFakeClient(movieProgressError: .sessionExpired)
         let loader = PlaybackProofLoader()
@@ -879,6 +1031,31 @@ final class luminaTests: XCTestCase {
 
         XCTAssertEqual(client.stoppedSessionIds, ["session-1"])
         XCTAssertEqual(client.stoppedPositionSeconds, [123])
+    }
+
+    func testPlaybackProofLoaderStopsBeforeStreamTokenWhenMovieIsNotPlayable() async throws {
+        let client = PlaybackProofFakeClient(
+            playbackSession: PlaybackSessionResponse(id: "session-1", mediaId: "movie", mediaKind: "movie")
+        )
+        client.playableMovie = PlayableMovie(
+            id: "movie",
+            title: "Movie",
+            resumePositionSeconds: 123,
+            durationSeconds: 3600,
+            hlsManifestPath: nil,
+            hasPlayableMedia: false
+        )
+        let loader = PlaybackProofLoader()
+
+        do {
+            _ = try await loader.loadMovieProof(movieOverride: nil, token: "token", client: client)
+            XCTFail("Expected missing playable media failure")
+        } catch let error as LuminaClientError {
+            XCTAssertEqual(error.safeMessage, "No playable movie was found on this Lumina server.")
+        }
+
+        XCTAssertEqual(client.streamTokenRequestCount, 0)
+        XCTAssertEqual(client.stoppedSessionIds, [])
     }
 
     func testPlaybackProofLoaderCarriesMovieTracksWhenAvailable() async throws {
@@ -939,6 +1116,74 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(result.proof.tracks?.tracks.subtitles.external.first?.id, "11")
         XCTAssertEqual(result.proof.manifestInspection?.audioRenditionCount, 1)
         XCTAssertEqual(result.proof.manifestInspection?.nonPlaylistSubtitleRenditionCount, 1)
+    }
+
+    @MainActor
+    func testAppModelPlaybackExitPreservesProofUntilFinalStop() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let tokenStore = InMemoryTokenStore()
+        try tokenStore.saveToken("session-token")
+        let settingsStore = InMemoryServerSettingsStore(serverURLString: "https://lumina.example.test")
+        let client = PlaybackProofFakeClient(
+            playbackSession: PlaybackSessionResponse(id: "session-1", mediaId: "movie", mediaKind: "movie")
+        )
+        let model = AppModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            apiClientFactory: { _, _ in client },
+            serverConnectionTester: FakeServerConnectionTester(capabilities: capabilities)
+        )
+        model.serverURLString = "https://lumina.example.test"
+        model.phase = .home
+
+        await model.loadPlaybackProof()
+
+        guard case .playback = model.phase else {
+            XCTFail("Expected playback phase after proof load")
+            return
+        }
+        XCTAssertNotNil(model.playbackProof)
+
+        model.requestPlaybackExit()
+
+        XCTAssertEqual(model.phase, .home)
+        XCTAssertNotNil(model.playbackProof)
+
+        await model.finishPlayback(positionSeconds: 240, event: "exit")
+
+        XCTAssertNil(model.playbackProof)
+        XCTAssertEqual(model.phase, .home)
+        XCTAssertEqual(client.progressUpdates.first?.positionSeconds, 240)
+        XCTAssertEqual(client.progressUpdates.first?.playState, "paused")
+        XCTAssertEqual(client.stoppedSessionIds, ["session-1"])
+        XCTAssertEqual(client.stoppedPositionSeconds, [240])
+    }
+
+    @MainActor
+    func testAppModelFinishPlaybackReturnsToSignInWhenProgressTokenExpires() async throws {
+        let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
+        let tokenStore = InMemoryTokenStore()
+        try tokenStore.saveToken("session-token")
+        let settingsStore = InMemoryServerSettingsStore(serverURLString: "https://lumina.example.test")
+        let client = PlaybackProofFakeClient(
+            playbackSession: PlaybackSessionResponse(id: "session-1", mediaId: "movie", mediaKind: "movie")
+        )
+        client.progressReportError = .sessionExpired
+        let model = AppModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            apiClientFactory: { _, _ in client },
+            serverConnectionTester: FakeServerConnectionTester(capabilities: capabilities)
+        )
+        model.serverURLString = "https://lumina.example.test"
+        model.phase = .home
+
+        await model.loadPlaybackProof()
+        await model.finishPlayback(positionSeconds: 240, event: "exit")
+
+        XCTAssertNil(model.playbackProof)
+        XCTAssertEqual(model.phase, .signIn)
+        XCTAssertThrowsError(try tokenStore.loadToken())
     }
 
     private func decodeFixture<T: Decodable>(_ type: T.Type, name: String) throws -> T {
@@ -1007,6 +1252,36 @@ private final class FailingTokenStore: TokenStore {
     }
 }
 
+private final class MockURLProtocol: URLProtocol {
+    static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.handler else {
+            client?.urlProtocol(self, didFailWithError: LuminaClientError.transport("missing mock handler"))
+            return
+        }
+
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}
+
 private struct FakeServerConnectionTester: ServerConnectionTesting {
     var capabilities: ServerCapabilities?
     var error: LuminaClientError?
@@ -1041,6 +1316,7 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
     var movieProgress = MovieProgressResponse(positionSeconds: 123, durationSeconds: 3600, playState: "paused")
     var movieTracks: MediaTrackListing?
     var movieProgressError: LuminaClientError?
+    var progressReportError: LuminaClientError?
     var playbackSession: PlaybackSessionResponse?
     var preflightError: LuminaClientError?
     var manifestInspection = HLSManifestInspection(
@@ -1050,6 +1326,9 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
         checkedVariantPlaylist: true,
         checkedFirstSegment: true
     )
+    var progressUpdates: [ProgressUpdateRequest] = []
+    var updatedSessionEvents: [(sessionId: String, positionSeconds: Double, playState: String)] = []
+    var streamTokenRequestCount = 0
     var stoppedSessionIds: [String] = []
     var stoppedPositionSeconds: [Double] = []
 
@@ -1137,7 +1416,8 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
     }
 
     func requestStreamToken(mediaType: String, mediaId: String, token: String) async throws -> String? {
-        "stream-token"
+        streamTokenRequestCount += 1
+        return "stream-token"
     }
 
     func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) -> URL {
@@ -1151,9 +1431,16 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
         return manifestInspection
     }
 
-    func reportProgress(_ update: ProgressUpdateRequest, token: String) async throws {}
+    func reportProgress(_ update: ProgressUpdateRequest, token: String) async throws {
+        if let progressReportError {
+            throw progressReportError
+        }
+        progressUpdates.append(update)
+    }
 
-    func updatePlaybackSession(sessionId: String, positionSeconds: Double, playState: String, token: String) async throws {}
+    func updatePlaybackSession(sessionId: String, positionSeconds: Double, playState: String, token: String) async throws {
+        updatedSessionEvents.append((sessionId, positionSeconds, playState))
+    }
 
     func stopPlaybackSession(sessionId: String, positionSeconds: Double, token: String) async throws {
         stoppedSessionIds.append(sessionId)

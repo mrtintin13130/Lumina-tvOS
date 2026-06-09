@@ -17,6 +17,25 @@ enum AppPhase: Equatable {
     case playback(PlaybackProof)
 }
 
+enum HomeTab: Hashable {
+    case home
+    case movies
+    case tvShows
+    case search
+    case settings
+}
+
+struct SupportSummary: Equatable {
+    let appBuild: String
+    let serverSummary: String
+    let apiSummary: String
+    let validationSummary: String
+    let diagnosticsSummary: String
+    let userDisplayName: String
+    let lastSafeError: String
+    let lastSupportId: String
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published var phase: AppPhase = .restoring
@@ -41,17 +60,52 @@ final class AppModel: ObservableObject {
     @Published var selectedEditorialSection: CatalogSection?
     @Published var isDetailLoading = false
     @Published var isEditorialLoading = false
+    @Published var selectedHomeTab: HomeTab = .home
+    var automaticCatalogRefreshEnabled = true
 
     private let tokenStore: TokenStore
     private let settingsStore: ServerSettingsStore
     private let diagnostics: DiagnosticsRecorder
-    private let playbackProofLoader: PlaybackProofLoader
     private let apiClientFactory: (URL, ServerCapabilities?) -> LuminaAPIClient
     private let serverConnectionTester: ServerConnectionTesting
-    private var playbackLoadID: UUID?
-    private var searchLoadID: UUID?
-    private var detailLoadID: UUID?
-    private var editorialLoadID: UUID?
+    private let sessionState: SessionStateModel
+    private let catalogState: CatalogStateModel
+    private let playbackState: PlaybackStateModel
+
+    var supportSummary: SupportSummary {
+        let lastError = diagnostics.events.last { $0.severity == .error }
+        let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let buildNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        let serverSummary: String
+        let apiSummary: String
+        let validationSummary: String
+        let diagnosticsSummary: String
+
+        if let capabilities {
+            serverSummary = "\(capabilities.server.name) \(capabilities.server.version)"
+            apiSummary = "\(capabilities.api.version) / min \(capabilities.api.minimumTvClientVersion)"
+            validationSummary = capabilities.isTvMVPCompatible ? L10n.text("Compatible") : L10n.text("Not compatible")
+            diagnosticsSummary = capabilities.diagnostics.clientEventUpload
+                ? L10n.text("Local events only; server upload available")
+                : L10n.text("Local events only")
+        } else {
+            serverSummary = L10n.text("Not validated")
+            apiSummary = L10n.text("Not validated")
+            validationSummary = L10n.text("Not validated")
+            diagnosticsSummary = L10n.text("Local events only")
+        }
+
+        return SupportSummary(
+            appBuild: "\(appVersion) (\(buildNumber))",
+            serverSummary: DiagnosticsRecorder.redact(serverSummary),
+            apiSummary: DiagnosticsRecorder.redact(apiSummary),
+            validationSummary: validationSummary,
+            diagnosticsSummary: "\(diagnosticsSummary) - \(diagnostics.events.count) \(L10n.text("events"))",
+            userDisplayName: DiagnosticsRecorder.redact(currentUser?.displayName ?? L10n.text("Unknown")),
+            lastSafeError: DiagnosticsRecorder.redact(statusMessage ?? lastError?.message ?? L10n.text("None")),
+            lastSupportId: DiagnosticsRecorder.redact(lastError?.supportId ?? L10n.text("None"))
+        )
+    }
 
     init(
         tokenStore: TokenStore = TokenStoreFactory.defaultStore(),
@@ -66,11 +120,23 @@ final class AppModel: ObservableObject {
         self.tokenStore = tokenStore
         self.settingsStore = settingsStore
         self.diagnostics = diagnostics
-        self.playbackProofLoader = playbackProofLoader
         self.apiClientFactory = apiClientFactory
         self.serverConnectionTester = serverConnectionTester
             ?? ServerConnectionTester(apiClientFactory: apiClientFactory)
-        self.serverURLString = settingsStore.serverURLString ?? ""
+        self.sessionState = SessionStateModel(
+            tokenStore: tokenStore,
+            settingsStore: settingsStore,
+            apiClientFactory: apiClientFactory,
+            serverConnectionTester: self.serverConnectionTester
+        )
+        self.catalogState = CatalogStateModel()
+        self.playbackState = PlaybackStateModel(
+            playbackProofLoader: playbackProofLoader,
+            diagnostics: diagnostics
+        )
+        syncFromSessionState()
+        syncFromCatalogState()
+        syncFromPlaybackState()
         self.phase = .setup
     }
 
@@ -78,23 +144,14 @@ final class AppModel: ObservableObject {
         guard phase == .restoring || phase == .setup || phase == .serverUnavailable else {
             return
         }
-        guard let storedServer = settingsStore.serverURLString,
-              let storedServerURL = normalizeServerURL(storedServer) else {
-            phase = .setup
-            return
-        }
-        serverURLString = storedServerURL.absoluteString
         do {
-            capabilities = try await serverConnectionTester.validateServer(baseURL: storedServerURL)
-            guard let session = try await authSessionRepository().restore(normalizeServerURL: normalizeServerURL) else {
+            guard try await sessionState.restore(normalizeServerURL: normalizeServerURL) != nil else {
+                syncFromSessionState()
                 phase = .signIn
                 return
             }
-            serverURLString = session.serverURL.absoluteString
-            capabilities = session.capabilities
-            currentUser = session.user
+            syncFromSessionState()
             phase = .home
-            statusMessage = nil
             await loadCatalog()
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "restore_session", phase: .auth)
@@ -102,38 +159,41 @@ final class AppModel: ObservableObject {
             case .sessionExpired, .missingToken:
                 handleSessionError(error, fallbackPhase: .signIn)
             default:
-                statusMessage = error.safeMessage
+                sessionState.statusMessage = error.safeMessage
+                syncFromSessionState()
                 phase = .serverUnavailable
             }
         } catch {
             diagnostics.record(operation: "restore_session", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromSessionState()
             phase = .serverUnavailable
         }
     }
 
     func validateServer() async {
+        copyToSessionState()
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
             phase = .setup
             return
         }
 
         phase = .validating
         do {
-            let capabilities = try await serverConnectionTester.validateServer(baseURL: url)
-            settingsStore.serverURLString = url.absoluteString
-            self.capabilities = capabilities
-            serverURLString = url.absoluteString
-            statusMessage = nil
+            try await sessionState.validateServer(url)
+            syncFromSessionState()
             phase = .signIn
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "validate_server", phase: .setup)
-            statusMessage = error.safeMessage
+            sessionState.statusMessage = error.safeMessage
+            syncFromSessionState()
             phase = .setup
         } catch {
             diagnostics.record(operation: "validate_server", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromSessionState()
             phase = .setup
         }
     }
@@ -149,11 +209,11 @@ final class AppModel: ObservableObject {
     }
 
     func retrySavedServer() async {
-        guard let storedServer = settingsStore.serverURLString else {
+        guard sessionState.retrySavedServer() else {
             phase = .setup
             return
         }
-        serverURLString = storedServer
+        syncFromSessionState()
         phase = .restoring
         await restoreSession()
     }
@@ -164,147 +224,144 @@ final class AppModel: ObservableObject {
     }
 
     func signIn() async {
+        copyToSessionState()
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
             phase = .setup
-            return
-        }
-        let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !email.isEmpty, !password.isEmpty else {
-            statusMessage = L10n.text("Enter your Lumina email and password.")
-            phase = .signIn
             return
         }
 
         phase = .signingIn
         do {
-            let session = try await authSessionRepository().signIn(
-                serverURL: url,
-                email: email,
-                password: password
-            )
-            capabilities = session.capabilities
-            currentUser = session.user
-            password = ""
-            statusMessage = nil
+            _ = try await sessionState.signIn(serverURL: url)
+            syncFromSessionState()
             phase = .home
             await loadCatalog()
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "sign_in", phase: .auth)
-            statusMessage = error.safeMessage
+            sessionState.statusMessage = error.safeMessage
+            syncFromSessionState()
             phase = .signIn
         } catch {
             diagnostics.record(operation: "sign_in", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromSessionState()
             phase = .signIn
         }
     }
 
     func signOut() {
-        playbackLoadID = nil
-        searchLoadID = nil
-        detailLoadID = nil
-        editorialLoadID = nil
-        authSessionRepository().signOut()
-        currentUser = nil
-        selectedEditorialSection = nil
-        isEditorialLoading = false
-        password = ""
+        playbackState.exit()
+        catalogState.reset()
+        sessionState.signOut()
+        syncFromSessionState()
+        syncFromCatalogState()
+        syncFromPlaybackState()
         phase = .signIn
-        statusMessage = L10n.text("Signed out.")
     }
 
     func loadCatalog() async {
         guard phase == .home, !isCatalogLoading else { return }
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
             return
         }
-        isCatalogLoading = true
-        defer { isCatalogLoading = false }
+        catalogState.isCatalogLoading = true
+        syncFromCatalogState()
+        defer {
+            catalogState.isCatalogLoading = false
+            syncFromCatalogState()
+        }
 
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             let repository = catalogRepository(for: url, token: token)
-            applyHomeSnapshot(try await repository.loadHome())
-            statusMessage = nil
+            catalogState.applyHomeSnapshot(try await repository.loadHome())
+            sessionState.statusMessage = nil
+            syncFromCatalogState()
+            syncFromSessionState()
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "load_catalog", phase: .catalog)
             handleSessionError(error)
         } catch {
             diagnostics.record(operation: "load_catalog", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromSessionState()
         }
     }
 
     func runSearch() async {
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else {
-            searchResults = []
+        copyToCatalogState()
+        guard let search = catalogState.beginSearch() else {
+            syncFromCatalogState()
             return
         }
         guard let url = normalizeServerURL(serverURLString) else {
+            _ = catalogState.failSearch(loadID: search.loadID)
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
+            syncFromCatalogState()
             return
         }
-        let loadID = UUID()
-        searchLoadID = loadID
-        isCatalogLoading = true
-        defer { isCatalogLoading = false }
+        syncFromCatalogState()
 
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             let repository = catalogRepository(for: url, token: token)
-            let results = try await repository.search(query: query)
-            guard searchLoadID == loadID else { return }
-            searchResults = results
-            statusMessage = searchResults.isEmpty ? L10n.text("No catalog results found.") : nil
+            let results = try await repository.search(query: search.query)
+            guard catalogState.completeSearch(loadID: search.loadID, results: results) else { return }
+            sessionState.statusMessage = catalogState.searchResults.isEmpty ? L10n.text("No catalog results found.") : nil
+            syncFromCatalogState()
+            syncFromSessionState()
         } catch let error as LuminaClientError {
-            guard searchLoadID == loadID else { return }
+            guard catalogState.failSearch(loadID: search.loadID) else { return }
             diagnostics.record(error: error, operation: "catalog_search", phase: .catalog)
+            syncFromCatalogState()
             handleSessionError(error)
         } catch {
-            guard searchLoadID == loadID else { return }
+            guard catalogState.failSearch(loadID: search.loadID) else { return }
             diagnostics.record(operation: "catalog_search", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromCatalogState()
+            syncFromSessionState()
         }
     }
 
     func openCatalogDetail(_ item: CatalogItem) async {
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
             return
         }
-        isDetailLoading = true
-        let loadID = UUID()
-        detailLoadID = loadID
-        selectedCatalogItem = item
-        selectedTVSeasons = []
-        selectedTVEpisodes = []
-        selectedSeasonNumber = nil
-        defer { isDetailLoading = false }
+        let loadID = catalogState.beginDetail(item)
+        syncFromCatalogState()
 
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             let repository = catalogRepository(for: url, token: token)
             if item.mediaType == "tv_show" {
                 let snapshot = try await repository.tvShowDetail(showId: item.id)
-                guard detailLoadID == loadID else { return }
-                applyTVShowDetailSnapshot(snapshot)
+                guard catalogState.applyTVShowDetail(loadID: loadID, snapshot: snapshot) else { return }
             } else if item.mediaType == "movie" {
                 let detail = try await repository.movieDetail(movieId: item.id)
-                guard detailLoadID == loadID else { return }
-                selectedCatalogItem = detail
+                guard catalogState.applyMovieDetail(loadID: loadID, item: detail) else { return }
             }
-            statusMessage = nil
+            sessionState.statusMessage = nil
+            syncFromCatalogState()
+            syncFromSessionState()
         } catch let error as LuminaClientError {
-            guard detailLoadID == loadID else { return }
+            guard catalogState.failDetail(loadID: loadID) else { return }
             diagnostics.record(error: error, operation: "catalog_detail", phase: .catalog)
+            syncFromCatalogState()
             handleSessionError(error)
         } catch {
-            guard detailLoadID == loadID else { return }
+            guard catalogState.failDetail(loadID: loadID) else { return }
             diagnostics.record(operation: "catalog_detail", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromCatalogState()
+            syncFromSessionState()
         }
     }
 
@@ -316,68 +373,70 @@ final class AppModel: ObservableObject {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
             return
         }
-        selectedSeasonNumber = season.seasonNumber
-        isDetailLoading = true
-        defer { isDetailLoading = false }
+        catalogState.beginSeason(season)
+        syncFromCatalogState()
 
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             let repository = catalogRepository(for: url, token: token)
-            selectedTVEpisodes = try await repository.episodes(showId: show.id, seasonNumber: season.seasonNumber)
-            statusMessage = selectedTVEpisodes.isEmpty ? L10n.text("No episodes found for this season.") : nil
+            let episodes = try await repository.episodes(showId: show.id, seasonNumber: season.seasonNumber)
+            catalogState.completeSeason(episodes: episodes)
+            sessionState.statusMessage = episodes.isEmpty ? L10n.text("No episodes found for this season.") : nil
+            syncFromCatalogState()
+            syncFromSessionState()
         } catch let error as LuminaClientError {
+            catalogState.failSeason()
             diagnostics.record(error: error, operation: "catalog_tv_episodes", phase: .catalog)
+            syncFromCatalogState()
             handleSessionError(error)
         } catch {
+            catalogState.failSeason()
             diagnostics.record(operation: "catalog_tv_episodes", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromCatalogState()
+            syncFromSessionState()
         }
     }
 
     func closeCatalogDetail() {
-        selectedCatalogItem = nil
-        selectedTVSeasons = []
-        selectedTVEpisodes = []
-        selectedSeasonNumber = nil
+        catalogState.closeDetail()
+        syncFromCatalogState()
     }
 
     func openEditorialSection(_ section: CatalogSection) async {
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
             return
         }
-        let loadID = UUID()
-        editorialLoadID = loadID
-        selectedEditorialSection = section
-        isEditorialLoading = true
-        defer {
-            if editorialLoadID == loadID {
-                isEditorialLoading = false
-            }
-        }
+        let loadID = catalogState.beginEditorial(section)
+        syncFromCatalogState()
 
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             let repository = catalogRepository(for: url, token: token)
             let editorialSection = try await repository.editorialSection(sectionId: section.id)
-            guard editorialLoadID == loadID else { return }
-            selectedEditorialSection = editorialSection
-            statusMessage = nil
+            guard catalogState.completeEditorial(loadID: loadID, section: editorialSection) else { return }
+            sessionState.statusMessage = nil
+            syncFromCatalogState()
+            syncFromSessionState()
         } catch let error as LuminaClientError {
-            guard editorialLoadID == loadID else { return }
+            guard catalogState.failEditorial(loadID: loadID) else { return }
             diagnostics.record(error: error, operation: "catalog_editorial", phase: .catalog)
+            syncFromCatalogState()
             handleSessionError(error)
         } catch {
-            guard editorialLoadID == loadID else { return }
+            guard catalogState.failEditorial(loadID: loadID) else { return }
             diagnostics.record(operation: "catalog_editorial", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromCatalogState()
+            syncFromSessionState()
         }
     }
 
     func closeEditorialSection() {
-        editorialLoadID = nil
-        selectedEditorialSection = nil
-        isEditorialLoading = false
+        catalogState.closeEditorial()
+        syncFromCatalogState()
     }
 
     func playCatalogMovie(_ item: CatalogItem) async {
@@ -398,6 +457,11 @@ final class AppModel: ObservableObject {
         diagnostics.record(operation: "catalog_link", message: "Catalog link selected: \(item.id)")
     }
 
+    func openPersonDetails(_ person: CatalogPersonCredit) {
+        statusMessage = L10n.personDetailsNotReady(person.name)
+        diagnostics.record(operation: "catalog_person", message: "Person selected: \(person.id)")
+    }
+
     func loadPlaybackProof() async {
         await loadPlaybackProof(movieOverride: nil)
     }
@@ -408,23 +472,22 @@ final class AppModel: ObservableObject {
             phase = .setup
             return
         }
-        let loadID = UUID()
-        playbackLoadID = loadID
+        let loadID = playbackState.beginLoad()
         phase = .loadingPlayback
         var result: PlaybackProofLoadResult?
         var playbackToken: String?
         var playbackClient: LuminaAPIClient?
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             playbackToken = token
             let client = apiClient(for: url)
             playbackClient = client
-            result = try await playbackProofLoader.loadMovieProof(
+            result = try await playbackState.loadMovieProof(
                 movieOverride: movieOverride,
                 token: token,
                 client: client
             )
-            guard playbackLoadID == loadID else {
+            guard playbackState.isCurrentLoad(loadID) else {
                 await stopPlaybackSessionIfNeeded(
                     result?.session,
                     client: client,
@@ -434,10 +497,13 @@ final class AppModel: ObservableObject {
                 return
             }
             guard let result else { return }
-            let proof = result.proof
-            playbackProof = proof
-            phase = .playback(proof)
-            statusMessage = nil
+            guard playbackState.applyLoadedProof(result, loadID: loadID) else { return }
+            syncFromPlaybackState()
+            if let playbackProof {
+                phase = .playback(playbackProof)
+            }
+            sessionState.statusMessage = nil
+            syncFromSessionState()
         } catch let error as LuminaClientError {
             if let playbackClient, let playbackToken {
                 await stopPlaybackSessionIfNeeded(
@@ -447,7 +513,7 @@ final class AppModel: ObservableObject {
                     positionSeconds: result?.resumePositionSeconds ?? 0
                 )
             }
-            guard playbackLoadID == loadID else { return }
+            guard playbackState.isCurrentLoad(loadID) else { return }
             diagnostics.record(error: error, operation: "load_playback_proof", phase: .playback)
             handleSessionError(error, fallbackPhase: .home)
         } catch {
@@ -459,9 +525,10 @@ final class AppModel: ObservableObject {
                     positionSeconds: result?.resumePositionSeconds ?? 0
                 )
             }
-            guard playbackLoadID == loadID else { return }
+            guard playbackState.isCurrentLoad(loadID) else { return }
             diagnostics.record(operation: "load_playback_proof", message: "\(error)")
-            statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromSessionState()
             phase = .home
         }
     }
@@ -476,12 +543,13 @@ final class AppModel: ObservableObject {
         try? await client.stopPlaybackSession(sessionId: session.id, positionSeconds: positionSeconds, token: token)
     }
 
-    func reportPlaybackProgress(positionSeconds: Double, event: String) async {
+    @discardableResult
+    func reportPlaybackProgress(positionSeconds: Double, event: String) async -> Bool {
         guard let proof = playbackProof, let url = normalizeServerURL(serverURLString) else {
-            return
+            return true
         }
         do {
-            let token = try authSessionRepository().token()
+            let token = try sessionState.token()
             let client = apiClient(for: url)
             try await client.reportProgress(
                 ProgressUpdateRequest(
@@ -499,25 +567,41 @@ final class AppModel: ObservableObject {
                     try await client.updatePlaybackSession(sessionId: sessionId, positionSeconds: positionSeconds, playState: event, token: token)
                 }
             }
+            return true
         } catch let error as LuminaClientError {
             diagnostics.record(error: error, operation: "playback_progress", phase: .playback)
             if error == .sessionExpired || error == .missingToken {
-                authSessionRepository().signOut()
+                sessionState.signOut(message: nil)
+                syncFromSessionState()
+                return false
             }
+            return true
         } catch {
             diagnostics.record(operation: "playback_progress", message: "\(error)")
+            return true
         }
     }
 
+    func requestPlaybackExit() {
+        phase = .home
+    }
+
+    func finishPlayback(positionSeconds: Double, event: String) async {
+        let sessionIsValid = await reportPlaybackProgress(positionSeconds: positionSeconds, event: event)
+        playbackState.exit()
+        syncFromPlaybackState()
+        phase = sessionIsValid ? .home : .signIn
+    }
+
     func exitPlayback() {
-        playbackLoadID = nil
-        playbackProof = nil
+        playbackState.exit()
+        syncFromPlaybackState()
         phase = .home
     }
 
     func recordPlaybackFailure(_ message: String) {
-        diagnostics.record(operation: "avkit_playback", phase: .playback, message: message)
-        statusMessage = DiagnosticsRecorder.redact(message)
+        sessionState.statusMessage = playbackState.recordFailure(message)
+        syncFromSessionState()
     }
 
     func recordPlaybackMediaOptions(
@@ -526,63 +610,16 @@ final class AppModel: ObservableObject {
         backendTracks: MediaTrackListing?,
         manifestInspection: HLSManifestInspection?
     ) {
-        let backendAudioCount = backendTracks?.tracks.audio.count ?? 0
-        let backendEmbeddedSubtitleCount = backendTracks?.tracks.subtitles.embedded.count ?? 0
-        let backendExternalSubtitleCount = backendTracks?.tracks.subtitles.external.count ?? 0
-        let manifestAudioCount = manifestInspection?.audioRenditionCount ?? 0
-        let manifestSubtitleCount = manifestInspection?.subtitleRenditionCount ?? 0
-        let nonPlaylistSubtitleCount = manifestInspection?.nonPlaylistSubtitleRenditionCount ?? 0
-        let severity: DiagnosticsSeverity = mediaSelectionSeverity(
-            avkitAudioCount: audioCount,
-            avkitSubtitleCount: subtitleCount,
-            backendAudioCount: backendAudioCount,
-            backendSubtitleCount: backendEmbeddedSubtitleCount + backendExternalSubtitleCount,
-            manifestAudioCount: manifestAudioCount,
-            manifestSubtitleCount: manifestSubtitleCount,
-            nonPlaylistSubtitleCount: nonPlaylistSubtitleCount
+        playbackState.recordMediaOptions(
+            audioCount: audioCount,
+            subtitleCount: subtitleCount,
+            backendTracks: backendTracks,
+            manifestInspection: manifestInspection
         )
-        diagnostics.record(
-            operation: "avkit_media_selection",
-            phase: .playback,
-            severity: severity,
-            message: "AVKit media options audio=\(audioCount) subtitles=\(subtitleCount); HLS media audio=\(manifestAudioCount) subtitles=\(manifestSubtitleCount) non_playlist_subtitles=\(nonPlaylistSubtitleCount); backend audio=\(backendAudioCount) embedded_subtitles=\(backendEmbeddedSubtitleCount) external_subtitles=\(backendExternalSubtitleCount)"
-        )
-    }
-
-    private func mediaSelectionSeverity(
-        avkitAudioCount: Int,
-        avkitSubtitleCount: Int,
-        backendAudioCount: Int,
-        backendSubtitleCount: Int,
-        manifestAudioCount: Int,
-        manifestSubtitleCount: Int,
-        nonPlaylistSubtitleCount: Int
-    ) -> DiagnosticsSeverity {
-        if backendAudioCount > 0, manifestAudioCount == 0 {
-            return .warning
-        }
-        if backendSubtitleCount > 0, manifestSubtitleCount == 0 {
-            return .warning
-        }
-        if manifestAudioCount > 0, avkitAudioCount == 0 {
-            return .warning
-        }
-        if manifestSubtitleCount > 0, avkitSubtitleCount == 0 {
-            return .warning
-        }
-        if nonPlaylistSubtitleCount > 0 {
-            return .warning
-        }
-        return .info
     }
 
     func recordPlaybackMediaOptionsUnavailable(_ message: String) {
-        diagnostics.record(
-            operation: "avkit_media_selection",
-            phase: .playback,
-            severity: .warning,
-            message: message
-        )
+        playbackState.recordMediaOptionsUnavailable(message)
     }
 
     func artworkURL(for path: String?, kind: CatalogArtworkKind) -> URL? {
@@ -591,30 +628,12 @@ final class AppModel: ObservableObject {
     }
 
     func resetServer() {
-        playbackLoadID = nil
-        searchLoadID = nil
-        detailLoadID = nil
-        editorialLoadID = nil
-        try? tokenStore.clearToken()
-        settingsStore.serverURLString = nil
-        capabilities = nil
-        currentUser = nil
-        homeHeroItems = []
-        homeSections = []
-        movies = []
-        tvShows = []
-        searchQuery = ""
-        searchResults = []
-        selectedCatalogItem = nil
-        selectedTVSeasons = []
-        selectedTVEpisodes = []
-        selectedSeasonNumber = nil
-        selectedEditorialSection = nil
-        isEditorialLoading = false
-        playbackProof = nil
-        email = ""
-        password = ""
-        statusMessage = nil
+        playbackState.reset()
+        catalogState.reset()
+        sessionState.resetServer()
+        syncFromPlaybackState()
+        syncFromCatalogState()
+        syncFromSessionState()
         phase = .setup
     }
 
@@ -630,40 +649,154 @@ final class AppModel: ObservableObject {
         CatalogRepository(client: apiClient(for: url), token: token)
     }
 
-    private func authSessionRepository() -> AuthSessionRepository {
-        AuthSessionRepository(
-            tokenStore: tokenStore,
-            settingsStore: settingsStore,
-            apiClientFactory: apiClientFactory,
-            serverConnectionTester: serverConnectionTester
-        )
+    private func copyToSessionState() {
+        sessionState.serverURLString = serverURLString
+        sessionState.email = email
+        sessionState.password = password
+        sessionState.statusMessage = statusMessage
+        sessionState.capabilities = capabilities
+        sessionState.currentUser = currentUser
     }
 
-    private func applyHomeSnapshot(_ snapshot: CatalogHomeSnapshot) {
-        homeHeroItems = snapshot.heroItems
-        homeSections = snapshot.sections
-        movies = snapshot.movies
-        tvShows = snapshot.tvShows
+    private func syncFromSessionState() {
+        serverURLString = sessionState.serverURLString
+        email = sessionState.email
+        password = sessionState.password
+        statusMessage = sessionState.statusMessage
+        capabilities = sessionState.capabilities
+        currentUser = sessionState.currentUser
     }
 
-    private func applyTVShowDetailSnapshot(_ snapshot: TVShowDetailSnapshot) {
-        selectedCatalogItem = snapshot.show
-        selectedTVSeasons = snapshot.seasons
-        selectedSeasonNumber = snapshot.selectedSeasonNumber
-        selectedTVEpisodes = snapshot.episodes
+    private func copyToCatalogState() {
+        catalogState.homeHeroItems = homeHeroItems
+        catalogState.homeSections = homeSections
+        catalogState.movies = movies
+        catalogState.tvShows = tvShows
+        catalogState.searchQuery = searchQuery
+        catalogState.searchResults = searchResults
+        catalogState.isCatalogLoading = isCatalogLoading
+        catalogState.selectedCatalogItem = selectedCatalogItem
+        catalogState.selectedTVSeasons = selectedTVSeasons
+        catalogState.selectedTVEpisodes = selectedTVEpisodes
+        catalogState.selectedSeasonNumber = selectedSeasonNumber
+        catalogState.selectedEditorialSection = selectedEditorialSection
+        catalogState.isDetailLoading = isDetailLoading
+        catalogState.isEditorialLoading = isEditorialLoading
+    }
+
+    private func syncFromCatalogState() {
+        homeHeroItems = catalogState.homeHeroItems
+        homeSections = catalogState.homeSections
+        movies = catalogState.movies
+        tvShows = catalogState.tvShows
+        searchQuery = catalogState.searchQuery
+        searchResults = catalogState.searchResults
+        isCatalogLoading = catalogState.isCatalogLoading
+        selectedCatalogItem = catalogState.selectedCatalogItem
+        selectedTVSeasons = catalogState.selectedTVSeasons
+        selectedTVEpisodes = catalogState.selectedTVEpisodes
+        selectedSeasonNumber = catalogState.selectedSeasonNumber
+        selectedEditorialSection = catalogState.selectedEditorialSection
+        isDetailLoading = catalogState.isDetailLoading
+        isEditorialLoading = catalogState.isEditorialLoading
+    }
+
+    private func syncFromPlaybackState() {
+        playbackProof = playbackState.playbackProof
     }
 
     private func handleSessionError(_ error: LuminaClientError, fallbackPhase: AppPhase = .home) {
         if error == .sessionExpired || error == .missingToken {
-            authSessionRepository().signOut()
-            currentUser = nil
-            playbackProof = nil
-            playbackLoadID = nil
-            statusMessage = error.safeMessage
+            sessionState.signOut(message: error.safeMessage)
+            playbackState.reset()
+            catalogState.reset()
+            syncFromSessionState()
+            syncFromPlaybackState()
+            syncFromCatalogState()
             phase = .signIn
             return
         }
-        statusMessage = error.safeMessage
+        sessionState.statusMessage = error.safeMessage
+        syncFromSessionState()
         phase = fallbackPhase
     }
 }
+
+#if DEBUG
+extension AppModel {
+    static func uiTestingModel(tab: HomeTab = .home, showsDetail: Bool = false, signedIn: Bool = true) -> AppModel {
+        let model = AppModel()
+        let capabilities = ServerCapabilities(
+            server: .init(name: "Lumina", version: "UI Test"),
+            api: .init(version: "2026-05-tv", minimumTvClientVersion: "1.0"),
+            auth: .init(modes: ["password_jwt"], sessionValidationRoute: "/api/v1/auth/me"),
+            playback: .init(
+                hls: .init(movies: true, episodes: true),
+                streamTokens: .init(requiredForProtectedStreams: true, transport: "query"),
+                progress: .init(supported: true, recommendedIntervalSeconds: 15, events: ["playing", "paused", "stopped"]),
+                sessions: .init(supported: true, route: "/api/v1/playback/sessions")
+            ),
+            library: .init(
+                home: true,
+                search: true,
+                movieBrowse: true,
+                tvBrowse: true,
+                movieDetails: true,
+                tvDetails: true,
+                watchlist: false,
+                favorites: false,
+                artworkKinds: ["poster", "backdrop"]
+            ),
+            diagnostics: .init(correlationIds: true, playbackSessionCorrelation: true, clientEventUpload: false),
+            routes: [
+                "catalogHome": "/api/v1/catalog/home",
+                "movieHlsManifest": "/api/v1/movies/{id}/hls/master.m3u8",
+                "movieProgressUpdate": "/api/v1/movies/{id}/progress"
+            ],
+            limits: .init(defaultPageSize: 24, maximumPageSize: 100, maximumArtworkWidth: 1280)
+        )
+        let movie = CatalogItem(
+            id: "ui-movie",
+            mediaType: "movie",
+            title: "UI Test Movie",
+            subtitle: "2026",
+            overview: "A safe fixture used by tvOS smoke tests.",
+            progressPercent: 42,
+            hasPlayableMedia: true,
+            year: 2026,
+            runtimeMinutes: 92,
+            genres: ["Drama"],
+            cast: [
+                CatalogPersonCredit(id: "ui-person-1", name: "Alex Rivera", role: "Pilot", creditType: "cast")
+            ],
+            crew: [
+                CatalogPersonCredit(id: "ui-person-2", name: "Sam Chen", role: "Director", department: "Directing", creditType: "crew")
+            ]
+        )
+
+        model.phase = .home
+        model.serverURLString = "https://lumina.example.test"
+        model.capabilities = capabilities
+        model.currentUser = LuminaUser(id: "ui-user", displayName: "UI Tester")
+        model.automaticCatalogRefreshEnabled = false
+        model.homeHeroItems = [movie]
+        model.homeSections = [
+            CatalogSection(id: "continue", title: "Continue Watching", type: "continue_watching", items: [movie]),
+            CatalogSection(id: "recent", title: "Recently Added", type: "poster", items: [movie])
+        ]
+        model.movies = [movie]
+        model.tvShows = [CatalogItem(id: "ui-show", mediaType: "tv_show", title: "UI Test Show", subtitle: "1 season")]
+        model.searchQuery = tab == .search ? "movie" : ""
+        model.searchResults = [movie]
+        model.selectedHomeTab = tab
+        model.selectedCatalogItem = showsDetail ? movie : nil
+        model.statusMessage = nil
+
+        if !signedIn {
+            model.phase = .signIn
+        }
+
+        return model
+    }
+}
+#endif

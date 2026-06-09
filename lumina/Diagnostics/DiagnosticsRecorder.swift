@@ -23,9 +23,11 @@ struct DiagnosticsEvent: Equatable {
     let operation: String
     let phase: DiagnosticsPhase
     let severity: DiagnosticsSeverity
+    let category: String?
     let routeKey: String?
     let statusCode: Int?
     let correlationId: String?
+    let supportId: String?
     let message: String
 }
 
@@ -36,19 +38,25 @@ final class DiagnosticsRecorder {
         operation: String,
         phase: DiagnosticsPhase = .networking,
         severity: DiagnosticsSeverity = .error,
+        category: String? = nil,
         routeKey: String? = nil,
         statusCode: Int? = nil,
         correlationId: String? = nil,
+        supportId: String? = nil,
         message: String
     ) {
+        let safeCorrelationId = correlationId.map(Self.redact)
+        let safeSupportId = supportId.map(Self.redact) ?? safeCorrelationId
         events.append(
             DiagnosticsEvent(
                 operation: operation,
                 phase: phase,
                 severity: severity,
+                category: category.map(Self.redact),
                 routeKey: routeKey,
                 statusCode: statusCode,
-                correlationId: correlationId,
+                correlationId: safeCorrelationId,
+                supportId: safeSupportId,
                 message: Self.redact(message)
             )
         )
@@ -62,15 +70,19 @@ final class DiagnosticsRecorder {
         statusCode: Int? = nil
     ) {
         let correlationId: String?
+        let category: String?
         if case .server(let body) = error {
             correlationId = body.correlationId
+            category = body.category
         } else {
             correlationId = nil
+            category = nil
         }
         record(
             operation: operation,
             phase: phase,
             severity: .error,
+            category: category,
             routeKey: routeKey,
             statusCode: statusCode,
             correlationId: correlationId,
@@ -83,16 +95,24 @@ final class DiagnosticsRecorder {
         let patterns = [
             #"Bearer\s+[A-Za-z0-9._\-]+"#,
             #"(?i)password[=:]\S+"#,
+            #"(?i)(username|email)[=:]\S+"#,
             #"(?i)"password"\s*:\s*"[^"]+""#,
+            #"(?i)"(username|email)"\s*:\s*"[^"]+""#,
             #"(?i)(stream_token|access_token|refresh_token|signature|signed)[=][^&\s]+"#,
             #"(?i)"(stream_token|access_token|refresh_token|signature|signed|token|jwt|authorization)"\s*:\s*"[^"]+""#,
             #"(?i)(token|jwt|authorization)[=:]\S+"#,
+            #"(https?://[^\s?]+)\?[^\s]+"#,
             #"/Users/[^ ]+"#,
             #"/private/var/[^ ]+"#,
             #"/var/mobile/[^ ]+"#,
             #"file://[^ \n]+"#,
             #"(?i)(select|insert|update|delete)\s+.+\s+(from|into|set)\s+.+"#,
-            #"(?m)^\s*at\s+.+$"#
+            #"(?i)(sqlite|sql error|database error)[^\n]*"#,
+            #"(?m)^\s*at\s+.+$"#,
+            #"(?m)^#\d+\s+.+$"#,
+            #"(?m)^Thread\s+\d+:.+$"#,
+            #"(?s)Command line invocation:.+"#,
+            #"(?m)^\s*(stdout|stderr):.+$"#
         ]
         for pattern in patterns {
             redacted = redacted.replacingOccurrences(of: pattern, with: "[redacted]", options: .regularExpression)

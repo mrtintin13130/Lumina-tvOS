@@ -99,9 +99,16 @@ struct PlaybackProofLoader {
         token: String,
         client: LuminaAPIClient
     ) async throws -> PlayableMovie {
+        let movie: PlayableMovie
         if let movieOverride {
-            return movieOverride
+            movie = movieOverride
+        } else {
+            movie = try await client.fetchPlayableMovie(token: token)
         }
-        return try await client.fetchPlayableMovie(token: token)
+
+        guard movie.hasPlayableMedia != false else {
+            throw LuminaClientError.transport(L10n.text("No playable movie was found on this Lumina server."))
+        }
+        return movie
     }
 }
