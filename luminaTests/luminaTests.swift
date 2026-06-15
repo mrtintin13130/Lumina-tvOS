@@ -576,6 +576,105 @@ final class luminaTests: XCTestCase {
         )
     }
 
+    func testEpisodeHLSManifestURLAppendsPlaybackQueryForAVKit() throws {
+        let client = URLSessionLuminaAPIClient(baseURL: URL(string: "https://lumina.example.test")!)
+        let episode = PlayableMovie(
+            id: "episode-99",
+            mediaType: "episode",
+            title: "Pilot",
+            showId: "show/42?#",
+            seasonNumber: 1,
+            episodeNumber: 2
+        )
+
+        let url = try client.episodeHLSManifestURL(
+            episode: episode,
+            streamToken: "scoped-token",
+            sessionId: "session-77",
+            startTime: 41.9,
+            quality: "720p"
+        )
+
+        XCTAssertEqual(
+            url.absoluteString,
+            "https://lumina.example.test/api/v1/stream/tv/show%2F42%3F%23/seasons/1/episodes/2/hls/manifest.m3u8?quality=720p&t=41&stream_token=scoped-token&session_id=session-77"
+        )
+    }
+
+    func testEpisodeCatalogItemDecodesPlaybackRouteIdentity() throws {
+        let json = """
+        {
+          "id": 99,
+          "media_type": "episode",
+          "title": "Pilot",
+          "show": {"id": 42, "title": "The Show"},
+          "season_number": 1,
+          "episode_number": 2,
+          "playback_readiness": {"has_playable_media": true}
+        }
+        """.data(using: .utf8)!
+
+        let episode = try JSONDecoder().decode(CatalogItem.self, from: json)
+
+        XCTAssertEqual(episode.id, "99")
+        XCTAssertEqual(episode.showId, "42")
+        XCTAssertEqual(episode.seasonNumber, 1)
+        XCTAssertEqual(episode.episodeNumber, 2)
+        XCTAssertEqual(episode.playableMovie.playbackMediaType, "episode")
+        XCTAssertEqual(episode.playableMovie.showId, "42")
+    }
+
+    func testWatchlistAddUsesCatalogActionBody() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.url?.path, "/api/v1/catalog/watchlist")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer token")
+            let body = try XCTUnwrap(request.httpBody)
+            let json = try JSONSerialization.jsonObject(with: body) as? [String: Any]
+            XCTAssertEqual(json?["media_type"] as? String, "movie")
+            XCTAssertEqual(json?["media_id"] as? String, "42")
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 204, httpVersion: nil, headerFields: nil)!,
+                Data()
+            )
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let client = URLSessionLuminaAPIClient(
+            baseURL: URL(string: "https://lumina.example.test")!,
+            session: URLSession(configuration: configuration)
+        )
+
+        try await client.setWatchlisted(mediaType: "movie", mediaId: "42", isWatchlisted: true, token: "token")
+    }
+
+    func testFavoriteRemoveUsesCatalogActionQuery() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "DELETE")
+            XCTAssertEqual(request.url?.path, "/api/v1/catalog/favorites")
+            let components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)
+            XCTAssertEqual(components?.queryItems?.first { $0.name == "media_type" }?.value, "tv_show")
+            XCTAssertEqual(components?.queryItems?.first { $0.name == "media_id" }?.value, "show-7")
+            XCTAssertNil(request.httpBody)
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 204, httpVersion: nil, headerFields: nil)!,
+                Data()
+            )
+        }
+        defer { MockURLProtocol.handler = nil }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let client = URLSessionLuminaAPIClient(
+            baseURL: URL(string: "https://lumina.example.test")!,
+            session: URLSession(configuration: configuration)
+        )
+
+        try await client.setFavorite(mediaType: "tv_show", mediaId: "show-7", isFavorite: false, token: "token")
+    }
+
     func testHLSManifestInspectionCountsMediaRenditions() {
         let manifest = """
         #EXTM3U
@@ -1390,6 +1489,10 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
         []
     }
 
+    func setWatchlisted(mediaType: String, mediaId: String, isWatchlisted: Bool, token: String) async throws {}
+
+    func setFavorite(mediaType: String, mediaId: String, isFavorite: Bool, token: String) async throws {}
+
     func fetchPlayableMovie(token: String) async throws -> PlayableMovie {
         playableMovie
     }
@@ -1408,7 +1511,18 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
         return movieTracks
     }
 
-    func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
+    func fetchEpisodeProgress(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MovieProgressResponse {
+        movieProgress
+    }
+
+    func fetchEpisodeTracks(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MediaTrackListing {
+        guard let movieTracks else {
+            throw LuminaClientError.transport("Track listing endpoint unavailable.")
+        }
+        return movieTracks
+    }
+
+    func createPlaybackSession(mediaType: String, mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
         guard let playbackSession else {
             throw LuminaClientError.transport("Playback session endpoint unavailable.")
         }
@@ -1422,6 +1536,10 @@ private final class PlaybackProofFakeClient: LuminaAPIClient {
 
     func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) -> URL {
         URL(string: "https://lumina.example.test/manifest.m3u8")!
+    }
+
+    func episodeHLSManifestURL(episode: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) throws -> URL {
+        URL(string: "https://lumina.example.test/episode-manifest.m3u8")!
     }
 
     func preflightHLSManifest(url: URL) async throws -> HLSManifestInspection {
@@ -1532,6 +1650,10 @@ private struct FakeLuminaAPIClient: LuminaAPIClient {
         tvEpisodes
     }
 
+    func setWatchlisted(mediaType: String, mediaId: String, isWatchlisted: Bool, token: String) async throws {}
+
+    func setFavorite(mediaType: String, mediaId: String, isFavorite: Bool, token: String) async throws {}
+
     func fetchPlayableMovie(token: String) async throws -> PlayableMovie {
         playableMovie
     }
@@ -1545,7 +1667,16 @@ private struct FakeLuminaAPIClient: LuminaAPIClient {
         return movieTracks
     }
 
-    func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
+    func fetchEpisodeProgress(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MovieProgressResponse {
+        movieProgress
+    }
+
+    func fetchEpisodeTracks(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MediaTrackListing {
+        guard let movieTracks else { throw LuminaClientError.decoding }
+        return movieTracks
+    }
+
+    func createPlaybackSession(mediaType: String, mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
         guard let playbackSession else { throw LuminaClientError.decoding }
         return playbackSession
     }
@@ -1556,6 +1687,10 @@ private struct FakeLuminaAPIClient: LuminaAPIClient {
 
     func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) -> URL {
         URL(string: "https://lumina.example.test/manifest.m3u8")!
+    }
+
+    func episodeHLSManifestURL(episode: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) throws -> URL {
+        URL(string: "https://lumina.example.test/episode-manifest.m3u8")!
     }
 
     func preflightHLSManifest(url: URL) async throws -> HLSManifestInspection {

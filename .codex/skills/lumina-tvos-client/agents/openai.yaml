@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumina tvOS Client"
+  short_description: "Build Lumina’s native Apple TV app"
+  default_prompt: "Use $lumina-tvos-client to implement a focus-first Lumina tvOS catalog or playback feature."

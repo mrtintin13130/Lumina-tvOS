@@ -89,6 +89,8 @@ struct CatalogDetailPage: View {
 
 private enum DetailAction: Hashable {
     case play
+    case watchlist
+    case favorite
 }
 
 private struct DetailHero: View {
@@ -131,6 +133,34 @@ private struct DetailHero: View {
                     .focused($focusedAction, equals: .play)
                     .modifier(DetailActionFocusModifier(isFocused: focusedAction == .play))
                     .accessibilityHint(L10n.text("Starts playback"))
+                }
+
+                if appModel.canToggleWatchlist(for: item) {
+                    Button {
+                        Task { await appModel.toggleWatchlist(item) }
+                    } label: {
+                        Label(item.watchlistActionTitle, systemImage: item.isWatchlisted == true ? "bookmark.fill" : "bookmark")
+                            .font(.system(size: 22, weight: .bold))
+                            .frame(minWidth: 190)
+                    }
+                    .buttonStyle(DetailActionButtonStyle(isPrimary: false))
+                    .focused($focusedAction, equals: .watchlist)
+                    .modifier(DetailActionFocusModifier(isFocused: focusedAction == .watchlist))
+                    .accessibilityHint(L10n.text("Updates watchlist"))
+                }
+
+                if appModel.canToggleFavorite(for: item) {
+                    Button {
+                        Task { await appModel.toggleFavorite(item) }
+                    } label: {
+                        Label(item.favoriteActionTitle, systemImage: item.isFavorite == true ? "heart.fill" : "heart")
+                            .font(.system(size: 22, weight: .bold))
+                            .frame(minWidth: 170)
+                    }
+                    .buttonStyle(DetailActionButtonStyle(isPrimary: false))
+                    .focused($focusedAction, equals: .favorite)
+                    .modifier(DetailActionFocusModifier(isFocused: focusedAction == .favorite))
+                    .accessibilityHint(L10n.text("Updates favorites"))
                 }
 
                 TrailerUnavailableLabel(isVisible: item.primaryTrailerTitle != nil)
@@ -451,12 +481,12 @@ private struct DetailSeasonButton: View {
             .overlay {
                 Capsule()
                     .stroke(
-                        isFocused ? .white.opacity(0.85) : .white.opacity(isSelected ? 0.38 : 0.12),
-                        lineWidth: isFocused ? 2 : 1
+                        isFocused ? .white.opacity(0.34) : .white.opacity(isSelected ? 0.38 : 0.12),
+                        lineWidth: 1
                     )
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .focused($isFocused)
     }
 }
@@ -471,6 +501,14 @@ private extension CatalogItem {
 
     var trailerActionTitle: String {
         L10n.text("Trailer")
+    }
+
+    var watchlistActionTitle: String {
+        isWatchlisted == true ? L10n.text("Remove") : L10n.text("Watchlist")
+    }
+
+    var favoriteActionTitle: String {
+        isFavorite == true ? L10n.text("Unfavorite") : L10n.text("Favorite")
     }
 
     var behindTheScenesPeople: [CatalogPersonCredit] {

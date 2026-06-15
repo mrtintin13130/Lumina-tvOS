@@ -18,12 +18,17 @@ protocol LuminaAPIClient {
     func fetchTVShowDetail(showId: String, token: String) async throws -> CatalogItem
     func fetchTVSeasons(showId: String, token: String) async throws -> [TVSeasonSummary]
     func fetchTVEpisodes(showId: String, seasonNumber: Int, token: String) async throws -> [CatalogItem]
+    func setWatchlisted(mediaType: String, mediaId: String, isWatchlisted: Bool, token: String) async throws
+    func setFavorite(mediaType: String, mediaId: String, isFavorite: Bool, token: String) async throws
     func fetchPlayableMovie(token: String) async throws -> PlayableMovie
     func fetchMovieProgress(movieId: String, token: String) async throws -> MovieProgressResponse
+    func fetchEpisodeProgress(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MovieProgressResponse
     func fetchMovieTracks(movieId: String, token: String) async throws -> MediaTrackListing
-    func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse
+    func fetchEpisodeTracks(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MediaTrackListing
+    func createPlaybackSession(mediaType: String, mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse
     func requestStreamToken(mediaType: String, mediaId: String, token: String) async throws -> String?
     func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) -> URL
+    func episodeHLSManifestURL(episode: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String) throws -> URL
     func preflightHLSManifest(url: URL) async throws -> HLSManifestInspection
     func reportProgress(_ update: ProgressUpdateRequest, token: String) async throws
     func updatePlaybackSession(sessionId: String, positionSeconds: Double, playState: String, token: String) async throws
@@ -209,6 +214,28 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         return response.episodes
     }
 
+    func setWatchlisted(mediaType: String, mediaId: String, isWatchlisted: Bool, token: String) async throws {
+        try await setLibraryMembership(
+            routeKey: "watchlist",
+            fallback: "/api/v1/catalog/watchlist",
+            mediaType: mediaType,
+            mediaId: mediaId,
+            enabled: isWatchlisted,
+            token: token
+        )
+    }
+
+    func setFavorite(mediaType: String, mediaId: String, isFavorite: Bool, token: String) async throws {
+        try await setLibraryMembership(
+            routeKey: "favorites",
+            fallback: "/api/v1/catalog/favorites",
+            mediaType: mediaType,
+            mediaId: mediaId,
+            enabled: isFavorite,
+            token: token
+        )
+    }
+
     func fetchPlayableMovie(token: String) async throws -> PlayableMovie {
         let response: MovieListResponse = try await send(
             path: route(key: "catalogMovies", fallback: "/api/v1/catalog/movies"),
@@ -239,14 +266,44 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         try await send(path: route(key: "movieProgress", fallback: "/api/v1/playback/movies/:movieId/progress", movieId: movieId), method: "GET", token: token, body: Optional<Data>.none)
     }
 
+    func fetchEpisodeProgress(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MovieProgressResponse {
+        try await send(
+            path: route(
+                key: "episodeProgress",
+                fallback: "/api/v1/playback/tv/:showId/seasons/:seasonNumber/episodes/:episodeNumber/progress",
+                showId: showId,
+                seasonNumber: seasonNumber,
+                episodeNumber: episodeNumber
+            ),
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+    }
+
     func fetchMovieTracks(movieId: String, token: String) async throws -> MediaTrackListing {
         try await send(path: route(key: "movieTracks", fallback: "/api/v1/playback/movies/:movieId/tracks", movieId: movieId), method: "GET", token: token, body: Optional<Data>.none)
     }
 
-    func createPlaybackSession(mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
+    func fetchEpisodeTracks(showId: String, seasonNumber: Int, episodeNumber: Int, token: String) async throws -> MediaTrackListing {
+        try await send(
+            path: route(
+                key: "episodeTracks",
+                fallback: "/api/v1/playback/tv/:showId/seasons/:seasonNumber/episodes/:episodeNumber/tracks",
+                showId: showId,
+                seasonNumber: seasonNumber,
+                episodeNumber: episodeNumber
+            ),
+            method: "GET",
+            token: token,
+            body: Optional<Data>.none
+        )
+    }
+
+    func createPlaybackSession(mediaType: String, mediaId: String, positionSeconds: Double, token: String) async throws -> PlaybackSessionResponse {
         let body = try encoder.encode(
             PlaybackSessionCreateRequest(
-                mediaType: "movie",
+                mediaType: mediaType,
                 mediaId: mediaId,
                 positionSeconds: positionSeconds,
                 playState: "playing",
@@ -265,6 +322,39 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
     func movieHLSManifestURL(movie: PlayableMovie, streamToken: String?, sessionId: String?, startTime: Double, quality: String = "720p") -> URL {
         let path = validatedManifestPath(movie.hlsManifestPath)
             ?? route(key: "movieHlsManifest", fallback: "/api/v1/stream/movies/:movieId/hls/manifest.m3u8", movieId: movie.id)
+        var queryItems = [
+            URLQueryItem(name: "quality", value: quality),
+            URLQueryItem(name: "t", value: String(Int(max(0, startTime))))
+        ]
+        if let streamToken {
+            queryItems.append(URLQueryItem(name: "stream_token", value: streamToken))
+        }
+        if let sessionId {
+            queryItems.append(URLQueryItem(name: "session_id", value: sessionId))
+        }
+        return makeURL(path: path, queryItems: queryItems)
+    }
+
+    func episodeHLSManifestURL(
+        episode: PlayableMovie,
+        streamToken: String?,
+        sessionId: String?,
+        startTime: Double,
+        quality: String = "720p"
+    ) throws -> URL {
+        guard let showId = episode.showId,
+              let seasonNumber = episode.seasonNumber,
+              let episodeNumber = episode.episodeNumber else {
+            throw LuminaClientError.transport(L10n.text("This episode is missing playback route details."))
+        }
+        let path = validatedManifestPath(episode.hlsManifestPath)
+            ?? route(
+                key: "episodeHlsManifest",
+                fallback: "/api/v1/stream/tv/:showId/seasons/:seasonNumber/episodes/:episodeNumber/hls/manifest.m3u8",
+                showId: showId,
+                seasonNumber: seasonNumber,
+                episodeNumber: episodeNumber
+            )
         var queryItems = [
             URLQueryItem(name: "quality", value: quality),
             URLQueryItem(name: "t", value: String(Int(max(0, startTime))))
@@ -399,7 +489,48 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
 
     func reportProgress(_ update: ProgressUpdateRequest, token: String) async throws {
         let body = try encoder.encode(update)
-        let _: EmptyResponse = try await send(path: route(keys: ["movieProgressUpdate", "progressUpdate"], fallback: "/api/v1/playback/movies/:movieId/progress", movieId: update.mediaId), method: "PUT", token: token, body: body)
+        let path: String
+        if update.mediaType == "episode",
+           let showId = update.showId,
+           let seasonNumber = update.seasonNumber,
+           let episodeNumber = update.episodeNumber {
+            path = route(
+                keys: ["episodeProgressUpdate", "progressUpdate"],
+                fallback: "/api/v1/playback/tv/:showId/seasons/:seasonNumber/episodes/:episodeNumber/progress",
+                showId: showId,
+                seasonNumber: seasonNumber,
+                episodeNumber: episodeNumber
+            )
+        } else {
+            path = route(keys: ["movieProgressUpdate", "progressUpdate"], fallback: "/api/v1/playback/movies/:movieId/progress", movieId: update.mediaId)
+        }
+        let _: EmptyResponse = try await send(path: path, method: "PUT", token: token, body: body)
+    }
+
+    private func setLibraryMembership(
+        routeKey: String,
+        fallback: String,
+        mediaType: String,
+        mediaId: String,
+        enabled: Bool,
+        token: String
+    ) async throws {
+        let path = route(key: routeKey, fallback: fallback)
+        if enabled {
+            let body = try encoder.encode(LibraryMembershipRequest(mediaType: mediaType, mediaId: mediaId))
+            let _: EmptyResponse = try await send(path: path, method: "POST", token: token, body: body)
+        } else {
+            let _: EmptyResponse = try await send(
+                path: path,
+                queryItems: [
+                    URLQueryItem(name: "media_type", value: mediaType),
+                    URLQueryItem(name: "media_id", value: mediaId)
+                ],
+                method: "DELETE",
+                token: token,
+                body: Optional<Data>.none
+            )
+        }
     }
 
     func updatePlaybackSession(sessionId: String, positionSeconds: Double, playState: String, token: String) async throws {
@@ -504,6 +635,7 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         movieId: String? = nil,
         showId: String? = nil,
         seasonNumber: Int? = nil,
+        episodeNumber: Int? = nil,
         sessionId: String? = nil,
         sectionId: String? = nil
     ) -> String {
@@ -518,6 +650,9 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
         if let seasonNumber {
             parameters["seasonNumber"] = String(seasonNumber)
         }
+        if let episodeNumber {
+            parameters["episodeNumber"] = String(episodeNumber)
+        }
         if let sessionId {
             parameters["sessionId"] = sessionId
         }
@@ -531,12 +666,24 @@ struct URLSessionLuminaAPIClient: LuminaAPIClient {
     private func route(
         keys: [String],
         fallback: String,
-        movieId: String? = nil
+        movieId: String? = nil,
+        showId: String? = nil,
+        seasonNumber: Int? = nil,
+        episodeNumber: Int? = nil
     ) -> String {
         var parameters: [String: String] = [:]
         if let movieId {
             parameters["movieId"] = movieId
             parameters["id"] = movieId
+        }
+        if let showId {
+            parameters["showId"] = showId
+        }
+        if let seasonNumber {
+            parameters["seasonNumber"] = String(seasonNumber)
+        }
+        if let episodeNumber {
+            parameters["episodeNumber"] = String(episodeNumber)
         }
         return routeTemplates.path(keys: keys, fallback: fallback, parameters: parameters)
     }

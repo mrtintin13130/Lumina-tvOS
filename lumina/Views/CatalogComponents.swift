@@ -8,6 +8,20 @@
 import Foundation
 import SwiftUI
 
+struct TVMediaCatalogButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .buttonStyle(.borderless)
+            .hoverEffect(.highlight)
+    }
+}
+
+extension View {
+    func tvMediaCatalogButton() -> some View {
+        modifier(TVMediaCatalogButtonModifier())
+    }
+}
+
 struct CatalogHeader: View {
     let title: String
     let subtitle: String
@@ -97,12 +111,12 @@ struct FeaturedCatalogButton: View {
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
-                        isFocused ? .white.opacity(0.85) : .white.opacity(0.08),
-                        lineWidth: isFocused ? 3 : 1
+                        isFocused ? .white.opacity(0.32) : .white.opacity(0.08),
+                        lineWidth: 1
                     )
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .shadow(
             color: .black.opacity(isFocused ? 0.55 : 0.25),
             radius: isFocused ? 26 : 14,
@@ -200,7 +214,7 @@ struct FeaturedHeroCarousel: View {
                                     .stroke(.white.opacity(0.22), lineWidth: 1)
                             }
                     }
-                    .buttonStyle(.plain)
+                    .tvMediaCatalogButton()
                     .focused($isFocused)
                     .padding(.top, 8)
                     .accessibilityLabel(item.accessibilitySummary)
@@ -228,8 +242,8 @@ struct FeaturedHeroCarousel: View {
             .clipped()
             .overlay(alignment: .bottom) {
                 Rectangle()
-                    .fill(isFocused ? .white.opacity(0.88) : .clear)
-                    .frame(height: 5)
+                    .fill(isFocused ? .white.opacity(0.32) : .clear)
+                    .frame(height: 3)
             }
             .onReceive(rotationTimer) { _ in
                 guard items.count > 1 else { return }
@@ -459,12 +473,12 @@ struct ContinueWatchingCardButton: View {
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
-                        isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
-                        lineWidth: isFocused ? 3 : 1
+                        isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
+                        lineWidth: 1
                     )
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .scaleEffect(isFocused ? focusedScale : 1)
         .shadow(color: .black.opacity(isFocused ? 0.62 : 0.24), radius: isFocused ? 22 : 10, x: 0, y: isFocused ? 14 : 6)
         .zIndex(isFocused ? 10 : 0)
@@ -553,12 +567,12 @@ struct CatalogLandscapeButton: View {
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
-                        isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
-                        lineWidth: isFocused ? 3 : 1
+                        isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
+                        lineWidth: 1
                     )
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .scaleEffect(isFocused ? focusedScale : 1)
         .shadow(
             color: .black.opacity(isFocused ? 0.62 : 0.24),
@@ -643,10 +657,10 @@ struct EditorialBannerSectionView: View {
                         .font(.system(size: 27, weight: .semibold))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
-                        .background(.white.opacity(isFocused ? 0.25 : 0.16), in: Capsule())
+                        .background(.white.opacity(0.16), in: Capsule())
                         .overlay {
                             Capsule()
-                                .stroke(isFocused ? .white.opacity(0.92) : .white.opacity(0.18), lineWidth: isFocused ? 3 : 1)
+                                .stroke(.white.opacity(0.18), lineWidth: 1)
                         }
                         .padding(.top, 4)
                 }
@@ -657,10 +671,10 @@ struct EditorialBannerSectionView: View {
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFocused ? .white.opacity(0.96) : .white.opacity(0.1), lineWidth: isFocused ? 3 : 1)
+                    .stroke(isFocused ? .white.opacity(0.34) : .white.opacity(0.1), lineWidth: 1)
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .scaleEffect(isFocused ? 1.018 : 1)
         .shadow(color: .black.opacity(isFocused ? 0.58 : 0.24), radius: isFocused ? 24 : 10, x: 0, y: isFocused ? 15 : 7)
         .animation(.easeOut(duration: 0.16), value: isFocused)
@@ -743,11 +757,11 @@ struct CatalogEditorialPage: View {
                                 .font(.system(size: 44, weight: .semibold))
                                 .frame(width: 74, height: 74)
                         }
-                        .buttonStyle(.plain)
-                        .background(.white.opacity(isCloseFocused ? 0.25 : 0.12), in: Circle())
+                        .tvMediaCatalogButton()
+                        .background(.white.opacity(0.12), in: Circle())
                         .overlay {
                             Circle()
-                                .stroke(isCloseFocused ? .white.opacity(0.95) : .white.opacity(0.16), lineWidth: isCloseFocused ? 3 : 1)
+                                .stroke(isCloseFocused ? .white.opacity(0.34) : .white.opacity(0.16), lineWidth: 1)
                         }
                         .scaleEffect(isCloseFocused ? 1.08 : 1)
                         .focused($isCloseFocused)
@@ -866,10 +880,10 @@ struct ThemedCatalogCardButton: View {
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isFocused ? .white.opacity(0.95) : .white.opacity(0.1), lineWidth: isFocused ? 3 : 1)
+                    .stroke(isFocused ? .white.opacity(0.34) : .white.opacity(0.1), lineWidth: 1)
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .scaleEffect(isFocused ? 1.025 : 1)
         .shadow(color: .black.opacity(isFocused ? 0.58 : 0.24), radius: isFocused ? 24 : 10, x: 0, y: isFocused ? 16 : 7)
         .animation(.easeOut(duration: 0.16), value: isFocused)
@@ -986,12 +1000,12 @@ struct CompactCatalogPosterButton: View {
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
-                        isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
-                        lineWidth: isFocused ? 3 : 1
+                        isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
+                        lineWidth: 1
                     )
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .scaleEffect(isFocused ? focusedScale : 1)
         .shadow(color: .black.opacity(isFocused ? 0.62 : 0.22), radius: isFocused ? 20 : 9, x: 0, y: isFocused ? 13 : 6)
         .zIndex(isFocused ? 10 : 0)
@@ -1043,7 +1057,7 @@ struct LogoCardButton: View {
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(.white.opacity(isFocused ? 0.18 : 0.1))
+                    .fill(.white.opacity(0.1))
 
                 CatalogArtwork(
                     url: appModel.artworkURL(
@@ -1070,12 +1084,12 @@ struct LogoCardButton: View {
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
-                        isFocused ? .white.opacity(0.95) : .white.opacity(0.12),
-                        lineWidth: isFocused ? 3 : 1
+                        isFocused ? .white.opacity(0.34) : .white.opacity(0.12),
+                        lineWidth: 1
                     )
             }
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .disabled(item.href != nil)
         .scaleEffect(isFocused ? focusedScale : 1)
         .shadow(color: .black.opacity(isFocused ? 0.56 : 0.2), radius: isFocused ? 20 : 9, x: 0, y: isFocused ? 13 : 6)
@@ -1100,12 +1114,18 @@ struct CatalogPosterButton: View {
 
     var body: some View {
         Button {
-            Task { await appModel.openCatalogDetail(item) }
+            Task {
+                if item.mediaType == "episode" {
+                    await appModel.playCatalogMovie(item)
+                } else {
+                    await appModel.openCatalogDetail(item)
+                }
+            }
         } label: {
             posterCard
                 .frame(width: cardWidth, height: cardHeight)
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .scaleEffect(isFocused ? focusedScale : 1)
         .shadow(
             color: .black.opacity(isFocused ? 0.65 : 0.25),
@@ -1117,7 +1137,7 @@ struct CatalogPosterButton: View {
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
         .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint(L10n.text("Opens details"))
+        .accessibilityHint(item.mediaType == "episode" ? L10n.text("Starts playback") : L10n.text("Opens details"))
     }
 
     private var posterCard: some View {
@@ -1167,8 +1187,8 @@ struct CatalogPosterButton: View {
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(
-                    isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
-                    lineWidth: isFocused ? 3 : 1
+                    isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
+                    lineWidth: 1
                 )
         }
     }
@@ -1205,7 +1225,7 @@ struct PersonCreditButton: View {
         } label: {
             cardContent
         }
-        .buttonStyle(.plain)
+        .tvMediaCatalogButton()
         .focused($isFocused)
         .scaleEffect(isFocused ? 1.06 : 1)
         .shadow(
@@ -1254,8 +1274,8 @@ struct PersonCreditButton: View {
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(
-                    isFocused ? .white.opacity(0.95) : .white.opacity(0.08),
-                    lineWidth: isFocused ? 3 : 1
+                    isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
+                    lineWidth: 1
                 )
         }
         .frame(width: cardWidth, height: cardHeight)

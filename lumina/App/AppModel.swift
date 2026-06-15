@@ -440,11 +440,51 @@ final class AppModel: ObservableObject {
     }
 
     func playCatalogMovie(_ item: CatalogItem) async {
-        guard item.mediaType == "movie" else {
-            statusMessage = L10n.text("Episode playback from catalog shelves is not wired yet.")
+        guard item.mediaType == "movie" || item.mediaType == "episode" else {
+            statusMessage = L10n.text("This title is not playable on Apple TV yet.")
             return
         }
         await loadPlaybackProof(movieOverride: item.playableMovie)
+    }
+
+    func canToggleWatchlist(for item: CatalogItem) -> Bool {
+        capabilities?.library.watchlist == true && supportsLibraryMembership(item)
+    }
+
+    func canToggleFavorite(for item: CatalogItem) -> Bool {
+        capabilities?.library.favorites == true && supportsLibraryMembership(item)
+    }
+
+    func toggleWatchlist(_ item: CatalogItem) async {
+        await setLibraryMembership(
+            item,
+            operation: "catalog_watchlist",
+            unsupportedMessage: L10n.text("Watchlist is not available for this title."),
+            action: { client, token, item in
+                try await client.setWatchlisted(
+                    mediaType: item.mediaType,
+                    mediaId: item.id,
+                    isWatchlisted: item.isWatchlisted != true,
+                    token: token
+                )
+            }
+        )
+    }
+
+    func toggleFavorite(_ item: CatalogItem) async {
+        await setLibraryMembership(
+            item,
+            operation: "catalog_favorite",
+            unsupportedMessage: L10n.text("Favorites are not available for this title."),
+            action: { client, token, item in
+                try await client.setFavorite(
+                    mediaType: item.mediaType,
+                    mediaId: item.id,
+                    isFavorite: item.isFavorite != true,
+                    token: token
+                )
+            }
+        )
     }
 
     func openTrailer(_ item: CatalogItem) {
@@ -460,6 +500,45 @@ final class AppModel: ObservableObject {
     func openPersonDetails(_ person: CatalogPersonCredit) {
         statusMessage = L10n.personDetailsNotReady(person.name)
         diagnostics.record(operation: "catalog_person", message: "Person selected: \(person.id)")
+    }
+
+    private func supportsLibraryMembership(_ item: CatalogItem) -> Bool {
+        item.mediaType == "movie" || item.mediaType == "tv_show"
+    }
+
+    private func setLibraryMembership(
+        _ item: CatalogItem,
+        operation: String,
+        unsupportedMessage: String,
+        action: (LuminaAPIClient, String, CatalogItem) async throws -> Void
+    ) async {
+        guard supportsLibraryMembership(item) else {
+            statusMessage = unsupportedMessage
+            sessionState.statusMessage = statusMessage
+            syncFromSessionState()
+            return
+        }
+        guard let url = normalizeServerURL(serverURLString) else {
+            statusMessage = LuminaClientError.invalidServerURL.safeMessage
+            sessionState.statusMessage = statusMessage
+            syncFromSessionState()
+            return
+        }
+
+        do {
+            let token = try sessionState.token()
+            try await action(apiClient(for: url), token, item)
+            sessionState.statusMessage = nil
+            syncFromSessionState()
+            await openCatalogDetail(item)
+        } catch let error as LuminaClientError {
+            diagnostics.record(error: error, operation: operation, phase: .catalog)
+            handleSessionError(error)
+        } catch {
+            diagnostics.record(operation: operation, message: "\(error)")
+            sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
+            syncFromSessionState()
+        }
     }
 
     func loadPlaybackProof() async {
@@ -554,6 +633,10 @@ final class AppModel: ObservableObject {
             try await client.reportProgress(
                 ProgressUpdateRequest(
                     mediaId: proof.movie.id,
+                    mediaType: proof.movie.playbackMediaType,
+                    showId: proof.movie.showId,
+                    seasonNumber: proof.movie.seasonNumber,
+                    episodeNumber: proof.movie.episodeNumber,
                     positionSeconds: positionSeconds,
                     durationSeconds: proof.movie.durationSeconds,
                     playState: event == "exit" ? "paused" : event

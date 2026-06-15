@@ -7,15 +7,22 @@ import Foundation
 
 struct PlayableMovie: Decodable, Equatable, Identifiable {
     let id: String
+    let mediaType: String
     let title: String
     let overview: String?
     let resumePositionSeconds: Double?
     let durationSeconds: Double?
     let hlsManifestPath: String?
     let hasPlayableMedia: Bool?
+    let showId: String?
+    let seasonNumber: Int?
+    let episodeNumber: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
+        case mediaId = "media_id"
+        case mediaType = "media_type"
+        case showId = "show_id"
         case title
         case name
         case overview
@@ -29,6 +36,9 @@ struct PlayableMovie: Decodable, Equatable, Identifiable {
         case has_playable_media
         case playback_readiness
         case progress
+        case show
+        case seasonNumber = "season_number"
+        case episodeNumber = "episode_number"
     }
 
     enum ProgressKeys: String, CodingKey {
@@ -40,31 +50,52 @@ struct PlayableMovie: Decodable, Equatable, Identifiable {
         case hasPlayableMedia = "has_playable_media"
     }
 
+    enum ShowKeys: String, CodingKey {
+        case id
+        case mediaId = "media_id"
+    }
+
     init(
         id: String,
+        mediaType: String = "movie",
         title: String,
         overview: String? = nil,
         resumePositionSeconds: Double? = nil,
         durationSeconds: Double? = nil,
         hlsManifestPath: String? = nil,
-        hasPlayableMedia: Bool? = nil
+        hasPlayableMedia: Bool? = nil,
+        showId: String? = nil,
+        seasonNumber: Int? = nil,
+        episodeNumber: Int? = nil
     ) {
         self.id = id
+        self.mediaType = mediaType
         self.title = title
         self.overview = overview
         self.resumePositionSeconds = resumePositionSeconds
         self.durationSeconds = durationSeconds
         self.hlsManifestPath = hlsManifestPath
         self.hasPlayableMedia = hasPlayableMedia
+        self.showId = showId
+        self.seasonNumber = seasonNumber
+        self.episodeNumber = episodeNumber
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let stringID = try? container.decode(String.self, forKey: .id) {
-            id = stringID
+        if let decodedID = decodeStringOrInt(from: container, forKey: .id)
+            ?? decodeStringOrInt(from: container, forKey: .mediaId) {
+            id = decodedID
         } else {
-            id = String(try container.decode(Int.self, forKey: .id))
+            throw DecodingError.keyNotFound(
+                CodingKeys.id,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Playable media is missing id or media_id."
+                )
+            )
         }
+        mediaType = try container.decodeIfPresent(String.self, forKey: .mediaType) ?? "movie"
         title = try container.decodeIfPresent(String.self, forKey: .title)
             ?? container.decodeIfPresent(String.self, forKey: .name)
             ?? "Untitled movie"
@@ -91,6 +122,21 @@ struct PlayableMovie: Decodable, Equatable, Identifiable {
         } else {
             resumePositionSeconds = nil
         }
+        if let directShowID = decodeStringOrInt(from: container, forKey: .showId) {
+            showId = directShowID
+        } else if let show = try? container.nestedContainer(keyedBy: ShowKeys.self, forKey: .show) {
+            if let id = decodeStringOrInt(from: show, forKey: .id) {
+                showId = id
+            } else if let mediaID = decodeStringOrInt(from: show, forKey: .mediaId) {
+                showId = mediaID
+            } else {
+                showId = nil
+            }
+        } else {
+            showId = nil
+        }
+        seasonNumber = try container.decodeIfPresent(Int.self, forKey: .seasonNumber)
+        episodeNumber = try container.decodeIfPresent(Int.self, forKey: .episodeNumber)
     }
 }
 
@@ -140,6 +186,9 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     let primaryTrailerTitle: String?
     let linkCount: Int?
     let href: String?
+    let showId: String?
+    let seasonNumber: Int?
+    let episodeNumber: Int?
     let cast: [CatalogPersonCredit]
     let crew: [CatalogPersonCredit]
 
@@ -175,6 +224,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         case cast
         case crew
         case credits
+        case showId = "show_id"
         case posterPath = "poster_path"
         case backdropPath = "backdrop_path"
         case backdropWithTextPath = "backdrop_with_text_path"
@@ -199,6 +249,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     }
 
     enum ShowKeys: String, CodingKey {
+        case id
+        case mediaId = "media_id"
         case title
     }
 
@@ -245,6 +297,9 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         primaryTrailerTitle: String? = nil,
         linkCount: Int? = nil,
         href: String? = nil,
+        showId: String? = nil,
+        seasonNumber: Int? = nil,
+        episodeNumber: Int? = nil,
         cast: [CatalogPersonCredit] = [],
         crew: [CatalogPersonCredit] = []
     ) {
@@ -269,6 +324,9 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         self.primaryTrailerTitle = primaryTrailerTitle
         self.linkCount = linkCount
         self.href = href
+        self.showId = showId
+        self.seasonNumber = seasonNumber
+        self.episodeNumber = episodeNumber
         self.cast = cast
         self.crew = crew
     }
@@ -294,10 +352,12 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
             ?? CatalogItem.year(from: try container.decodeIfPresent(String.self, forKey: .firstAirDate))
             ?? CatalogItem.year(from: try container.decodeIfPresent(String.self, forKey: .airDate))
         let originalTitle = try container.decodeIfPresent(String.self, forKey: .originalTitle)
+        let decodedSeasonNumber = try container.decodeIfPresent(Int.self, forKey: .seasonNumber)
+        let decodedEpisodeNumber = try container.decodeIfPresent(Int.self, forKey: .episodeNumber)
         if let show = try? container.nestedContainer(keyedBy: ShowKeys.self, forKey: .show),
            let showTitle = try show.decodeIfPresent(String.self, forKey: .title) {
-            let season = try container.decodeIfPresent(Int.self, forKey: .seasonNumber)
-            let episode = try container.decodeIfPresent(Int.self, forKey: .episodeNumber)
+            let season = decodedSeasonNumber
+            let episode = decodedEpisodeNumber
             let episodeTitle = try container.decodeIfPresent(String.self, forKey: .episodeTitle)
             subtitle = [showTitle, season.map { "S\($0)" }, episode.map { "E\($0)" }, episodeTitle]
                 .compactMap { $0 }
@@ -306,6 +366,21 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
             subtitle = String(year)
         } else {
             subtitle = originalTitle
+        }
+        seasonNumber = decodedSeasonNumber
+        episodeNumber = decodedEpisodeNumber
+        if let directShowID = decodeStringOrInt(from: container, forKey: .showId) {
+            showId = directShowID
+        } else if let show = try? container.nestedContainer(keyedBy: ShowKeys.self, forKey: .show) {
+            if let id = decodeStringOrInt(from: show, forKey: .id) {
+                showId = id
+            } else if let mediaID = decodeStringOrInt(from: show, forKey: .mediaId) {
+                showId = mediaID
+            } else {
+                showId = nil
+            }
+        } else {
+            showId = nil
         }
         overview = try container.decodeIfPresent(String.self, forKey: .overview)
             ?? container.decodeIfPresent(String.self, forKey: .description)
@@ -355,7 +430,16 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     }
 
     var playableMovie: PlayableMovie {
-        PlayableMovie(id: id, title: title, overview: overview, hasPlayableMedia: hasPlayableMedia)
+        PlayableMovie(
+            id: id,
+            mediaType: mediaType,
+            title: title,
+            overview: overview,
+            hasPlayableMedia: hasPlayableMedia,
+            showId: showId,
+            seasonNumber: seasonNumber,
+            episodeNumber: episodeNumber
+        )
     }
 
     private static func year(from date: String?) -> Int? {
@@ -428,6 +512,19 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         }
         return []
     }
+}
+
+private func decodeStringOrInt<Key: CodingKey>(
+    from container: KeyedDecodingContainer<Key>,
+    forKey key: Key
+) -> String? {
+    if let stringValue = try? container.decode(String.self, forKey: key) {
+        return stringValue
+    }
+    if let intValue = try? container.decode(Int.self, forKey: key) {
+        return String(intValue)
+    }
+    return nil
 }
 
 private struct EmptyDecodable: Decodable {}
@@ -676,6 +773,16 @@ struct CatalogDetailResponse: Decodable, Equatable {
         } else {
             item = try CatalogItem(from: decoder)
         }
+    }
+}
+
+struct LibraryMembershipRequest: Encodable, Equatable {
+    let mediaType: String
+    let mediaId: String
+
+    enum CodingKeys: String, CodingKey {
+        case mediaType = "media_type"
+        case mediaId = "media_id"
     }
 }
 

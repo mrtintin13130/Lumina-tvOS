@@ -196,6 +196,10 @@ struct MediaProbeStatus: Decodable, Equatable {
 
 struct ProgressUpdateRequest: Encodable {
     let mediaId: String
+    let mediaType: String
+    let showId: String?
+    let seasonNumber: Int?
+    let episodeNumber: Int?
     let positionSeconds: Double
     let durationSeconds: Double?
     let playState: String
@@ -204,6 +208,26 @@ struct ProgressUpdateRequest: Encodable {
         case positionSeconds = "position_seconds"
         case durationSeconds = "duration_seconds"
         case playState = "play_state"
+    }
+
+    init(
+        mediaId: String,
+        mediaType: String = "movie",
+        showId: String? = nil,
+        seasonNumber: Int? = nil,
+        episodeNumber: Int? = nil,
+        positionSeconds: Double,
+        durationSeconds: Double?,
+        playState: String
+    ) {
+        self.mediaId = mediaId
+        self.mediaType = mediaType
+        self.showId = showId
+        self.seasonNumber = seasonNumber
+        self.episodeNumber = episodeNumber
+        self.positionSeconds = positionSeconds
+        self.durationSeconds = durationSeconds
+        self.playState = playState
     }
 }
 

@@ -63,13 +63,21 @@ struct HomeShellView: View {
 private struct CatalogHomeView: View {
     @EnvironmentObject private var appModel: AppModel
 
+    private enum Layout {
+        static let horizontalPadding: CGFloat = 72
+        static let shelfPeekHeight: CGFloat = 420
+        static let minimumHeroHeight: CGFloat = 520
+        static let maximumHeroHeight: CGFloat = 650
+        static let shelfSpacing: CGFloat = 28
+    }
+
     var body: some View {
         GeometryReader { proxy in
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: Layout.shelfSpacing) {
                     if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
                         ProgressView(L10n.text("Loading catalog"))
-                            .padding(.horizontal, 72)
+                            .padding(.horizontal, Layout.horizontalPadding)
                             .padding(.top, 72)
                     }
 
@@ -93,7 +101,7 @@ private struct CatalogHomeView: View {
 
                         StatusText(message: appModel.statusMessage)
                     }
-                    .padding(.horizontal, 72)
+                    .padding(.horizontal, Layout.horizontalPadding)
                     .padding(.bottom, 46)
                 }
             }
@@ -102,7 +110,10 @@ private struct CatalogHomeView: View {
     }
 
     private func heroHeight(for proxy: GeometryProxy) -> CGFloat {
-        min(max(proxy.size.height * 0.78, 640), 840)
+        min(
+            max(proxy.size.height - Layout.shelfPeekHeight, Layout.minimumHeroHeight),
+            Layout.maximumHeroHeight
+        )
     }
 }
 

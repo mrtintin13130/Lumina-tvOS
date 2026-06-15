@@ -5,7 +5,7 @@ milestone_name: Stability, Usability, And Beta Hardening
 status: Milestone v1.2 initialized from senior review
 stopped_at: Milestone v1.1 initialized and ready to plan Phase 8.
 last_updated: "2026-06-08T21:41:51.984Z"
-last_activity: 2026-06-08
+last_activity: 2026-06-15
 progress:
   total_phases: 5
   completed_phases: 5
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-08)
 Phase: 15
 Plan: Not started
 Status: Milestone v1.2 initialized from senior review
-Last activity: 2026-06-08
+Last activity: 2026-06-15 - Completed quick task: install-oh-my-opencode-slim
 
 Progress: [----------] 0%
 
@@ -153,6 +153,7 @@ Items acknowledged and carried forward from previous milestone close:
 | 2026-06-08 | capabilities-contract-version-fix | Fixed setup validation rejecting current Lumina API servers by accepting the backend TV contract version `2026-05-tv`; generic tvOS build-for-testing was attempted but local Swift compilation stalled. |
 | 2026-06-08 | discovery-health-validation-fix | Fixed manual setup validation for the backend's uppercase health status and hardened Bonjour address resolution with retry plus numeric-address fallback; generic tvOS build-for-testing passed with code signing disabled. |
 | 2026-06-08 | home-hero-full-bleed | Made the Home hero carousel extend through the top and horizontal safe-area edges, removed the remaining left gutter, and stopped intercepting Up focus movement from the hero; generic tvOS build passed with code signing disabled. |
+| 2026-06-15 | install-oh-my-opencode-slim | Installed and configured oh-my-opencode-slim for OpenCode, enabled background subagents, installed bundled skills, and verified the generated config with doctor; provider authentication remains a human step. |
 | 2026-05-30 | catalog-home-shell | Added native tvOS catalog tabs, home shelves, browse grids, search, catalog API loading, and artwork-backed cards. |
 
 ## Session Continuity
