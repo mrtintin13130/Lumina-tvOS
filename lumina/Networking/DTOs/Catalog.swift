@@ -172,6 +172,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     let overview: String?
     let posterPath: String?
     let backdropPath: String?
+    let backdropWithTextPath: String?
     let logoPath: String?
     let progressPercent: Double
     let watchedState: String?
@@ -283,6 +284,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         overview: String? = nil,
         posterPath: String? = nil,
         backdropPath: String? = nil,
+        backdropWithTextPath: String? = nil,
         logoPath: String? = nil,
         progressPercent: Double = 0,
         watchedState: String? = nil,
@@ -310,6 +312,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         self.overview = overview
         self.posterPath = posterPath
         self.backdropPath = backdropPath
+        self.backdropWithTextPath = backdropWithTextPath
         self.logoPath = logoPath
         self.progressPercent = progressPercent
         self.watchedState = watchedState
@@ -385,8 +388,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         overview = try container.decodeIfPresent(String.self, forKey: .overview)
             ?? container.decodeIfPresent(String.self, forKey: .description)
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
-        backdropPath = try container.decodeIfPresent(String.self, forKey: .backdropWithTextPath)
-            ?? container.decodeIfPresent(String.self, forKey: .backdropPath)
+        backdropPath = try container.decodeIfPresent(String.self, forKey: .backdropPath)
+        backdropWithTextPath = try container.decodeIfPresent(String.self, forKey: .backdropWithTextPath)
         logoPath = try container.decodeIfPresent(String.self, forKey: .logoPath)
         if let progress = try? container.nestedContainer(keyedBy: ProgressKeys.self, forKey: .progress) {
             progressPercent = try progress.decodeIfPresent(Double.self, forKey: .progressPercent) ?? 0

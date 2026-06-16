@@ -43,12 +43,12 @@ struct CatalogDetailPage: View {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 42) {
                     DetailHero(focusedAction: $focusedAction, item: item)
-                        .padding(.top, 290)
-                        .padding(.horizontal, 92)
-                        .frame(maxWidth: 1360, alignment: .leading)
+                        .padding(.top, TVLayout.detailHeroTopPadding)
+                        .padding(.horizontal, TVLayout.safeHorizontalPadding)
+                        .frame(maxWidth: TVLayout.detailContentMaxWidth, alignment: .leading)
 
                     DetailPeopleShelves(item: item)
-                        .padding(.horizontal, 92)
+                        .padding(.horizontal, TVLayout.safeHorizontalPadding)
 
                     VStack(alignment: .leading, spacing: 42) {
                         if item.mediaType == "tv_show" {
@@ -63,12 +63,16 @@ struct CatalogDetailPage: View {
 
                         StatusText(message: appModel.statusMessage)
                     }
-                    .padding(.horizontal, 92)
-                    .frame(maxWidth: 1360, alignment: .leading)
+                    .padding(.horizontal, TVLayout.safeHorizontalPadding)
+                    .frame(maxWidth: TVLayout.detailContentMaxWidth, alignment: .leading)
                 }
-                .padding(.bottom, 70)
+                .padding(.bottom, TVLayout.contentBottomPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            DetailMainMenu()
+                .padding(.top, TVLayout.detailMenuTopPadding)
+                .padding(.horizontal, TVLayout.safeHorizontalPadding)
         }
         .background(Color.black.ignoresSafeArea())
         .onExitCommand {
@@ -84,6 +88,71 @@ struct CatalogDetailPage: View {
 
     private var isPlayableMovie: Bool {
         item.mediaType == "movie" && item.hasPlayableMedia != false
+    }
+}
+
+private struct DetailMainMenu: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState private var focusedTab: HomeTab?
+
+    private let items: [(tab: HomeTab, title: String, systemImage: String)] = [
+        (.home, L10n.text("Home"), "house"),
+        (.movies, L10n.text("Movies"), "film"),
+        (.tvShows, L10n.text("TV Shows"), "tv"),
+        (.search, L10n.text("Search"), "magnifyingglass"),
+        (.settings, L10n.text("Settings"), "gearshape")
+    ]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(items, id: \.tab) { item in
+                Button {
+                    appModel.openHomeTab(item.tab)
+                } label: {
+                    Label(item.title, systemImage: item.systemImage)
+                        .font(.system(size: 19, weight: .semibold))
+                        .labelStyle(.titleAndIcon)
+                        .frame(minWidth: item.tab == .tvShows ? 138 : 112)
+                }
+                .buttonStyle(DetailMenuButtonStyle(isSelected: appModel.selectedHomeTab == item.tab))
+                .focused($focusedTab, equals: item.tab)
+                .modifier(DetailMenuFocusModifier(isFocused: focusedTab == item.tab))
+            }
+        }
+        .padding(8)
+        .background(.black.opacity(0.34), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(.white.opacity(0.12), lineWidth: 1)
+        }
+    }
+}
+
+private struct DetailMenuButtonStyle: ButtonStyle {
+    let isSelected: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isSelected ? .black : .white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ? .white.opacity(configuration.isPressed ? 0.74 : 0.9) : .white.opacity(configuration.isPressed ? 0.18 : 0.08),
+                in: Capsule()
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+    }
+}
+
+private struct DetailMenuFocusModifier: ViewModifier {
+    let isFocused: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isFocused ? 1.05 : 1)
+            .shadow(color: .white.opacity(isFocused ? 0.28 : 0), radius: 14, x: 0, y: 0)
+            .animation(.easeOut(duration: 0.16), value: isFocused)
     }
 }
 
@@ -367,7 +436,7 @@ private struct DetailPersonShelf: View {
     let textStyle: PersonCreditCardTextStyle
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
                 .font(.title2.bold())
 
@@ -377,8 +446,8 @@ private struct DetailPersonShelf: View {
                         PersonCreditButton(person: person, textStyle: textStyle)
                     }
                 }
-                .padding(.vertical, 20)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.compactShelfFocusGutter)
+                .padding(.horizontal, TVLayout.shelfFocusGutter)
             }
             .scrollClipDisabled()
         }

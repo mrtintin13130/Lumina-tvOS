@@ -403,6 +403,13 @@ final class AppModel: ObservableObject {
         syncFromCatalogState()
     }
 
+    func openHomeTab(_ tab: HomeTab) {
+        selectedHomeTab = tab
+        catalogState.closeDetail()
+        catalogState.closeEditorial()
+        syncFromCatalogState()
+    }
+
     func openEditorialSection(_ section: CatalogSection) async {
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage

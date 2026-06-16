@@ -8,6 +8,25 @@
 import Foundation
 import SwiftUI
 
+enum TVLayout {
+    static let safeHorizontalPadding: CGFloat = 80
+    static let compactHorizontalPadding: CGFloat = 72
+    static let safeTopPadding: CGFloat = 60
+    static let contentTopPadding: CGFloat = 46
+    static let contentBottomPadding: CGFloat = 56
+    static let shelfSpacing: CGFloat = 36
+    static let heroShelfSpacing: CGFloat = 0
+    static let shelfTitleSpacing: CGFloat = 14
+    static let shelfItemSpacing: CGFloat = 26
+    static let compactShelfItemSpacing: CGFloat = 22
+    static let shelfFocusGutter: CGFloat = 26
+    static let compactShelfFocusGutter: CGFloat = 22
+    static let detailContentMaxWidth: CGFloat = 1360
+    static let detailHeroTopPadding: CGFloat = 290
+    static let detailMenuTopPadding: CGFloat = 48
+    static let setupContentMaxWidth: CGFloat = 1120
+}
+
 struct TVMediaCatalogButtonModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
@@ -273,27 +292,170 @@ struct FeaturedHeroCarousel: View {
     }
 }
 
+struct ContextualHomeHeroView: View {
+    @EnvironmentObject private var appModel: AppModel
+
+    let item: CatalogItem
+
+    private let heroHeight: CGFloat = 430
+    private let textHorizontalPadding: CGFloat = TVLayout.safeHorizontalPadding
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            CatalogArtwork(
+                url: appModel.artworkURL(
+                    for: item.heroBackdropPath,
+                    kind: .backdrop
+                ),
+                aspectRatio: 16 / 9,
+                alignment: .bottom
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: heroHeight)
+            .clipped()
+            .ignoresSafeArea(.container, edges: [.top, .horizontal])
+            .accessibilityHidden(true)
+
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.9),
+                    .black.opacity(0.56),
+                    .black.opacity(0.08)
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .ignoresSafeArea(.container, edges: [.top, .horizontal])
+
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.36), location: 0.62),
+                    .init(color: .black, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 240)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+            .ignoresSafeArea(.container, edges: .horizontal)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Text(item.mediaTypeDisplayName)
+                    if item.progressPercent > 0 {
+                        Text(L10n.watchedPercent(Int(item.progressPercent.rounded())))
+                    }
+                }
+                .font(.system(size: 23, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.72))
+
+                Text(item.title)
+                    .font(.system(size: 62, weight: .bold))
+                    .lineLimit(2)
+                    .frame(maxWidth: 920, alignment: .leading)
+
+                if !item.detailMetadata.isEmpty {
+                    Text(item.detailMetadata.joined(separator: "  -  "))
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.76))
+                        .lineLimit(1)
+                } else if let subtitle = item.subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.76))
+                        .lineLimit(1)
+                }
+
+                if item.progressPercent > 0 {
+                    ProgressView(value: min(max(item.progressPercent / 100, 0), 1))
+                        .progressViewStyle(.linear)
+                        .frame(width: 420, height: 6)
+                        .padding(.top, 2)
+                }
+
+                if let overview = item.overview {
+                    Text(overview)
+                        .font(.system(size: 29, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.78))
+                        .lineLimit(2)
+                        .frame(maxWidth: 960, alignment: .leading)
+                        .padding(.top, 2)
+                }
+            }
+            .id(item.id)
+            .transition(.opacity)
+            .padding(.leading, textHorizontalPadding)
+            .padding(.trailing, textHorizontalPadding)
+            .padding(.bottom, TVLayout.contentTopPadding)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: heroHeight)
+        .clipped()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.accessibilitySummary)
+    }
+}
+
 struct HomeCatalogSectionView: View {
     let section: CatalogSection
+    let onItemFocus: ((CatalogItem) -> Void)?
+    let contentHorizontalInset: CGFloat
+
+    init(
+        section: CatalogSection,
+        onItemFocus: ((CatalogItem) -> Void)? = nil,
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.section = section
+        self.onItemFocus = onItemFocus
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
         switch section.homeLayout {
         case .heroCarousel:
             FeaturedHeroCarousel(items: section.items)
         case .continueLandscape:
-            ContinueWatchingShelfView(title: section.title, items: section.items)
+            ContinueWatchingShelfView(
+                title: section.title,
+                items: section.items,
+                onItemFocus: onItemFocus,
+                contentHorizontalInset: contentHorizontalInset
+            )
         case .genrePills:
-            GenrePillSection(title: section.title, items: section.items)
+            GenrePillSection(title: section.title, items: section.items, contentHorizontalInset: contentHorizontalInset)
         case .compactRail:
-            CompactCatalogShelfView(title: section.title, items: section.items)
+            CompactCatalogShelfView(
+                title: section.title,
+                items: section.items,
+                onItemFocus: onItemFocus,
+                contentHorizontalInset: contentHorizontalInset
+            )
         case .logoCardRail:
-            LogoCardShelfView(title: section.title, items: section.items)
+            LogoCardShelfView(
+                title: section.title,
+                items: section.items,
+                onItemFocus: onItemFocus,
+                contentHorizontalInset: contentHorizontalInset
+            )
         case .landscapeRail:
-            CatalogLandscapeShelfView(title: section.title, items: section.items)
+            CatalogLandscapeShelfView(
+                title: section.title,
+                items: section.items,
+                onItemFocus: onItemFocus,
+                contentHorizontalInset: contentHorizontalInset
+            )
         case .editorialBanner:
             EditorialBannerSectionView(section: section)
+                .padding(.horizontal, contentHorizontalInset)
         case .posterRail:
-            CatalogShelfView(title: section.title, items: section.items)
+            CatalogShelfView(
+                title: section.title,
+                items: section.items,
+                onItemFocus: onItemFocus,
+                contentHorizontalInset: contentHorizontalInset
+            )
         }
     }
 }
@@ -337,11 +499,23 @@ extension CatalogSection {
 struct GenrePillSection: View {
     let title: String
     let items: [CatalogItem]
+    let contentHorizontalInset: CGFloat
+
+    init(
+        title: String,
+        items: [CatalogItem],
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.title = title
+        self.items = items
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(title)
                 .font(.title2.bold())
+                .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 18) {
@@ -349,11 +523,19 @@ struct GenrePillSection: View {
                         CatalogGenrePillButton(item: item)
                     }
                 }
-                .padding(.vertical, 18)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.compactShelfFocusGutter)
+                .padding(.leading, horizontalShelfPadding(TVLayout.shelfFocusGutter))
+                .padding(.trailing, horizontalShelfPadding(TVLayout.shelfFocusGutter))
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
             .scrollClipDisabled()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func horizontalShelfPadding(_ defaultPadding: CGFloat) -> CGFloat {
+        contentHorizontalInset > 0 ? contentHorizontalInset : defaultPadding
     }
 }
 
@@ -393,23 +575,46 @@ struct CatalogGenrePillButton: View {
 struct ContinueWatchingShelfView: View {
     let title: String
     let items: [CatalogItem]
+    let onItemFocus: ((CatalogItem) -> Void)?
+    let contentHorizontalInset: CGFloat
+
+    init(
+        title: String,
+        items: [CatalogItem],
+        onItemFocus: ((CatalogItem) -> Void)? = nil,
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.title = title
+        self.items = items
+        self.onItemFocus = onItemFocus
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
                 .font(.title2.bold())
+                .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .center, spacing: 26) {
+                LazyHStack(alignment: .center, spacing: TVLayout.shelfItemSpacing) {
                     ForEach(items) { item in
-                        ContinueWatchingCardButton(item: item)
+                        ContinueWatchingCardButton(item: item, onFocus: onItemFocus)
                     }
                 }
-                .padding(.vertical, 22)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.shelfFocusGutter)
+                .padding(.leading, horizontalShelfPadding(TVLayout.shelfFocusGutter))
+                .padding(.trailing, horizontalShelfPadding(TVLayout.shelfFocusGutter))
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
             .scrollClipDisabled()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func horizontalShelfPadding(_ defaultPadding: CGFloat) -> CGFloat {
+        contentHorizontalInset > 0 ? contentHorizontalInset : defaultPadding
     }
 }
 
@@ -418,6 +623,15 @@ struct ContinueWatchingCardButton: View {
     @FocusState private var isFocused: Bool
 
     let item: CatalogItem
+    let onFocus: ((CatalogItem) -> Void)?
+
+    init(
+        item: CatalogItem,
+        onFocus: ((CatalogItem) -> Void)? = nil
+    ) {
+        self.item = item
+        self.onFocus = onFocus
+    }
 
     private let cardWidth: CGFloat = 430
     private let cardHeight: CGFloat = 242
@@ -484,6 +698,11 @@ struct ContinueWatchingCardButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                onFocus?(item)
+            }
+        }
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -492,23 +711,46 @@ struct ContinueWatchingCardButton: View {
 struct CatalogLandscapeShelfView: View {
     let title: String
     let items: [CatalogItem]
+    let onItemFocus: ((CatalogItem) -> Void)?
+    let contentHorizontalInset: CGFloat
+
+    init(
+        title: String,
+        items: [CatalogItem],
+        onItemFocus: ((CatalogItem) -> Void)? = nil,
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.title = title
+        self.items = items
+        self.onItemFocus = onItemFocus
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
                 .font(.title2.bold())
+                .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .center, spacing: 26) {
+                LazyHStack(alignment: .center, spacing: TVLayout.shelfItemSpacing) {
                     ForEach(items) { item in
-                        CatalogLandscapeButton(item: item)
+                        CatalogLandscapeButton(item: item, onFocus: onItemFocus)
                     }
                 }
-                .padding(.vertical, 22)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.shelfFocusGutter)
+                .padding(.leading, horizontalShelfPadding(TVLayout.shelfFocusGutter))
+                .padding(.trailing, horizontalShelfPadding(TVLayout.shelfFocusGutter))
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
             .scrollClipDisabled()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func horizontalShelfPadding(_ defaultPadding: CGFloat) -> CGFloat {
+        contentHorizontalInset > 0 ? contentHorizontalInset : defaultPadding
     }
 }
 
@@ -517,6 +759,15 @@ struct CatalogLandscapeButton: View {
     @FocusState private var isFocused: Bool
 
     let item: CatalogItem
+    let onFocus: ((CatalogItem) -> Void)?
+
+    init(
+        item: CatalogItem,
+        onFocus: ((CatalogItem) -> Void)? = nil
+    ) {
+        self.item = item
+        self.onFocus = onFocus
+    }
 
     private let cardWidth: CGFloat = 420
     private let cardHeight: CGFloat = 236
@@ -583,6 +834,11 @@ struct CatalogLandscapeButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                onFocus?(item)
+            }
+        }
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -725,7 +981,7 @@ struct CatalogEditorialPage: View {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 30) {
                     HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
                             if let eyebrow = section.eyebrow {
                                 Text(eyebrow)
                                     .font(.system(size: 26, weight: .bold))
@@ -791,9 +1047,9 @@ struct CatalogEditorialPage: View {
 
                     StatusText(message: appModel.statusMessage)
                 }
-                .padding(.horizontal, 72)
-                .padding(.top, 64)
-                .padding(.bottom, 56)
+                .padding(.horizontal, TVLayout.safeHorizontalPadding)
+                .padding(.top, TVLayout.safeTopPadding)
+                .padding(.bottom, TVLayout.contentBottomPadding)
             }
         }
         .onExitCommand {
@@ -909,46 +1165,92 @@ struct ThemedCatalogCardButton: View {
 struct CatalogShelfView: View {
     let title: String
     let items: [CatalogItem]
+    let onItemFocus: ((CatalogItem) -> Void)?
+    let contentHorizontalInset: CGFloat
+
+    init(
+        title: String,
+        items: [CatalogItem],
+        onItemFocus: ((CatalogItem) -> Void)? = nil,
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.title = title
+        self.items = items
+        self.onItemFocus = onItemFocus
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
                 .font(.title2.bold())
+                .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .center, spacing: 26) {
+                LazyHStack(alignment: .center, spacing: TVLayout.shelfItemSpacing) {
                     ForEach(items) { item in
-                        CatalogPosterButton(item: item)
+                        CatalogPosterButton(item: item, onFocus: onItemFocus)
                     }
                 }
-                .padding(.vertical, 22)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.shelfFocusGutter)
+                .padding(.leading, horizontalShelfPadding(TVLayout.shelfFocusGutter))
+                .padding(.trailing, horizontalShelfPadding(TVLayout.shelfFocusGutter))
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
             .scrollClipDisabled()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func horizontalShelfPadding(_ defaultPadding: CGFloat) -> CGFloat {
+        contentHorizontalInset > 0 ? contentHorizontalInset : defaultPadding
     }
 }
 
 struct CompactCatalogShelfView: View {
     let title: String
     let items: [CatalogItem]
+    let onItemFocus: ((CatalogItem) -> Void)?
+    let contentHorizontalInset: CGFloat
+
+    init(
+        title: String,
+        items: [CatalogItem],
+        onItemFocus: ((CatalogItem) -> Void)? = nil,
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.title = title
+        self.items = items
+        self.onItemFocus = onItemFocus
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.title2.bold())
+                .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .center, spacing: 22) {
+                LazyHStack(alignment: .center, spacing: TVLayout.compactShelfItemSpacing) {
                     ForEach(items) { item in
-                        CompactCatalogPosterButton(item: item)
+                        CompactCatalogPosterButton(item: item, onFocus: onItemFocus)
                     }
                 }
-                .padding(.vertical, 20)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.compactShelfFocusGutter)
+                .padding(.leading, horizontalShelfPadding(TVLayout.compactShelfFocusGutter))
+                .padding(.trailing, horizontalShelfPadding(TVLayout.compactShelfFocusGutter))
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
             .scrollClipDisabled()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func horizontalShelfPadding(_ defaultPadding: CGFloat) -> CGFloat {
+        contentHorizontalInset > 0 ? contentHorizontalInset : defaultPadding
     }
 }
 
@@ -957,6 +1259,15 @@ struct CompactCatalogPosterButton: View {
     @FocusState private var isFocused: Bool
 
     let item: CatalogItem
+    let onFocus: ((CatalogItem) -> Void)?
+
+    init(
+        item: CatalogItem,
+        onFocus: ((CatalogItem) -> Void)? = nil
+    ) {
+        self.item = item
+        self.onFocus = onFocus
+    }
 
     private let cardWidth: CGFloat = 172
     private let cardHeight: CGFloat = 258
@@ -1011,6 +1322,11 @@ struct CompactCatalogPosterButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                onFocus?(item)
+            }
+        }
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
     }
@@ -1019,23 +1335,46 @@ struct CompactCatalogPosterButton: View {
 struct LogoCardShelfView: View {
     let title: String
     let items: [CatalogItem]
+    let onItemFocus: ((CatalogItem) -> Void)?
+    let contentHorizontalInset: CGFloat
+
+    init(
+        title: String,
+        items: [CatalogItem],
+        onItemFocus: ((CatalogItem) -> Void)? = nil,
+        contentHorizontalInset: CGFloat = 0
+    ) {
+        self.title = title
+        self.items = items
+        self.onItemFocus = onItemFocus
+        self.contentHorizontalInset = contentHorizontalInset
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
                 .font(.title2.bold())
+                .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .center, spacing: 24) {
+                LazyHStack(alignment: .center, spacing: TVLayout.shelfItemSpacing) {
                     ForEach(items) { item in
-                        LogoCardButton(item: item)
+                        LogoCardButton(item: item, onFocus: onItemFocus)
                     }
                 }
-                .padding(.vertical, 20)
-                .padding(.horizontal, 8)
+                .padding(.vertical, TVLayout.compactShelfFocusGutter)
+                .padding(.leading, horizontalShelfPadding(TVLayout.shelfFocusGutter))
+                .padding(.trailing, horizontalShelfPadding(TVLayout.shelfFocusGutter))
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
             .scrollClipDisabled()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func horizontalShelfPadding(_ defaultPadding: CGFloat) -> CGFloat {
+        contentHorizontalInset > 0 ? contentHorizontalInset : defaultPadding
     }
 }
 
@@ -1044,6 +1383,15 @@ struct LogoCardButton: View {
     @FocusState private var isFocused: Bool
 
     let item: CatalogItem
+    let onFocus: ((CatalogItem) -> Void)?
+
+    init(
+        item: CatalogItem,
+        onFocus: ((CatalogItem) -> Void)? = nil
+    ) {
+        self.item = item
+        self.onFocus = onFocus
+    }
 
     private let cardWidth: CGFloat = 300
     private let cardHeight: CGFloat = 168
@@ -1096,6 +1444,11 @@ struct LogoCardButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                onFocus?(item)
+            }
+        }
         .accessibilityLabel(item.title)
         .accessibilityHint(item.href == nil ? L10n.text("Opens details") : L10n.text("Collection browsing unavailable"))
     }
@@ -1106,6 +1459,15 @@ struct CatalogPosterButton: View {
     @FocusState private var isFocused: Bool
 
     let item: CatalogItem
+    let onFocus: ((CatalogItem) -> Void)?
+
+    init(
+        item: CatalogItem,
+        onFocus: ((CatalogItem) -> Void)? = nil
+    ) {
+        self.item = item
+        self.onFocus = onFocus
+    }
 
     private let cardWidth: CGFloat = 220
     private let cardHeight: CGFloat = 330
@@ -1136,6 +1498,11 @@ struct CatalogPosterButton: View {
         .zIndex(isFocused ? 10 : 0)
         .animation(.easeOut(duration: 0.16), value: isFocused)
         .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                onFocus?(item)
+            }
+        }
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(item.mediaType == "episode" ? L10n.text("Starts playback") : L10n.text("Opens details"))
     }
@@ -1396,6 +1763,10 @@ struct EmptyCatalogState: View {
 }
 
 extension CatalogItem {
+    var heroBackdropPath: String? {
+        backdropPath ?? backdropWithTextPath ?? posterPath
+    }
+
     var mediaTypeDisplayName: String {
         switch mediaType {
         case "tv_show":

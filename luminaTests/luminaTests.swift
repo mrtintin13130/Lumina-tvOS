@@ -184,7 +184,8 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(item.id, "8")
         XCTAssertEqual(item.subtitle, "2026")
         XCTAssertEqual(item.posterPath, "/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg")
-        XCTAssertEqual(item.backdropPath, "/etfKck6BHfGc4Q9ScDIECjomLYO.jpg")
+        XCTAssertEqual(item.backdropPath, "/qO55CD8tgVL1T4WKn6zYFFiD6lL.jpg")
+        XCTAssertEqual(item.backdropWithTextPath, "/etfKck6BHfGc4Q9ScDIECjomLYO.jpg")
         XCTAssertEqual(item.progressPercent, 25)
         XCTAssertEqual(item.hasPlayableMedia, true)
     }

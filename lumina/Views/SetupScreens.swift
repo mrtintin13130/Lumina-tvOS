@@ -384,9 +384,9 @@ private struct SetupExperienceShell: View {
 
             content
         }
-        .frame(maxWidth: 1120, alignment: .leading)
-        .padding(.horizontal, 90)
-        .padding(.vertical, 56)
+        .frame(maxWidth: TVLayout.setupContentMaxWidth, alignment: .leading)
+        .padding(.horizontal, TVLayout.safeHorizontalPadding)
+        .padding(.vertical, TVLayout.contentBottomPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

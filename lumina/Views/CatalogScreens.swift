@@ -22,7 +22,7 @@ struct HomeShellView: View {
                 title: L10n.text("Movies"),
                 items: appModel.movies,
                 emptyTitle: L10n.text("No movies found"),
-                topPadding: 46
+                topPadding: TVLayout.contentTopPadding
             )
             .tag(HomeTab.movies)
             .tabItem {
@@ -33,25 +33,28 @@ struct HomeShellView: View {
                 title: L10n.text("TV Shows"),
                 items: appModel.tvShows,
                 emptyTitle: L10n.text("No TV shows found"),
-                topPadding: 46
+                topPadding: TVLayout.contentTopPadding
             )
             .tag(HomeTab.tvShows)
             .tabItem {
                 Label(L10n.text("TV Shows"), systemImage: "tv")
             }
 
-            CatalogSearchView(topPadding: 46)
+            CatalogSearchView(topPadding: TVLayout.contentTopPadding)
                 .tag(HomeTab.search)
                 .tabItem {
                     Label(L10n.text("Search"), systemImage: "magnifyingglass")
                 }
 
-            SettingsView(topPadding: 70)
+            SettingsView(topPadding: TVLayout.safeTopPadding)
                 .tag(HomeTab.settings)
                 .tabItem {
                     Label(L10n.text("Settings"), systemImage: "gearshape")
                 }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.ignoresSafeArea())
+        .ignoresSafeArea(.container, edges: [.top, .horizontal])
         .task {
             if appModel.automaticCatalogRefreshEnabled {
                 await appModel.loadCatalog()
@@ -62,58 +65,128 @@ struct HomeShellView: View {
 
 private struct CatalogHomeView: View {
     @EnvironmentObject private var appModel: AppModel
+    @State private var selectedHeroItem: CatalogItem?
 
     private enum Layout {
-        static let horizontalPadding: CGFloat = 72
-        static let shelfPeekHeight: CGFloat = 420
-        static let minimumHeroHeight: CGFloat = 520
-        static let maximumHeroHeight: CGFloat = 650
-        static let shelfSpacing: CGFloat = 28
+        static let horizontalPadding: CGFloat = TVLayout.safeHorizontalPadding
+        static let shelfSpacing: CGFloat = TVLayout.shelfSpacing
+        static let heroShelfSpacing: CGFloat = TVLayout.heroShelfSpacing
+        static let topPadding: CGFloat = TVLayout.contentTopPadding
+        static let bottomPadding: CGFloat = TVLayout.contentBottomPadding
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: Layout.shelfSpacing) {
-                    if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
-                        ProgressView(L10n.text("Loading catalog"))
-                            .padding(.horizontal, Layout.horizontalPadding)
-                            .padding(.top, 72)
-                    }
-
-                    if !appModel.homeHeroItems.isEmpty {
-                        FeaturedHeroCarousel(
-                            items: appModel.homeHeroItems,
-                            heroHeight: heroHeight(for: proxy)
-                        )
-                            .frame(width: proxy.size.width)
-                            .ignoresSafeArea(.container, edges: [.top, .horizontal])
-                    }
-
-                    VStack(alignment: .leading, spacing: 40) {
-                        ForEach(appModel.homeSections.filter { !$0.items.isEmpty }) { section in
-                            HomeCatalogSectionView(section: section)
-                        }
-
-                        if appModel.homeSections.isEmpty && !appModel.isCatalogLoading {
-                            EmptyCatalogState(title: L10n.text("No catalog shelves yet"))
-                        }
-
-                        StatusText(message: appModel.statusMessage)
-                    }
+        VStack(alignment: .leading, spacing: 0) {
+            if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
+                ProgressView(L10n.text("Loading catalog"))
                     .padding(.horizontal, Layout.horizontalPadding)
-                    .padding(.bottom, 46)
-                }
+                    .padding(.top, Layout.topPadding)
             }
-            .ignoresSafeArea(.container, edges: [.top, .horizontal])
+
+            if let selectedHeroItem {
+                ContextualHomeHeroView(item: selectedHeroItem)
+            }
+
+            ScrollView(.vertical) {
+                shelvesContent
+                    .padding(.top, selectedHeroItem == nil ? Layout.shelfSpacing : Layout.heroShelfSpacing)
+                    .padding(.bottom, Layout.bottomPadding)
+            }
+            .contentMargins(.all, 0, for: .scrollContent)
+            .frame(maxWidth: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.black.ignoresSafeArea())
+        .ignoresSafeArea(.container, edges: [.top, .horizontal])
+        .onAppear {
+            resetHeroSelectionIfNeeded()
+        }
+        .onChange(of: appModel.homeSections) { _, _ in
+            resetHeroSelectionIfNeeded()
         }
     }
 
-    private func heroHeight(for proxy: GeometryProxy) -> CGFloat {
-        min(
-            max(proxy.size.height - Layout.shelfPeekHeight, Layout.minimumHeroHeight),
-            Layout.maximumHeroHeight
-        )
+    private var shelvesContent: some View {
+        VStack(alignment: .leading, spacing: 40) {
+            ForEach(displayedHomeSections) { section in
+                HomeCatalogSectionView(
+                    section: section,
+                    onItemFocus: selectHeroItem,
+                    contentHorizontalInset: Layout.horizontalPadding
+                )
+            }
+
+            if displayedHomeSections.isEmpty && !appModel.isCatalogLoading {
+                EmptyCatalogState(title: L10n.text("No catalog shelves yet"))
+                    .padding(.horizontal, Layout.horizontalPadding)
+            }
+
+            StatusText(message: appModel.statusMessage)
+                .padding(.horizontal, Layout.horizontalPadding)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var displayedHomeSections: [CatalogSection] {
+        appModel.homeSections.filter { section in
+            !section.items.isEmpty && section.homeLayout != .heroCarousel
+        }
+    }
+
+    private var heroControllingSection: CatalogSection? {
+        displayedHomeSections.first(where: isContinueWatchingSection)
+            ?? displayedHomeSections.first(where: isNextUpSection)
+            ?? displayedHomeSections.first(where: isRecentlyAddedMovieSection)
+            ?? displayedHomeSections.first(where: isRecentlyAddedShowSection)
+            ?? displayedHomeSections.first
+    }
+
+    private func resetHeroSelectionIfNeeded() {
+        guard let firstItem = heroControllingSection?.items.first else {
+            selectedHeroItem = nil
+            return
+        }
+        guard let selectedHeroItem else {
+            self.selectedHeroItem = firstItem
+            return
+        }
+        if heroControllingSection?.items.contains(selectedHeroItem) != true {
+            self.selectedHeroItem = firstItem
+        }
+    }
+
+    private func selectHeroItem(_ item: CatalogItem) {
+        withAnimation(.easeInOut(duration: 0.22)) {
+            selectedHeroItem = item
+        }
+    }
+
+    private func isContinueWatchingSection(_ section: CatalogSection) -> Bool {
+        section.homeLayout == .continueLandscape
+            || section.matchesHomeSectionKeywords(["continue", "watching", "resume"])
+    }
+
+    private func isNextUpSection(_ section: CatalogSection) -> Bool {
+        section.matchesHomeSectionKeywords(["next", "up"])
+    }
+
+    private func isRecentlyAddedMovieSection(_ section: CatalogSection) -> Bool {
+        section.mediaType == "movie"
+            && section.matchesHomeSectionKeywords(["recently", "added"])
+    }
+
+    private func isRecentlyAddedShowSection(_ section: CatalogSection) -> Bool {
+        (section.mediaType == "tv_show" || section.mediaType == "show")
+            && section.matchesHomeSectionKeywords(["recently", "added"])
+    }
+}
+
+private extension CatalogSection {
+    func matchesHomeSectionKeywords(_ keywords: [String]) -> Bool {
+        let values = [id, title, type, mediaType]
+            .compactMap { $0?.lowercased() }
+            .joined(separator: " ")
+        return keywords.allSatisfy { values.contains($0) }
     }
 }
 
@@ -147,9 +220,9 @@ private struct CatalogGridView: View {
 
                 StatusText(message: appModel.statusMessage)
             }
-            .padding(.horizontal, 72)
+            .padding(.horizontal, TVLayout.safeHorizontalPadding)
             .padding(.top, topPadding)
-            .padding(.bottom, 46)
+            .padding(.bottom, TVLayout.contentBottomPadding)
         }
     }
 }
@@ -204,9 +277,9 @@ private struct CatalogSearchView: View {
 
                 StatusText(message: appModel.statusMessage)
             }
-            .padding(.horizontal, 72)
+            .padding(.horizontal, TVLayout.safeHorizontalPadding)
             .padding(.top, topPadding)
-            .padding(.bottom, 46)
+            .padding(.bottom, TVLayout.contentBottomPadding)
         }
         .defaultFocus($focusedField, .query)
     }
