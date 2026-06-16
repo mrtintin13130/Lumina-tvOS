@@ -106,6 +106,10 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-16 | backdrop-alpha-fade | Replaced the contextual hero backdrop's bottom black overlay with an alpha mask so artwork fades into the dynamic Home background colors directly while preserving the left image mask and existing sizing; static diff checks passed. |
+| 2026-06-16 | contextual-hero-fade-removal | Removed the contextual Home hero's separate full-width gradient overlay while preserving the backdrop image's own left mask and bottom fade; static diff checks passed. |
+| 2026-06-16 | home-dynamic-gradient | Added API-driven Home background palettes with debounced, slow animated transitions using item background, secondary, and accent colors; kept safe dark fallbacks, made the contextual hero base transparent so the gradient shows through, and added DTO decode coverage; static diff checks passed while the local generic tvOS build reached Swift compilation before the known Xcode/CoreSimulator stall/interruption. |
+| 2026-06-16 | tvos-card-sizing | Increased poster, compact poster, people-card, grid, search, and detail-page sizing for better tvOS readability; reduced reusable section title sizing; removed custom media-card hover highlighting so focus keeps card-level scaling without additional artwork zoom; changed the contextual hero backdrop to contained right-aligned artwork with stronger image-attached fades and deeper shelf bleed; generic tvOS build reached Swift compilation/module output before the known local Xcode stall/interruption. |
 | 2026-06-03 | catalog-screens-split | Extracted catalog tab shell and browsing screens from `ContentView.swift`; generic tvOS build and simulator tests passed. |
 | 2026-06-03 | setup-auth-screen-split | Extracted setup/sign-in screens and shared contract badge from `ContentView.swift`; generic tvOS build and simulator tests passed. |
 | 2026-06-03 | refactor-checkpoint-hygiene | Untracked local Xcode user-state noise and prepared the completed refactor set for a checkpoint commit. |

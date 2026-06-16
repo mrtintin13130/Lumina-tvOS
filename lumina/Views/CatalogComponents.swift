@@ -31,13 +31,16 @@ struct TVMediaCatalogButtonModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .buttonStyle(.borderless)
-            .hoverEffect(.highlight)
     }
 }
 
 extension View {
     func tvMediaCatalogButton() -> some View {
         modifier(TVMediaCatalogButtonModifier())
+    }
+
+    func tvSectionTitle() -> some View {
+        font(.system(size: 32, weight: .bold))
     }
 }
 
@@ -296,49 +299,34 @@ struct ContextualHomeHeroView: View {
     @EnvironmentObject private var appModel: AppModel
 
     let item: CatalogItem
+    let availableHeight: CGFloat?
 
-    private let heroHeight: CGFloat = 430
     private let textHorizontalPadding: CGFloat = TVLayout.safeHorizontalPadding
+    private let fallbackHeroHeight: CGFloat = 540
+    private let minHeroHeight: CGFloat = 430
+    private let maxHeroHeight: CGFloat = 600
+    private let preferredHeroHeightRatio: CGFloat = 0.5
+    private let minBottomFadeHeight: CGFloat = 240
+    private let maxBottomFadeHeight: CGFloat = 430
+    private let bottomFadeHeightRatio: CGFloat = 0.64
+    private let artworkBleedHeight: CGFloat = 150
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            CatalogArtwork(
+            Color.clear
+
+            ContextualHeroBackdrop(
                 url: appModel.artworkURL(
                     for: item.heroBackdropPath,
                     kind: .backdrop
                 ),
-                aspectRatio: 16 / 9,
-                alignment: .bottom
+                bottomFadeHeight: artworkBottomFadeHeight
             )
-            .frame(maxWidth: .infinity)
-            .frame(height: heroHeight)
-            .clipped()
+            .frame(width: heroArtworkWidth, height: heroArtworkHeight, alignment: .topTrailing)
+            .frame(maxWidth: .infinity, maxHeight: heroArtworkHeight, alignment: .topTrailing)
+            .frame(height: heroHeight, alignment: .top)
             .ignoresSafeArea(.container, edges: [.top, .horizontal])
             .accessibilityHidden(true)
-
-            LinearGradient(
-                colors: [
-                    .black.opacity(0.9),
-                    .black.opacity(0.56),
-                    .black.opacity(0.08)
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .ignoresSafeArea(.container, edges: [.top, .horizontal])
-
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black.opacity(0.36), location: 0.62),
-                    .init(color: .black, location: 1)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 240)
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .ignoresSafeArea(.container, edges: .horizontal)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
@@ -391,9 +379,104 @@ struct ContextualHomeHeroView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: heroHeight)
-        .clipped()
         .accessibilityElement(children: .combine)
         .accessibilityLabel(item.accessibilitySummary)
+    }
+
+    private var heroHeight: CGFloat {
+        guard let availableHeight, availableHeight > 0 else {
+            return fallbackHeroHeight
+        }
+        let proposedHeight = availableHeight * preferredHeroHeightRatio
+        return min(max(proposedHeight, minHeroHeight), maxHeroHeight)
+    }
+
+    private var artworkBottomFadeHeight: CGFloat {
+        let proposedHeight = heroArtworkHeight * bottomFadeHeightRatio
+        return min(max(proposedHeight, minBottomFadeHeight), maxBottomFadeHeight)
+    }
+
+    private var heroArtworkWidth: CGFloat {
+        heroArtworkHeight * 16 / 9
+    }
+
+    private var heroArtworkHeight: CGFloat {
+        heroHeight + artworkBleedHeight
+    }
+}
+
+private struct ContextualHeroBackdrop: View {
+    let url: URL?
+    let bottomFadeHeight: CGFloat
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            if let url {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                            .mask(leftFadeMask)
+                            .mask(bottomFadeMask)
+
+                    case .failure:
+                        placeholderIcon("photo")
+
+                    case .empty:
+                        ProgressView()
+
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            } else {
+                placeholderIcon("play.rectangle")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+    }
+
+    private var leftFadeMask: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .clear, location: 0.12),
+                .init(color: .black.opacity(0.24), location: 0.26),
+                .init(color: .black.opacity(0.78), location: 0.5),
+                .init(color: .black, location: 0.72)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    private var bottomFadeMask: some View {
+        VStack(spacing: 0) {
+            Color.black
+
+            LinearGradient(
+                stops: [
+                    .init(color: .black, location: 0),
+                    .init(color: .black.opacity(0.78), location: 0.32),
+                    .init(color: .black.opacity(0.24), location: 0.64),
+                    .init(color: .clear, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: bottomFadeHeight)
+        }
+    }
+
+    private func placeholderIcon(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 70, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.28))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .padding(.trailing, TVLayout.safeHorizontalPadding)
     }
 }
 
@@ -514,7 +597,7 @@ struct GenrePillSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
                 .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
@@ -593,7 +676,7 @@ struct ContinueWatchingShelfView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
                 .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
@@ -729,7 +812,7 @@ struct CatalogLandscapeShelfView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
                 .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
@@ -1067,7 +1150,7 @@ struct ThemedCatalogSectionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
 
             LazyVStack(spacing: 22) {
                 ForEach(items) { item in
@@ -1183,7 +1266,7 @@ struct CatalogShelfView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
                 .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
@@ -1229,7 +1312,7 @@ struct CompactCatalogShelfView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
                 .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
@@ -1269,8 +1352,8 @@ struct CompactCatalogPosterButton: View {
         self.onFocus = onFocus
     }
 
-    private let cardWidth: CGFloat = 172
-    private let cardHeight: CGFloat = 258
+    private let cardWidth: CGFloat = 190
+    private let cardHeight: CGFloat = 285
     private let focusedScale: CGFloat = 1.065
     private let cornerRadius: CGFloat = 10
 
@@ -1300,7 +1383,7 @@ struct CompactCatalogPosterButton: View {
                 )
 
                 Text(item.title)
-                    .font(.system(size: 21, weight: .semibold))
+                    .font(.system(size: 23, weight: .semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .padding(12)
@@ -1353,7 +1436,7 @@ struct LogoCardShelfView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
                 .padding(.horizontal, contentHorizontalInset)
 
             ScrollView(.horizontal) {
@@ -1469,8 +1552,8 @@ struct CatalogPosterButton: View {
         self.onFocus = onFocus
     }
 
-    private let cardWidth: CGFloat = 220
-    private let cardHeight: CGFloat = 330
+    private let cardWidth: CGFloat = 250
+    private let cardHeight: CGFloat = 375
     private let focusedScale: CGFloat = 1.06
     private let cornerRadius: CGFloat = 12
 
@@ -1530,12 +1613,12 @@ struct CatalogPosterButton: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.title)
-                    .font(.system(size: 25, weight: .semibold))
+                    .font(.system(size: 29, weight: .semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 Text(item.subtitle ?? item.mediaTypeDisplayName)
-                    .font(.system(size: 21, weight: .medium))
+                    .font(.system(size: 24, weight: .medium))
                     .foregroundStyle(.white.opacity(0.72))
                     .lineLimit(1)
 
@@ -1573,9 +1656,9 @@ struct PersonCreditButton: View {
     let person: CatalogPersonCredit
     let textStyle: PersonCreditCardTextStyle
 
-    private let cardWidth: CGFloat = 206
-    private let imageHeight: CGFloat = 276
-    private let cardHeight: CGFloat = 384
+    private let cardWidth: CGFloat = 220
+    private let imageHeight: CGFloat = 294
+    private let cardHeight: CGFloat = 410
     private let cornerRadius: CGFloat = 12
 
     init(
@@ -1619,7 +1702,7 @@ struct PersonCreditButton: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(primaryText)
-                    .font(.system(size: 25, weight: .semibold))
+                    .font(.system(size: 29, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -1627,7 +1710,7 @@ struct PersonCreditButton: View {
 
                 if let secondaryText {
                     Text(secondaryText)
-                        .font(.system(size: 21, weight: .medium))
+                        .font(.system(size: 24, weight: .medium))
                         .foregroundStyle(.white.opacity(0.68))
                         .lineLimit(1)
                 }

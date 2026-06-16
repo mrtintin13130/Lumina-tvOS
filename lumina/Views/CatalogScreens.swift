@@ -66,6 +66,8 @@ struct HomeShellView: View {
 private struct CatalogHomeView: View {
     @EnvironmentObject private var appModel: AppModel
     @State private var selectedHeroItem: CatalogItem?
+    @State private var backgroundPalette = HomeBackgroundPalette.default
+    @State private var backgroundPaletteTask: Task<Void, Never>?
 
     private enum Layout {
         static let horizontalPadding: CGFloat = TVLayout.safeHorizontalPadding
@@ -73,29 +75,13 @@ private struct CatalogHomeView: View {
         static let heroShelfSpacing: CGFloat = TVLayout.heroShelfSpacing
         static let topPadding: CGFloat = TVLayout.contentTopPadding
         static let bottomPadding: CGFloat = TVLayout.contentBottomPadding
+        static let backgroundDebounceNanoseconds: UInt64 = 320_000_000
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
-                ProgressView(L10n.text("Loading catalog"))
-                    .padding(.horizontal, Layout.horizontalPadding)
-                    .padding(.top, Layout.topPadding)
-            }
-
-            if let selectedHeroItem {
-                ContextualHomeHeroView(item: selectedHeroItem)
-            }
-
-            ScrollView(.vertical) {
-                shelvesContent
-                    .padding(.top, selectedHeroItem == nil ? Layout.shelfSpacing : Layout.heroShelfSpacing)
-                    .padding(.bottom, Layout.bottomPadding)
-            }
-            .contentMargins(.all, 0, for: .scrollContent)
-            .frame(maxWidth: .infinity)
+        GeometryReader { geometry in
+            homeContent(availableHeight: geometry.size.height)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.black.ignoresSafeArea())
         .ignoresSafeArea(.container, edges: [.top, .horizontal])
         .onAppear {
@@ -104,6 +90,38 @@ private struct CatalogHomeView: View {
         .onChange(of: appModel.homeSections) { _, _ in
             resetHeroSelectionIfNeeded()
         }
+        .onDisappear {
+            backgroundPaletteTask?.cancel()
+        }
+    }
+
+    private func homeContent(availableHeight: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            HomeDynamicBackground(palette: backgroundPalette)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
+                    ProgressView(L10n.text("Loading catalog"))
+                        .padding(.horizontal, Layout.horizontalPadding)
+                        .padding(.top, Layout.topPadding)
+                }
+
+                if let selectedHeroItem {
+                    ContextualHomeHeroView(item: selectedHeroItem, availableHeight: availableHeight)
+                }
+
+                ScrollView(.vertical) {
+                    shelvesContent
+                        .padding(.top, selectedHeroItem == nil ? Layout.shelfSpacing : Layout.heroShelfSpacing)
+                        .padding(.bottom, Layout.bottomPadding)
+                }
+                .contentMargins(.all, 0, for: .scrollContent)
+                .frame(maxWidth: .infinity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var shelvesContent: some View {
@@ -144,20 +162,40 @@ private struct CatalogHomeView: View {
     private func resetHeroSelectionIfNeeded() {
         guard let firstItem = heroControllingSection?.items.first else {
             selectedHeroItem = nil
+            scheduleBackgroundPaletteUpdate(for: nil)
             return
         }
         guard let selectedHeroItem else {
             self.selectedHeroItem = firstItem
+            scheduleBackgroundPaletteUpdate(for: firstItem, debounce: false)
             return
         }
         if heroControllingSection?.items.contains(selectedHeroItem) != true {
             self.selectedHeroItem = firstItem
+            scheduleBackgroundPaletteUpdate(for: firstItem, debounce: false)
         }
     }
 
     private func selectHeroItem(_ item: CatalogItem) {
         withAnimation(.easeInOut(duration: 0.22)) {
             selectedHeroItem = item
+        }
+        scheduleBackgroundPaletteUpdate(for: item)
+    }
+
+    private func scheduleBackgroundPaletteUpdate(for item: CatalogItem?, debounce: Bool = true) {
+        let palette = HomeBackgroundPalette(item: item)
+        backgroundPaletteTask?.cancel()
+        backgroundPaletteTask = Task {
+            if debounce {
+                try? await Task.sleep(nanoseconds: Layout.backgroundDebounceNanoseconds)
+            }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 1.45)) {
+                    backgroundPalette = palette
+                }
+            }
         }
     }
 
@@ -181,6 +219,109 @@ private struct CatalogHomeView: View {
     }
 }
 
+private struct HomeDynamicBackground: View {
+    let palette: HomeBackgroundPalette
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    palette.background,
+                    palette.backgroundSecondary,
+                    .black
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            RadialGradient(
+                colors: [
+                    palette.accent.opacity(0.34),
+                    palette.accent.opacity(0.12),
+                    .clear
+                ],
+                center: .topTrailing,
+                startRadius: 120,
+                endRadius: 980
+            )
+
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.18),
+                    .black.opacity(0.56)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+        .animation(.easeInOut(duration: 1.45), value: palette)
+    }
+}
+
+private struct HomeBackgroundPalette: Equatable {
+    let backgroundHex: String?
+    let backgroundSecondaryHex: String?
+    let accentHex: String?
+
+    static let `default` = HomeBackgroundPalette(
+        backgroundHex: "#000000",
+        backgroundSecondaryHex: "#050507",
+        accentHex: "#101014"
+    )
+
+    init(
+        backgroundHex: String?,
+        backgroundSecondaryHex: String?,
+        accentHex: String?
+    ) {
+        self.backgroundHex = backgroundHex
+        self.backgroundSecondaryHex = backgroundSecondaryHex
+        self.accentHex = accentHex
+    }
+
+    init(item: CatalogItem?) {
+        guard let colors = item?.colors else {
+            self = .default
+            return
+        }
+        self.backgroundHex = colors.background
+        self.backgroundSecondaryHex = colors.backgroundSecondary
+        self.accentHex = colors.accent
+    }
+
+    var background: Color {
+        Color(hex: backgroundHex) ?? .black
+    }
+
+    var backgroundSecondary: Color {
+        Color(hex: backgroundSecondaryHex) ?? Color(red: 0.02, green: 0.02, blue: 0.03)
+    }
+
+    var accent: Color {
+        Color(hex: accentHex) ?? Color(red: 0.08, green: 0.08, blue: 0.09)
+    }
+}
+
+private extension Color {
+    init?(hex: String?) {
+        guard let hex else {
+            return nil
+        }
+
+        let cleaned = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard cleaned.count == 6, let value = Int(cleaned, radix: 16) else {
+            return nil
+        }
+
+        let red = Double((value >> 16) & 0xFF) / 255
+        let green = Double((value >> 8) & 0xFF) / 255
+        let blue = Double(value & 0xFF) / 255
+
+        self.init(red: red, green: green, blue: blue)
+    }
+}
+
 private extension CatalogSection {
     func matchesHomeSectionKeywords(_ keywords: [String]) -> Bool {
         let values = [id, title, type, mediaType]
@@ -198,7 +339,7 @@ private struct CatalogGridView: View {
     let topPadding: CGFloat
 
     private let columns = [
-        GridItem(.adaptive(minimum: 220, maximum: 240), spacing: 30)
+        GridItem(.adaptive(minimum: 250, maximum: 270), spacing: 34)
     ]
 
     var body: some View {
@@ -211,7 +352,7 @@ private struct CatalogGridView: View {
                 } else if items.isEmpty {
                     EmptyCatalogState(title: emptyTitle)
                 } else {
-                    LazyVGrid(columns: columns, alignment: .leading, spacing: 30) {
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 34) {
                         ForEach(items) { item in
                             CatalogPosterButton(item: item)
                         }
@@ -247,7 +388,7 @@ private struct CatalogSearchView: View {
                         .textFieldStyle(.plain)
                         .textContentType(.none)
                         .submitLabel(.search)
-                        .font(.title3)
+                        .font(.system(size: 31, weight: .medium))
                         .padding(18)
                         .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                         .frame(maxWidth: 680)
@@ -260,6 +401,7 @@ private struct CatalogSearchView: View {
                         Task { await appModel.runSearch() }
                     } label: {
                         Label(L10n.text("Search"), systemImage: "magnifyingglass")
+                            .font(.system(size: 31, weight: .semibold))
                     }
                     .buttonStyle(.borderedProminent)
                     .focused($focusedField, equals: .submit)

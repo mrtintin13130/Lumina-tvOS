@@ -110,9 +110,9 @@ private struct DetailMainMenu: View {
                     appModel.openHomeTab(item.tab)
                 } label: {
                     Label(item.title, systemImage: item.systemImage)
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(.system(size: 23, weight: .semibold))
                         .labelStyle(.titleAndIcon)
-                        .frame(minWidth: item.tab == .tvShows ? 138 : 112)
+                        .frame(minWidth: item.tab == .tvShows ? 158 : 128)
                 }
                 .buttonStyle(DetailMenuButtonStyle(isSelected: appModel.selectedHomeTab == item.tab))
                 .focused($focusedTab, equals: item.tab)
@@ -134,8 +134,8 @@ private struct DetailMenuButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(isSelected ? .black : .white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
             .background(
                 isSelected ? .white.opacity(configuration.isPressed ? 0.74 : 0.9) : .white.opacity(configuration.isPressed ? 0.18 : 0.08),
                 in: Capsule()
@@ -178,10 +178,10 @@ private struct DetailHero: View {
 
             if let overview = item.overview, !overview.isEmpty {
                 Text(overview)
-                    .font(.system(size: 25, weight: .regular))
+                    .font(.system(size: 29, weight: .regular))
                     .foregroundStyle(.white.opacity(0.82))
                     .lineLimit(4)
-                    .lineSpacing(4)
+                    .lineSpacing(5)
                     .frame(maxWidth: 960, alignment: .leading)
             }
 
@@ -194,8 +194,8 @@ private struct DetailHero: View {
                         Task { await appModel.playCatalogMovie(item) }
                     } label: {
                         Label(item.primaryActionTitle, systemImage: "play.fill")
-                            .font(.system(size: 22, weight: .bold))
-                            .frame(minWidth: 170)
+                            .font(.system(size: 29, weight: .bold))
+                            .frame(minWidth: 192)
                     }
                     .buttonStyle(DetailActionButtonStyle(isPrimary: true))
                     .disabled(item.hasPlayableMedia == false)
@@ -209,8 +209,8 @@ private struct DetailHero: View {
                         Task { await appModel.toggleWatchlist(item) }
                     } label: {
                         Label(item.watchlistActionTitle, systemImage: item.isWatchlisted == true ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 22, weight: .bold))
-                            .frame(minWidth: 190)
+                            .font(.system(size: 29, weight: .bold))
+                            .frame(minWidth: 220)
                     }
                     .buttonStyle(DetailActionButtonStyle(isPrimary: false))
                     .focused($focusedAction, equals: .watchlist)
@@ -223,8 +223,8 @@ private struct DetailHero: View {
                         Task { await appModel.toggleFavorite(item) }
                     } label: {
                         Label(item.favoriteActionTitle, systemImage: item.isFavorite == true ? "heart.fill" : "heart")
-                            .font(.system(size: 22, weight: .bold))
-                            .frame(minWidth: 170)
+                            .font(.system(size: 29, weight: .bold))
+                            .frame(minWidth: 210)
                     }
                     .buttonStyle(DetailActionButtonStyle(isPrimary: false))
                     .focused($focusedAction, equals: .favorite)
@@ -245,7 +245,7 @@ private struct TrailerUnavailableLabel: View {
     var body: some View {
         if isVisible {
             Label(L10n.text("Trailer unavailable"), systemImage: "film.stack")
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 29, weight: .bold))
                 .foregroundStyle(.white.opacity(0.64))
                 .padding(.horizontal, 28)
                 .padding(.vertical, 16)
@@ -438,7 +438,7 @@ private struct DetailPersonShelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: TVLayout.shelfTitleSpacing) {
             Text(title)
-                .font(.title2.bold())
+                .tvSectionTitle()
 
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 24) {
@@ -458,7 +458,7 @@ private struct DetailEmptyPeopleShelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Cast")
-                .font(.title2.bold())
+                .tvSectionTitle()
 
             Text("Cast and behind-the-scenes credits are not available for this title yet.")
                 .font(.headline)
@@ -495,7 +495,7 @@ private struct TVSeasonEpisodeSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Seasons")
-                .font(.title2.bold())
+                .tvSectionTitle()
 
             if appModel.selectedTVSeasons.isEmpty && !appModel.isDetailLoading {
                 EmptyCatalogState(title: L10n.text("No seasons found"))

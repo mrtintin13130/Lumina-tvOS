@@ -162,6 +162,12 @@ final class luminaTests: XCTestCase {
                 "poster_path": "/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg",
                 "backdrop_path": "/qO55CD8tgVL1T4WKn6zYFFiD6lL.jpg",
                 "backdrop_with_text_path": "/etfKck6BHfGc4Q9ScDIECjomLYO.jpg",
+                "colors": {
+                  "background": "#101014",
+                  "backgroundSecondary": "#050507",
+                  "accent": "#6B7280",
+                  "text": "#FFFFFF"
+                },
                 "progress": {
                   "progress_percent": 25
                 },
@@ -186,6 +192,10 @@ final class luminaTests: XCTestCase {
         XCTAssertEqual(item.posterPath, "/qQclTgLMDvGBuUBFGHRipxkEwWR.jpg")
         XCTAssertEqual(item.backdropPath, "/qO55CD8tgVL1T4WKn6zYFFiD6lL.jpg")
         XCTAssertEqual(item.backdropWithTextPath, "/etfKck6BHfGc4Q9ScDIECjomLYO.jpg")
+        XCTAssertEqual(item.colors?.background, "#101014")
+        XCTAssertEqual(item.colors?.backgroundSecondary, "#050507")
+        XCTAssertEqual(item.colors?.accent, "#6B7280")
+        XCTAssertEqual(item.colors?.text, "#FFFFFF")
         XCTAssertEqual(item.progressPercent, 25)
         XCTAssertEqual(item.hasPlayableMedia, true)
     }

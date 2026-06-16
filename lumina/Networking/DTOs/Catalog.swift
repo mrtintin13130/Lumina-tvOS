@@ -192,6 +192,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
     let episodeNumber: Int?
     let cast: [CatalogPersonCredit]
     let crew: [CatalogPersonCredit]
+    let colors: CatalogItemColors?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -239,6 +240,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         case seasonNumber = "season_number"
         case episodeNumber = "episode_number"
         case episodeTitle = "episode_title"
+        case colors
     }
 
     enum ProgressKeys: String, CodingKey {
@@ -303,7 +305,8 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         seasonNumber: Int? = nil,
         episodeNumber: Int? = nil,
         cast: [CatalogPersonCredit] = [],
-        crew: [CatalogPersonCredit] = []
+        crew: [CatalogPersonCredit] = [],
+        colors: CatalogItemColors? = nil
     ) {
         self.id = id
         self.mediaType = mediaType
@@ -332,6 +335,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         self.episodeNumber = episodeNumber
         self.cast = cast
         self.crew = crew
+        self.colors = colors
     }
 
     init(from decoder: Decoder) throws {
@@ -423,6 +427,7 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
         href = try container.decodeIfPresent(String.self, forKey: .href)
         cast = CatalogItem.decodeCredits(from: container, key: .cast)
         crew = CatalogItem.decodeCredits(from: container, key: .crew)
+        colors = try container.decodeIfPresent(CatalogItemColors.self, forKey: .colors)
         if let direct = try container.decodeIfPresent(Bool.self, forKey: .hasPlayableMedia) {
             hasPlayableMedia = direct
         } else if let readiness = try? container.nestedContainer(keyedBy: PlaybackReadinessKeys.self, forKey: .playbackReadiness) {
@@ -514,6 +519,20 @@ struct CatalogItem: Decodable, Equatable, Identifiable {
             return nested
         }
         return []
+    }
+}
+
+struct CatalogItemColors: Decodable, Equatable {
+    let background: String?
+    let backgroundSecondary: String?
+    let accent: String?
+    let text: String?
+
+    enum CodingKeys: String, CodingKey {
+        case background
+        case backgroundSecondary
+        case accent
+        case text
     }
 }
 
