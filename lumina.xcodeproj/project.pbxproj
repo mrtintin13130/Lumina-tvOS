@@ -31,6 +31,13 @@
 		5BD000132FCA500000000001 /* Views/CatalogDetailOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */; };
 		5BD000152FCA500000000001 /* Playback/AVKitPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */; };
 		5BD000172FCA500000000001 /* Views/CatalogComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD000182FCA500000000001 /* Views/CatalogComponents.swift */; };
+		5BD100012FCA510000000001 /* Views/CatalogHeroViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD100022FCA510000000001 /* Views/CatalogHeroViews.swift */; };
+		5BD100032FCA510000000001 /* Views/CatalogSectionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD100042FCA510000000001 /* Views/CatalogSectionViews.swift */; };
+		5BD100052FCA510000000001 /* Views/CatalogShelves.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD100062FCA510000000001 /* Views/CatalogShelves.swift */; };
+		5BD100072FCA510000000001 /* Views/CatalogCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD100082FCA510000000001 /* Views/CatalogCards.swift */; };
+		5BD100092FCA510000000001 /* Views/CatalogEditorialViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD1000A2FCA510000000001 /* Views/CatalogEditorialViews.swift */; };
+		5BD1000B2FCA510000000001 /* Views/CatalogArtwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD1000C2FCA510000000001 /* Views/CatalogArtwork.swift */; };
+		5BD1000D2FCA510000000001 /* Views/CatalogDisplayExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD1000E2FCA510000000001 /* Views/CatalogDisplayExtensions.swift */; };
 		5BD000192FCA500000000001 /* Views/StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001A2FCA500000000001 /* Views/StatusText.swift */; };
 		5BD0001B2FCA500000000001 /* Views/SetupScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001C2FCA500000000001 /* Views/SetupScreens.swift */; };
 		5BD0001D2FCA500000000001 /* Views/CatalogScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */; };
@@ -95,6 +102,13 @@
 		5BD000142FCA500000000001 /* Views/CatalogDetailOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogDetailOverlay.swift; sourceTree = "<group>"; };
 		5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playback/AVKitPlayerView.swift; sourceTree = "<group>"; };
 		5BD000182FCA500000000001 /* Views/CatalogComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogComponents.swift; sourceTree = "<group>"; };
+		5BD100022FCA510000000001 /* Views/CatalogHeroViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogHeroViews.swift; sourceTree = "<group>"; };
+		5BD100042FCA510000000001 /* Views/CatalogSectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogSectionViews.swift; sourceTree = "<group>"; };
+		5BD100062FCA510000000001 /* Views/CatalogShelves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogShelves.swift; sourceTree = "<group>"; };
+		5BD100082FCA510000000001 /* Views/CatalogCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogCards.swift; sourceTree = "<group>"; };
+		5BD1000A2FCA510000000001 /* Views/CatalogEditorialViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogEditorialViews.swift; sourceTree = "<group>"; };
+		5BD1000C2FCA510000000001 /* Views/CatalogArtwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogArtwork.swift; sourceTree = "<group>"; };
+		5BD1000E2FCA510000000001 /* Views/CatalogDisplayExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogDisplayExtensions.swift; sourceTree = "<group>"; };
 		5BD0001A2FCA500000000001 /* Views/StatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/StatusText.swift; sourceTree = "<group>"; };
 		5BD0001C2FCA500000000001 /* Views/SetupScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SetupScreens.swift; sourceTree = "<group>"; };
 		5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/CatalogScreens.swift; sourceTree = "<group>"; };
@@ -189,6 +203,13 @@
 				5BD0003B2FCA500000000001 /* Playback/PlaybackStateModel.swift */,
 				5BD000162FCA500000000001 /* Playback/AVKitPlayerView.swift */,
 				5BD000182FCA500000000001 /* Views/CatalogComponents.swift */,
+				5BD1000C2FCA510000000001 /* Views/CatalogArtwork.swift */,
+				5BD100082FCA510000000001 /* Views/CatalogCards.swift */,
+				5BD1000E2FCA510000000001 /* Views/CatalogDisplayExtensions.swift */,
+				5BD1000A2FCA510000000001 /* Views/CatalogEditorialViews.swift */,
+				5BD100022FCA510000000001 /* Views/CatalogHeroViews.swift */,
+				5BD100042FCA510000000001 /* Views/CatalogSectionViews.swift */,
+				5BD100062FCA510000000001 /* Views/CatalogShelves.swift */,
 				5BD0001A2FCA500000000001 /* Views/StatusText.swift */,
 				5BD0001C2FCA500000000001 /* Views/SetupScreens.swift */,
 				5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */,
@@ -401,6 +422,13 @@
 				5BD000382FCA500000000001 /* Playback/PlaybackStateModel.swift in Sources */,
 				5BD000152FCA500000000001 /* Playback/AVKitPlayerView.swift in Sources */,
 				5BD000172FCA500000000001 /* Views/CatalogComponents.swift in Sources */,
+				5BD1000B2FCA510000000001 /* Views/CatalogArtwork.swift in Sources */,
+				5BD100072FCA510000000001 /* Views/CatalogCards.swift in Sources */,
+				5BD1000D2FCA510000000001 /* Views/CatalogDisplayExtensions.swift in Sources */,
+				5BD100092FCA510000000001 /* Views/CatalogEditorialViews.swift in Sources */,
+				5BD100012FCA510000000001 /* Views/CatalogHeroViews.swift in Sources */,
+				5BD100032FCA510000000001 /* Views/CatalogSectionViews.swift in Sources */,
+				5BD100052FCA510000000001 /* Views/CatalogShelves.swift in Sources */,
 				5BD000192FCA500000000001 /* Views/StatusText.swift in Sources */,
 				5BD0001B2FCA500000000001 /* Views/SetupScreens.swift in Sources */,
 				5BD0001D2FCA500000000001 /* Views/CatalogScreens.swift in Sources */,

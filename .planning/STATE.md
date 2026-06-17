@@ -110,6 +110,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-17 | catalog-components-split | Split the large catalog components file into focused Swift files for shared UI, artwork, cards, shelves, hero views, section routing, editorial views, and display extensions; updated the Xcode source list and ignored local `.derivedData/` build output; generic tvOS build passed with code signing disabled. |
 | 2026-06-17 | poster-image-only-cards | Removed visible title/subtitle/progress text from compact and standard poster shelf cards so the native tvOS card button displays only the clipped poster artwork while preserving existing actions and accessibility labels; generic tvOS build passed with code signing disabled. |
 | 2026-06-17 | native-tvos-poster-card | Replaced custom poster shelf focus styling with native tvOS `Button` card styling for compact and standard poster rails, kept poster artwork clipped to fixed rounded sizes, moved title/details outside the button label, and preserved existing detail/play actions; generic tvOS build passed with code signing disabled. |
 | 2026-06-16 | backdrop-alpha-fade | Replaced the contextual hero backdrop's bottom black overlay with an alpha mask so artwork fades into the dynamic Home background colors directly while preserving the left image mask and existing sizing; static diff checks passed. |
