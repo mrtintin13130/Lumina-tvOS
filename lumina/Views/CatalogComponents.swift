@@ -1354,57 +1354,25 @@ struct CompactCatalogPosterButton: View {
 
     private let cardWidth: CGFloat = 190
     private let cardHeight: CGFloat = 285
-    private let focusedScale: CGFloat = 1.065
     private let cornerRadius: CGFloat = 10
 
     var body: some View {
-        Button {
-            Task { await appModel.openCatalogDetail(item) }
-        } label: {
-            ZStack(alignment: .bottomLeading) {
-                CatalogArtwork(
-                    url: appModel.artworkURL(
-                        for: item.posterPath ?? item.backdropPath,
-                        kind: .poster
-                    ),
-                    aspectRatio: 2 / 3
-                )
-                .frame(width: cardWidth, height: cardHeight)
-                .accessibilityHidden(true)
-
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        .black.opacity(0.1),
-                        .black.opacity(0.82)
-                    ],
-                    startPoint: .center,
-                    endPoint: .bottom
-                )
-
-                Text(item.title)
-                    .font(.system(size: 23, weight: .semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .padding(12)
-                    .frame(width: cardWidth, alignment: .leading)
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                Task { await appModel.openCatalogDetail(item) }
+            } label: {
+                posterImage
             }
-            .frame(width: cardWidth, height: cardHeight)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(
-                        isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
-                        lineWidth: 1
-                    )
-            }
+            .buttonStyle(.card)
+            .focused($isFocused)
+
+            Text(item.title)
+                .font(.system(size: 23, weight: .semibold))
+                .lineLimit(1)
+                .frame(width: cardWidth, alignment: .leading)
         }
-        .tvMediaCatalogButton()
-        .scaleEffect(isFocused ? focusedScale : 1)
-        .shadow(color: .black.opacity(isFocused ? 0.62 : 0.22), radius: isFocused ? 20 : 9, x: 0, y: isFocused ? 13 : 6)
+        .frame(width: cardWidth, alignment: .leading)
         .zIndex(isFocused ? 10 : 0)
-        .animation(.easeOut(duration: 0.16), value: isFocused)
-        .focused($isFocused)
         .onChange(of: isFocused) { _, focused in
             if focused {
                 onFocus?(item)
@@ -1412,6 +1380,19 @@ struct CompactCatalogPosterButton: View {
         }
         .accessibilityLabel(item.accessibilitySummary)
         .accessibilityHint(L10n.text("Opens details"))
+    }
+
+    private var posterImage: some View {
+        CatalogArtwork(
+            url: appModel.artworkURL(
+                for: item.posterPath ?? item.backdropPath,
+                kind: .poster
+            ),
+            aspectRatio: 2 / 3
+        )
+        .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .accessibilityHidden(true)
     }
 }
 
@@ -1554,68 +1535,28 @@ struct CatalogPosterButton: View {
 
     private let cardWidth: CGFloat = 250
     private let cardHeight: CGFloat = 375
-    private let focusedScale: CGFloat = 1.06
     private let cornerRadius: CGFloat = 12
 
     var body: some View {
-        Button {
-            Task {
-                if item.mediaType == "episode" {
-                    await appModel.playCatalogMovie(item)
-                } else {
-                    await appModel.openCatalogDetail(item)
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                Task {
+                    if item.mediaType == "episode" {
+                        await appModel.playCatalogMovie(item)
+                    } else {
+                        await appModel.openCatalogDetail(item)
+                    }
                 }
+            } label: {
+                posterImage
             }
-        } label: {
-            posterCard
-                .frame(width: cardWidth, height: cardHeight)
-        }
-        .tvMediaCatalogButton()
-        .scaleEffect(isFocused ? focusedScale : 1)
-        .shadow(
-            color: .black.opacity(isFocused ? 0.65 : 0.25),
-            radius: isFocused ? 22 : 10,
-            x: 0,
-            y: isFocused ? 14 : 6
-        )
-        .zIndex(isFocused ? 10 : 0)
-        .animation(.easeOut(duration: 0.16), value: isFocused)
-        .focused($isFocused)
-        .onChange(of: isFocused) { _, focused in
-            if focused {
-                onFocus?(item)
-            }
-        }
-        .accessibilityLabel(item.accessibilitySummary)
-        .accessibilityHint(item.mediaType == "episode" ? L10n.text("Starts playback") : L10n.text("Opens details"))
-    }
-
-    private var posterCard: some View {
-        ZStack(alignment: .bottomLeading) {
-            CatalogArtwork(
-                url: appModel.artworkURL(
-                    for: item.posterPath ?? item.backdropPath,
-                    kind: .poster
-                ),
-                aspectRatio: 2 / 3
-            )
-            .frame(width: cardWidth, height: cardHeight)
-
-            LinearGradient(
-                colors: [
-                    .clear,
-                    .black.opacity(0.12),
-                    .black.opacity(0.86)
-                ],
-                startPoint: .center,
-                endPoint: .bottom
-            )
+            .buttonStyle(.card)
+            .focused($isFocused)
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.title)
                     .font(.system(size: 29, weight: .semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
+                    .lineLimit(1)
 
                 Text(item.subtitle ?? item.mediaTypeDisplayName)
                     .font(.system(size: 24, weight: .medium))
@@ -1629,18 +1570,30 @@ struct CatalogPosterButton: View {
                         .padding(.top, 5)
                 }
             }
-            .padding(14)
             .frame(width: cardWidth, alignment: .leading)
         }
-        .frame(width: cardWidth, height: cardHeight)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        .overlay {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(
-                    isFocused ? .white.opacity(0.34) : .white.opacity(0.08),
-                    lineWidth: 1
-                )
+        .frame(width: cardWidth, alignment: .leading)
+        .zIndex(isFocused ? 10 : 0)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                onFocus?(item)
+            }
         }
+        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityHint(item.mediaType == "episode" ? L10n.text("Starts playback") : L10n.text("Opens details"))
+    }
+
+    private var posterImage: some View {
+        CatalogArtwork(
+            url: appModel.artworkURL(
+                for: item.posterPath ?? item.backdropPath,
+                kind: .poster
+            ),
+            aspectRatio: 2 / 3
+        )
+        .frame(width: cardWidth, height: cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .accessibilityHidden(true)
     }
 }
 

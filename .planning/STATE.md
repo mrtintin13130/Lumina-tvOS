@@ -110,6 +110,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-17 | native-tvos-poster-card | Replaced custom poster shelf focus styling with native tvOS `Button` card styling for compact and standard poster rails, kept poster artwork clipped to fixed rounded sizes, moved title/details outside the button label, and preserved existing detail/play actions; generic tvOS build passed with code signing disabled. |
 | 2026-06-16 | backdrop-alpha-fade | Replaced the contextual hero backdrop's bottom black overlay with an alpha mask so artwork fades into the dynamic Home background colors directly while preserving the left image mask and existing sizing; static diff checks passed. |
 | 2026-06-16 | contextual-hero-fade-removal | Removed the contextual Home hero's separate full-width gradient overlay while preserving the backdrop image's own left mask and bottom fade; static diff checks passed. |
 | 2026-06-16 | home-dynamic-gradient | Added API-driven Home background palettes with debounced, slow animated transitions using item background, secondary, and accent colors; kept safe dark fallbacks, made the contextual hero base transparent so the gradient shows through, and added DTO decode coverage; static diff checks passed while the local generic tvOS build reached Swift compilation before the known Xcode/CoreSimulator stall/interruption. |
