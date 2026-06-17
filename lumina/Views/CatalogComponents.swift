@@ -1357,21 +1357,13 @@ struct CompactCatalogPosterButton: View {
     private let cornerRadius: CGFloat = 10
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                Task { await appModel.openCatalogDetail(item) }
-            } label: {
-                posterImage
-            }
-            .buttonStyle(.card)
-            .focused($isFocused)
-
-            Text(item.title)
-                .font(.system(size: 23, weight: .semibold))
-                .lineLimit(1)
-                .frame(width: cardWidth, alignment: .leading)
+        Button {
+            Task { await appModel.openCatalogDetail(item) }
+        } label: {
+            posterImage
         }
-        .frame(width: cardWidth, alignment: .leading)
+        .buttonStyle(.card)
+        .focused($isFocused)
         .zIndex(isFocused ? 10 : 0)
         .onChange(of: isFocused) { _, focused in
             if focused {
@@ -1538,41 +1530,19 @@ struct CatalogPosterButton: View {
     private let cornerRadius: CGFloat = 12
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                Task {
-                    if item.mediaType == "episode" {
-                        await appModel.playCatalogMovie(item)
-                    } else {
-                        await appModel.openCatalogDetail(item)
-                    }
-                }
-            } label: {
-                posterImage
-            }
-            .buttonStyle(.card)
-            .focused($isFocused)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(item.title)
-                    .font(.system(size: 29, weight: .semibold))
-                    .lineLimit(1)
-
-                Text(item.subtitle ?? item.mediaTypeDisplayName)
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(1)
-
-                if item.progressPercent > 0 {
-                    ProgressView(value: min(max(item.progressPercent / 100, 0), 1))
-                        .progressViewStyle(.linear)
-                        .frame(height: 5)
-                        .padding(.top, 5)
+        Button {
+            Task {
+                if item.mediaType == "episode" {
+                    await appModel.playCatalogMovie(item)
+                } else {
+                    await appModel.openCatalogDetail(item)
                 }
             }
-            .frame(width: cardWidth, alignment: .leading)
+        } label: {
+            posterImage
         }
-        .frame(width: cardWidth, alignment: .leading)
+        .buttonStyle(.card)
+        .focused($isFocused)
         .zIndex(isFocused ? 10 : 0)
         .onChange(of: isFocused) { _, focused in
             if focused {
