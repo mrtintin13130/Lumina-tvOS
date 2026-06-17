@@ -4,22 +4,19 @@
 
 Lumina Native tvOS Client is a first-class Apple TV app for browsing and playing a user's Lumina media library from the living room. It is a native SwiftUI, AVKit, and AVFoundation client that consumes the existing Lumina API as the source of truth for catalog, identity, playback, progress, watched state, watchlist, favorites, stream tokens, HLS/direct streaming, subtitles, track metadata, scanner state, metadata, and diagnostics.
 
-The repository currently contains an Xcode-generated tvOS SwiftUI scaffold. The next work is to turn that scaffold into a remote-control-first media app while keeping backend changes additive and focused on the TV client contract.
+The repository now contains a real native tvOS client with setup/auth, server discovery, catalog browsing, detail surfaces, AVKit playback, diagnostics, localization, tests, and beta-readiness documentation. Next work should be driven by a fresh milestone, with physical Apple TV evidence and release preparation still treated as high-value gates.
 
 ## Core Value
 
 One authenticated Apple TV client can connect to a Lumina server, play HLS video through native AVKit on physical Apple TV, report progress, and resume reliably.
 
-## Current Milestone: v1.2 Stability, Usability, And Beta Hardening
+## Current State
 
-**Goal:** Turn the working tvOS client into a stable, usable, remote-first beta candidate by hardening the core movie path, focus/navigation behavior, diagnostics, and verification without overbuilding non-MVP features.
+**Shipped milestone:** v1.2 Stability, Usability, And Beta Hardening - completed 2026-06-17.
 
-**Target features:**
-- Reduce architecture risk by separating session, catalog, playback, and diagnostics responsibilities from the current central app model while keeping the implementation lightweight and testable.
-- Finish the user-critical Apple TV path: server setup, sign-in, Home, movie details, playback, exit, relaunch, resume, settings, and sign-out.
-- Harden tvOS focus, default focus, focus restoration, remote Back/Menu behavior, and setup/search text-entry friction so the app feels natural from the couch.
-- Make diagnostics and support information useful and safe for real debugging without exposing JWTs, stream tokens, Authorization headers, signed URLs, local paths, SQL details, stack traces, or raw subprocess output.
-- Add repeatable unit/UI/hardware verification gates for playback lifecycle, progress/resume, focus/navigation, and beta readiness.
+The v1.2 milestone hardened the working tvOS client into a stronger small-beta candidate. Architecture ownership is split across focused session, catalog, playback, and diagnostics models; remote-first focus and setup/search ergonomics are improved; playback lifecycle and safe support diagnostics are better covered; and repeatable build/test plus beta-readiness notes now exist.
+
+Known deferred close items remain: Phase 10 physical playback proof evidence, active simulator/focus debug notes, and quick-task planning-history cleanup. These are recorded in STATE.md and MILESTONES.md.
 
 ## Requirements
 
@@ -29,16 +26,19 @@ One authenticated Apple TV client can connect to a Lumina server, play HLS video
 - ✓ The app target uses SwiftUI and targets Apple TV / tvOS 17.2 — existing project settings
 - ✓ Product direction is documented in `TVOS_CLIENT_PRD.md` — approved PRD
 - ✓ A codebase map exists under `.planning/codebase/` — existing planning context
+- ✓ Split high-risk responsibilities out of AppModel into focused session, catalog, playback, and diagnostics ownership - v1.2
+- ✓ Hid, disabled, or clarified unfinished user-visible tvOS affordances before beta - v1.2
+- ✓ Hardened tvOS focus, default focus, focus restoration, and remote navigation behavior - v1.2
+- ✓ Strengthened movie playback lifecycle handling and captured physical QA follow-up evidence needs - v1.2
+- ✓ Added safe Settings diagnostics and support context with redaction coverage - v1.2
+- ✓ Replaced template UI tests with focused tvOS smoke coverage and repeatable build gates - v1.2
+- ✓ Prepared small-beta readiness notes with reviewer path, QA matrix, privacy notes, and release blockers - v1.2
 
 ### Active
 
-- [ ] Split high-risk responsibilities out of `AppModel` into small session, catalog, playback, and diagnostics coordinators or models while preserving existing SwiftUI behavior and tests.
-- [ ] Remove, hide, or explicitly disable user-visible placeholder actions such as episode playback, trailer playback, genre browsing, and person details until they are real flows.
-- [ ] Harden tvOS focus behavior across setup, sign-in, Home, grids, search, detail overlays, editorial overlays, settings, and playback exit so focus is visible, predictable, and restored after navigation.
-- [ ] Complete movie playback lifecycle proof on physical Apple TV, including start, pause/exit, stop, relaunch, resume, expired stream-token, missing media, server restart/unreachable, subtitles, and alternate audio where available.
-- [ ] Add safe Settings diagnostics/support information that exposes app/server/session context useful for support while preserving all security redaction requirements.
-- [ ] Replace template UI tests with focused XCUITest coverage for setup/sign-in shell, Home, search, detail, playback entry, Settings, and sign-out, plus keep generic tvOS build/test-build commands repeatable.
-- [ ] Prepare a small-beta readiness checklist with reviewer path, demo server expectations, seed media coverage, physical QA evidence, privacy decisions, and known deferrals.
+- [ ] Define the next milestone with `$gsd-new-milestone`.
+- [ ] Close or explicitly re-scope remaining physical Apple TV playback proof evidence before wider beta confidence.
+- [ ] Resolve active simulator playback stall and tvOS focus/navigation debug notes.
 
 ### Out of Scope
 
@@ -68,7 +68,7 @@ The PRD's critical vertical slice is the highest-priority proof: manual server s
 
 The `rest-client/` endpoint collection is now the concrete backend endpoint inventory for this milestone. It confirms the available auth, catalog, HLS, playback session, progress, watched-state, track, subtitle, watchlist, and favorite routes. `GET /api/v1/system/capabilities` is implemented even though it is not listed in the endpoint collection, so the client should validate against that route and reconcile route-key details against the real backend response.
 
-The current senior-review finding is that the app has promising foundations but is not yet beta-stable. `AppModel` now concentrates too many concerns, some polished UI affordances still lead to placeholder messages, tvOS focus/default-focus behavior is uneven, physical Apple TV playback evidence remains the gate for confidence, Settings diagnostics are too thin for real support, and UI tests still mostly reflect the generated template.
+After v1.2, the app is locally build-ready for a small beta candidate and has stronger architecture boundaries, tvOS smoke tests, safer diagnostics, and beta-readiness documentation. It is not distribution-ready until physical Apple TV playback evidence, signing/provisioning, demo server/media, App Store privacy answers, review assets, and the acknowledged debug items are closed or intentionally deferred.
 
 ## Constraints
 
@@ -89,11 +89,11 @@ The current senior-review finding is that the app has promising foundations but 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Build a native tvOS app rather than Flutter, React Native for TV, or Unity | Native SwiftUI/AVKit best matches Apple TV focus, player behavior, platform compliance, and PRD risk profile | — Pending |
-| Use existing Lumina username/password JWT auth for MVP | Avoid delaying playback proof on a new device-pairing auth system | — Pending |
+| Build a native tvOS app rather than Flutter, React Native for TV, or Unity | Native SwiftUI/AVKit best matches Apple TV focus, player behavior, platform compliance, and PRD risk profile | ✓ Good |
+| Use existing Lumina username/password JWT auth for MVP | Avoid delaying playback proof on a new device-pairing auth system | ✓ Good |
 | Defer QR/device pairing | Remote-control sign-in is imperfect, but playback proof is higher risk and higher leverage | — Pending |
 | Use manual server URL entry first | Local discovery can be added after the core server-auth-playback path works | — Pending |
-| Prefer HLS playback on Apple TV | HLS aligns with AVKit and platform media expectations | — Pending |
+| Prefer HLS playback on Apple TV | HLS aligns with AVKit and platform media expectations | ✓ Good |
 | Preserve direct streaming support for existing clients | tvOS preferences should not break backend behavior used elsewhere | — Pending |
 | Require physical Apple TV proof before broad catalog polish | HLS, remote behavior, track selection, buffering, and long playback can differ from simulator behavior | — Pending |
 | Keep backend changes additive for MVP | The tvOS client should not become a backend rewrite project | — Pending |
@@ -102,10 +102,10 @@ The current senior-review finding is that the app has promising foundations but 
 | Start in this repository unless a later decision moves the client | The current workspace already contains the tvOS Xcode scaffold | — Pending |
 | Treat `rest-client/` as the concrete endpoint inventory for v1.1 alignment | The endpoint collection exposes the real route names and payload shapes the tvOS client must call | — Pending |
 | Keep v1.1 focused on movie playback proof before broad UI polish | The audit found hardware playback/progress/resume evidence is the highest-risk gap | — Pending |
-| Start v1.2 as stabilization and usability hardening rather than feature expansion | The app now builds and has real client surfaces, but beta risk is in architecture concentration, focus behavior, playback lifecycle proof, diagnostics, and verification | — Pending |
+| Start v1.2 as stabilization and usability hardening rather than feature expansion | The app now builds and has real client surfaces, but beta risk is in architecture concentration, focus behavior, playback lifecycle proof, diagnostics, and verification | ✓ Good |
 | Continue roadmap numbering from Phase 11 | The existing v1.1 roadmap already owns phases 8-10 and should remain traceable | — Pending |
-| Hide or explicitly disable unfinished actions before beta | On tvOS, selecting a focused item that only says "not wired yet" feels broken even if the underlying MVP path works | — Pending |
-| Keep architecture refactoring right-sized | Split high-risk responsibilities out of `AppModel` without introducing a large framework or over-abstracted architecture | — Pending |
+| Hide or explicitly disable unfinished actions before beta | On tvOS, selecting a focused item that only says "not wired yet" feels broken even if the underlying MVP path works | ✓ Good |
+| Keep architecture refactoring right-sized | Split high-risk responsibilities out of `AppModel` without introducing a large framework or over-abstracted architecture | ✓ Good |
 
 ## Evolution
 
@@ -125,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-08 after v1.2 milestone start*
+*Last updated: 2026-06-17 after v1.2 milestone completion*

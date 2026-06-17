@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Stability, Usability, And Beta Hardening
-status: Milestone v1.2 initialized from senior review
+status: Milestone v1.2 completed and archived
 stopped_at: Milestone v1.1 initialized and ready to plan Phase 8.
-last_updated: "2026-06-08T21:41:51.984Z"
-last_activity: 2026-06-15
+last_updated: "2026-06-17T00:00:00.000Z"
+last_activity: 2026-06-17
 progress:
   total_phases: 5
   completed_phases: 5
@@ -18,19 +18,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-08)
+See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** One authenticated Apple TV client can connect to a Lumina server, play HLS video through native AVKit on physical Apple TV, report progress, and resume reliably.
-**Current focus:** Phase 11: Architecture And State Hardening
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Milestone v1.2 initialized from senior review
-Last activity: 2026-06-15 - Completed quick task: install-oh-my-opencode-slim
+Phase: Complete
+Plan: Complete
+Status: Milestone v1.2 completed and archived
+Last activity: 2026-06-17 - Archived v1.2 milestone and recorded known deferred items
 
-Progress: [----------] 0%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
@@ -78,8 +78,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Discuss and plan Phase 11: Architecture And State Hardening.
-- Preserve existing dirty worktree changes while planning/executing v1.2.
+- Define the next milestone with `$gsd-new-milestone`.
+- Review acknowledged deferred items before widening beta scope.
 
 ### Blockers/Concerns
 
@@ -101,6 +101,10 @@ Items acknowledged and carried forward from previous milestone close:
 | Platform | Top Shelf behavior | Deferred until playback and Home are stable | Initialization |
 | Product | Household profiles | Deferred to v2 | Initialization |
 | Playback | Offline downloads and FairPlay DRM | Deferred to later product decision | Initialization |
+| uat | Phase 10 physical playback proof has 5 pending evidence checks | acknowledged at v1.2 close | 2026-06-17 |
+| debug | simulator-playback-stall | active debug note retained | 2026-06-17 |
+| debug | tvos-focus-navigation-bugs | active debug note retained | 2026-06-17 |
+| quick_task | 21 quick-task PLAN files without matching SUMMARY files | acknowledged planning-history gap | 2026-06-17 |
 
 ## Quick Tasks Completed
 
