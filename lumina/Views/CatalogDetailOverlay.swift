@@ -74,6 +74,7 @@ struct CatalogDetailPage: View {
                 .padding(.top, TVLayout.detailMenuTopPadding)
                 .padding(.horizontal, TVLayout.safeHorizontalPadding)
         }
+        .ignoresSafeArea(.container, edges: .horizontal)
         .background(Color.black.ignoresSafeArea())
         .onExitCommand {
             appModel.closeCatalogDetail()

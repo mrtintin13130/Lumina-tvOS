@@ -54,6 +54,7 @@ struct HomeShellView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.ignoresSafeArea())
+        .ignoresSafeArea(.container, edges: .horizontal)
         .task {
             if appModel.automaticCatalogRefreshEnabled {
                 await appModel.loadCatalog()
