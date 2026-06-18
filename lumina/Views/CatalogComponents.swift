@@ -25,6 +25,7 @@ enum TVLayout {
     static let detailHeroTopPadding: CGFloat = 290
     static let detailMenuTopPadding: CGFloat = 48
     static let setupContentMaxWidth: CGFloat = 1120
+    static let setupFieldWidth: CGFloat = 820
 }
 
 struct TVMediaCatalogButtonModifier: ViewModifier {

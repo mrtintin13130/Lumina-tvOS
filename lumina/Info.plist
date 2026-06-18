@@ -30,7 +30,7 @@
 		<string>_lumina._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Lumina searches for your server on the local network.</string>
+	<string>Lumina uses your local network to find your media server.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIUserInterfaceStyle</key>

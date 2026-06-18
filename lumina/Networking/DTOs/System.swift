@@ -10,6 +10,7 @@ struct ServerCapabilities: Codable, Equatable {
 
     struct Server: Codable, Equatable {
         let name: String
+        let id: String?
         let version: String
     }
 
@@ -75,6 +76,13 @@ struct ServerCapabilities: Codable, Equatable {
         let maximumArtworkWidth: Int
     }
 
+    struct Discovery: Codable, Equatable {
+        let serviceType: String
+        let apiPath: String
+        let capabilitiesRoute: String
+        let secure: Bool
+    }
+
     let server: Server
     let api: API
     let auth: Auth
@@ -83,6 +91,7 @@ struct ServerCapabilities: Codable, Equatable {
     let diagnostics: Diagnostics
     let routes: [String: String]
     let limits: Limits
+    let discovery: Discovery?
 
     var isTvMVPCompatible: Bool {
         Self.supportedAPIVersions.contains(api.version)

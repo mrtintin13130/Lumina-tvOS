@@ -12,9 +12,12 @@
 "Close editorial collection" = "Close editorial collection";
 "Compatible" = "Compatible";
 "Connect this Apple TV to your Lumina server." = "Connect this Apple TV to your Lumina server.";
+"Choose a discovered server or keep the address above." = "Choose a discovered server or keep the address above.";
 "Continue watching" = "Continue watching";
+"Dictation works well for server addresses." = "Dictation works well for server addresses.";
 "Email" = "Email";
 "Enter a valid Lumina server URL." = "Enter a valid Lumina server URL.";
+"Enter your server address, then sign in with your Lumina account." = "Enter your server address, then sign in with your Lumina account.";
 "Enter your Lumina email and password." = "Enter your Lumina email and password.";
 "Episode" = "Episode";
 "Episode playback from catalog shelves is not wired yet." = "Episode playback from catalog shelves is not wired yet.";
@@ -115,6 +118,7 @@
 "Trailer unavailable" = "Trailer unavailable";
 "Trailer playback is not wired yet." = "Trailer playback is not wired yet.";
 "Use dictation or the remote keyboard, then press Search." = "Use dictation or the remote keyboard, then press Search.";
+"Use the address your Lumina library uses at home." = "Use the address your Lumina library uses at home.";
 "No results yet. Try a title, actor, or genre." = "No results yet. Try a title, actor, or genre.";
 "Will connect to %@" = "Will connect to %@";
 "Collection browsing unavailable" = "Collection browsing unavailable";

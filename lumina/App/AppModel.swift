@@ -817,7 +817,7 @@ extension AppModel {
     static func uiTestingModel(tab: HomeTab = .home, showsDetail: Bool = false, signedIn: Bool = true) -> AppModel {
         let model = AppModel()
         let capabilities = ServerCapabilities(
-            server: .init(name: "Lumina", version: "UI Test"),
+            server: .init(name: "Lumina", id: "ui-test-server", version: "UI Test"),
             api: .init(version: "2026-05-tv", minimumTvClientVersion: "1.0"),
             auth: .init(modes: ["password_jwt"], sessionValidationRoute: "/api/v1/auth/me"),
             playback: .init(
@@ -843,7 +843,13 @@ extension AppModel {
                 "movieHlsManifest": "/api/v1/movies/{id}/hls/master.m3u8",
                 "movieProgressUpdate": "/api/v1/movies/{id}/progress"
             ],
-            limits: .init(defaultPageSize: 24, maximumPageSize: 100, maximumArtworkWidth: 1280)
+            limits: .init(defaultPageSize: 24, maximumPageSize: 100, maximumArtworkWidth: 1280),
+            discovery: .init(
+                serviceType: "_lumina._tcp",
+                apiPath: "/api/v1",
+                capabilitiesRoute: "/api/v1/system/capabilities",
+                secure: false
+            )
         )
         let movie = CatalogItem(
             id: "ui-movie",

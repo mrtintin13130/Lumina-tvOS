@@ -1,6 +1,7 @@
 {
   "server": {
     "name": "Lumina",
+    "id": "server-stable-id",
     "version": "1.0.0"
   },
   "api": {
@@ -94,5 +95,11 @@
     "defaultPageSize": 24,
     "maximumPageSize": 60,
     "maximumArtworkWidth": 1920
+  },
+  "discovery": {
+    "serviceType": "_lumina._tcp",
+    "apiPath": "/api/v1",
+    "capabilitiesRoute": "/api/v1/system/capabilities",
+    "secure": false
   }
 }

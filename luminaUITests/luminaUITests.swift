@@ -17,7 +17,8 @@ final class luminaUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Connect to Lumina"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Add Manually"].exists || app.buttons["Hide Manual Entry"].exists)
+        XCTAssertTrue(app.staticTexts["Server Address"].exists)
+        XCTAssertTrue(app.buttons["Validate Server"].exists)
     }
 
     func testSeededHomeSmoke() throws {
@@ -53,7 +54,8 @@ final class luminaUITests: XCTestCase {
         XCTAssertTrue(settingsApp.buttons["Sign Out"].exists)
 
         let signInApp = launchSeededApp(argument: "-uiTestingSignIn")
-        XCTAssertTrue(signInApp.staticTexts["Secure Sign In"].waitForExistence(timeout: 8))
+        XCTAssertTrue(signInApp.staticTexts["Sign in to Lumina"].waitForExistence(timeout: 8))
+        XCTAssertTrue(signInApp.buttons["Change Server"].exists)
     }
 
     func testLaunchPerformance() throws {

@@ -12,6 +12,9 @@ final class LuminaServerDiscovery: NSObject, ObservableObject {
     @Published private(set) var isSearching = false
     @Published private(set) var errorMessage: String?
 
+    private static let resolveTimeout: TimeInterval = 20
+    private static let maximumResolveAttempts = 3
+
     private let browser = NetServiceBrowser()
     private var services: [NetService] = []
     private var resolveRetryCounts: [String: Int] = [:]
@@ -19,6 +22,7 @@ final class LuminaServerDiscovery: NSObject, ObservableObject {
     override init() {
         super.init()
         browser.delegate = self
+        browser.includesPeerToPeer = true
     }
 
     func startSearching() {
@@ -61,79 +65,83 @@ final class LuminaServerDiscovery: NSObject, ObservableObject {
 }
 
 extension LuminaServerDiscovery: NetServiceBrowserDelegate {
-    nonisolated func netServiceBrowser(
+    func netServiceBrowser(
         _ browser: NetServiceBrowser,
         didFind service: NetService,
         moreComing: Bool
     ) {
-        Task { @MainActor in
-            services.append(service)
-            resolveRetryCounts[serviceKey(for: service)] = 0
-            service.delegate = self
-            service.resolve(withTimeout: 10)
-        }
+        services.append(service)
+        resolveRetryCounts[serviceKey(for: service)] = 0
+        service.delegate = self
+        service.includesPeerToPeer = true
+        service.resolve(withTimeout: Self.resolveTimeout)
     }
 
-    nonisolated func netServiceBrowser(
+    func netServiceBrowser(
         _ browser: NetServiceBrowser,
         didRemove service: NetService,
         moreComing: Bool
     ) {
-        Task { @MainActor in
-            discoveredServers.removeAll { server in
-                server.name == service.name || server.host == service.hostName
-            }
-            resolveRetryCounts[serviceKey(for: service)] = nil
+        discoveredServers.removeAll { server in
+            server.name == service.name || server.host == service.hostName
         }
+        resolveRetryCounts[serviceKey(for: service)] = nil
     }
 
-    nonisolated func netServiceBrowser(
+    func netServiceBrowser(
         _ browser: NetServiceBrowser,
         didNotSearch errorDict: [String: NSNumber]
     ) {
-        Task { @MainActor in
-            isSearching = false
-            errorMessage = L10n.text("Local network search failed.")
-        }
+        isSearching = false
+        errorMessage = L10n.text("Local network search failed.")
     }
 }
 
 extension LuminaServerDiscovery: NetServiceDelegate {
-    nonisolated func netServiceDidResolveAddress(_ sender: NetService) {
-        Task { @MainActor in
-            guard let host = sender.hostName ?? NetServiceAddressResolver.host(from: sender.addresses),
-                  sender.port > 0 else {
-                return
-            }
-            let txt = parseTXTRecords(from: sender)
-            let server = LuminaDiscoveredServer(
-                name: sender.name,
-                host: host,
-                port: sender.port,
-                isSecure: txt["secure"] == "true",
-                serverVersion: txt["serverVersion"],
-                apiVersion: txt["apiVersion"]
-            )
-            addOrUpdateServer(server)
-            resolveRetryCounts[serviceKey(for: sender)] = nil
+    func netServiceDidResolveAddress(_ sender: NetService) {
+        let txt = parseTXTRecords(from: sender)
+        guard let host = NetServiceAddressResolver.host(from: sender.addresses)
+            ?? LuminaDiscoveryTXTRecords.addressHint(from: txt)
+            ?? sender.hostName,
+              sender.port > 0 else {
+            return
         }
+        guard let server = LuminaDiscoveryTXTRecords.discoveredServer(
+            name: sender.name,
+            host: host,
+            port: sender.port,
+            txt: txt
+        ) else { return }
+        addOrUpdateServer(server)
+        resolveRetryCounts[serviceKey(for: sender)] = nil
     }
 
-    nonisolated func netService(
+    func netService(
         _ sender: NetService,
         didNotResolve errorDict: [String: NSNumber]
     ) {
-        Task { @MainActor in
-            let key = serviceKey(for: sender)
-            let retryCount = resolveRetryCounts[key, default: 0]
-            if retryCount == 0 {
-                resolveRetryCounts[key] = 1
-                sender.resolve(withTimeout: 10)
-                return
-            }
-            if discoveredServers.isEmpty {
-                errorMessage = L10n.text("A Lumina server was found, but its address could not be resolved.")
-            }
+        let key = serviceKey(for: sender)
+        let retryCount = resolveRetryCounts[key, default: 0]
+        if retryCount + 1 < Self.maximumResolveAttempts {
+            resolveRetryCounts[key] = retryCount + 1
+            sender.resolve(withTimeout: Self.resolveTimeout)
+            return
+        }
+        let txt = parseTXTRecords(from: sender)
+        if sender.port > 0,
+           let host = LuminaDiscoveryTXTRecords.addressHint(from: txt),
+           let server = LuminaDiscoveryTXTRecords.discoveredServer(
+            name: sender.name,
+            host: host,
+            port: sender.port,
+            txt: txt
+           ) {
+            addOrUpdateServer(server)
+            resolveRetryCounts[key] = nil
+            return
+        }
+        if discoveredServers.isEmpty {
+            errorMessage = L10n.text("A Lumina server was found, but its address could not be resolved.")
         }
     }
 }
@@ -168,5 +176,43 @@ enum NetServiceAddressResolver {
         }
 
         return nil
+    }
+}
+
+enum LuminaDiscoveryTXTRecords {
+    static func addressHint(from txt: [String: String]) -> String? {
+        sanitizedAddress(txt["address"]) ?? sanitizedAddress(txt["host"])
+    }
+
+    static func discoveredServer(
+        name: String,
+        host: String,
+        port: Int,
+        txt: [String: String]
+    ) -> LuminaDiscoveredServer? {
+        guard txt["app"]?.localizedCaseInsensitiveCompare("lumina") == .orderedSame else {
+            return nil
+        }
+
+        return LuminaDiscoveredServer(
+            name: name,
+            host: host,
+            port: port,
+            isSecure: txt["secure"] == "true",
+            serverID: txt["id"],
+            serverVersion: txt["version"],
+            apiVersion: txt["apiVersion"],
+            apiPath: txt["api"] ?? "/api/v1",
+            capabilitiesPath: txt["capabilities"] ?? "/api/v1/system/capabilities"
+        )
+    }
+
+    private static func sanitizedAddress(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else {
+            return nil
+        }
+        return trimmed
     }
 }

@@ -12,9 +12,12 @@
 "Close editorial collection" = "Fermer la collection éditoriale";
 "Compatible" = "Compatible";
 "Connect this Apple TV to your Lumina server." = "Connectez cette Apple TV à votre serveur Lumina.";
+"Choose a discovered server or keep the address above." = "Choisissez un serveur détecté ou conservez l'adresse ci-dessus.";
 "Continue watching" = "Reprendre la lecture";
+"Dictation works well for server addresses." = "La dictée fonctionne bien pour les adresses de serveur.";
 "Email" = "E-mail";
 "Enter a valid Lumina server URL." = "Saisissez une URL de serveur Lumina valide.";
+"Enter your server address, then sign in with your Lumina account." = "Saisissez l'adresse du serveur, puis connectez-vous avec votre compte Lumina.";
 "Enter your Lumina email and password." = "Saisissez votre e-mail Lumina et votre mot de passe.";
 "Episode" = "Épisode";
 "Episode playback from catalog shelves is not wired yet." = "La lecture d'épisodes depuis les rayons du catalogue n'est pas encore disponible.";
@@ -115,6 +118,7 @@
 "Trailer unavailable" = "Bande-annonce indisponible";
 "Trailer playback is not wired yet." = "La lecture des bandes-annonces n'est pas encore disponible.";
 "Use dictation or the remote keyboard, then press Search." = "Utilisez la dictée ou le clavier de la télécommande, puis lancez la recherche.";
+"Use the address your Lumina library uses at home." = "Utilisez l'adresse de votre bibliothèque Lumina à la maison.";
 "No results yet. Try a title, actor, or genre." = "Aucun résultat pour l'instant. Essayez un titre, un acteur ou un genre.";
 "Will connect to %@" = "Connexion prévue à %@";
 "Collection browsing unavailable" = "Navigation dans la collection indisponible";

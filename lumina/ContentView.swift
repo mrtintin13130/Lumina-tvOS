@@ -45,12 +45,10 @@ struct ContentView: View {
         switch appModel.phase {
         case .restoring:
             ProgressView(L10n.text("Restoring Lumina"))
-        case .setup, .validating:
+        case .setup, .validating, .signIn, .signingIn:
             ServerSetupView()
         case .serverUnavailable:
             ServerUnavailableView()
-        case .signIn, .signingIn:
-            SignInView()
         case .home:
             HomeShellView()
         case .loadingPlayback:

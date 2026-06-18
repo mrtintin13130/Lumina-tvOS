@@ -10,81 +10,83 @@ import SwiftUI
 struct ServerSetupView: View {
     @EnvironmentObject private var appModel: AppModel
     @StateObject private var discovery = LuminaServerDiscovery()
-    @State private var showManualEntry = false
     @FocusState private var focusedItem: ServerSetupFocus?
 
     enum ServerSetupFocus: Hashable {
         case retry
-        case manualToggle
         case serverAddress
         case validate
+        case email
+        case password
+        case signIn
+        case changeServer
     }
 
     var body: some View {
+        let isServerReady = appModel.capabilities != nil
+        let isBusy = appModel.phase == .validating || appModel.phase == .signingIn
+
         SetupExperienceShell(
             icon: "play.tv.fill",
             eyebrow: L10n.text("Apple TV Setup"),
             title: L10n.text("Connect to Lumina"),
-            subtitle: L10n.text("Choose a discovered server or enter the address your Lumina library uses at home."),
+            subtitle: L10n.text("Enter your server address, then sign in with your Lumina account."),
+            statusMessage: appModel.statusMessage,
             content: AnyView(
-                VStack(alignment: .leading, spacing: 28) {
-                    discoveryContent
-
-                    HStack(spacing: 18) {
-                        Button {
-                            discovery.startSearching()
-                        } label: {
-                            Label(L10n.text("Retry"), systemImage: "arrow.clockwise")
-                        }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .secondary))
-                        .focused($focusedItem, equals: .retry)
-
-                        Button {
-                            showManualEntry.toggle()
-                        } label: {
-                            Label(showManualEntry ? L10n.text("Hide Manual Entry") : L10n.text("Add Manually"), systemImage: "keyboard")
-                        }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .primary))
-                        .focused($focusedItem, equals: .manualToggle)
-                    }
-
-                    if showManualEntry || discovery.discoveredServers.isEmpty {
+                VStack(alignment: .leading, spacing: 30) {
+                    if isServerReady {
+                        SignInPanel(
+                            focusedItem: $focusedItem,
+                            emailFocus: .email,
+                            passwordFocus: .password,
+                            signInFocus: .signIn,
+                            changeServerFocus: .changeServer
+                        )
+                    } else {
                         ManualServerEntryView(
                             focusedItem: $focusedItem,
                             addressFocus: .serverAddress,
                             validateFocus: .validate
                         )
-                    }
+                        .disabled(appModel.phase == .signingIn)
 
-                    StatusText(message: appModel.statusMessage)
+                        discoveryContent
+                    }
                 }
             )
         )
         .task {
-            discovery.startSearching()
+            if !isServerReady {
+                discovery.startSearching()
+            }
         }
         .onDisappear {
             discovery.stopSearching()
         }
+        .onChange(of: isServerReady) { _, ready in
+            if ready {
+                discovery.stopSearching()
+                focusedItem = .email
+            } else if !isBusy {
+                discovery.startSearching()
+            }
+        }
         .defaultFocus(
             $focusedItem,
-            showManualEntry || discovery.discoveredServers.isEmpty ? .serverAddress : .manualToggle
+            isServerReady ? .email : .serverAddress
         )
     }
 
     @ViewBuilder
     private var discoveryContent: some View {
         if appModel.phase == .validating {
-            HStack(spacing: 16) {
-                ProgressView()
-                Text(L10n.text("Validating"))
-                    .font(.system(size: 32, weight: .semibold))
-            }
-            .frame(maxWidth: 820, minHeight: 144, alignment: .leading)
+            SetupProgressRow(text: L10n.text("Validating"))
         } else if !discovery.discoveredServers.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.text("Servers Found"))
-                    .font(.system(size: 34, weight: .bold))
+                SetupSectionHeader(
+                    title: L10n.text("Servers Found"),
+                    subtitle: L10n.text("Choose a discovered server or keep the address above.")
+                )
 
                 ForEach(discovery.discoveredServers) { server in
                     Button {
@@ -108,29 +110,36 @@ struct ServerSetupView: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 24, weight: .bold))
                         }
-                        .frame(width: 820, height: 124, alignment: .leading)
+                        .frame(width: TVLayout.setupFieldWidth, height: 116, alignment: .leading)
                     }
-                    .buttonStyle(SetupCardButtonStyle())
+                    .buttonStyle(.card)
                 }
             }
         } else {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 16) {
-                    if discovery.isSearching {
-                        ProgressView()
-                    }
-
-                    Text(discovery.isSearching ? L10n.text("Searching for your Lumina server...") : L10n.text("No Lumina server found."))
-                        .font(.system(size: 32, weight: .semibold))
+            VStack(alignment: .leading, spacing: 18) {
+                if discovery.isSearching {
+                    SetupProgressRow(text: L10n.text("Searching for your Lumina server..."))
+                } else {
+                    Text(L10n.text("No Lumina server found."))
+                        .font(.system(size: 29, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.78))
                 }
 
                 if let message = discovery.errorMessage {
                     Text(message)
-                        .font(.system(size: 26, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.system(size: 25, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.66))
                 }
+
+                Button {
+                    discovery.startSearching()
+                } label: {
+                    Label(L10n.text("Retry"), systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+                .focused($focusedItem, equals: .retry)
             }
-            .frame(maxWidth: 820, minHeight: 144, alignment: .leading)
+            .frame(minWidth: TVLayout.setupFieldWidth, maxWidth: TVLayout.setupFieldWidth, minHeight: 118, alignment: .topLeading)
         }
     }
 }
@@ -142,8 +151,16 @@ struct ManualServerEntryView: View {
     let validateFocus: ServerSetupView.ServerSetupFocus
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SetupInputField(title: L10n.text("Server Address"), systemImage: "network") {
+        VStack(alignment: .leading, spacing: 20) {
+            SetupSectionHeader(
+                title: L10n.text("Server"),
+                subtitle: L10n.text("Use the address your Lumina library uses at home.")
+            )
+
+            SetupInputField(
+                title: L10n.text("Server Address"),
+                systemImage: "network"
+            ) {
                 TextField("192.168.0.50:3000", text: $appModel.serverURLString)
                     .textFieldStyle(.plain)
                     .textContentType(.URL)
@@ -157,8 +174,8 @@ struct ManualServerEntryView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.text("Tip: Siri dictation works well for server addresses."))
-                    .font(.system(size: 25, weight: .medium))
+                Label(L10n.text("Dictation works well for server addresses."), systemImage: "mic.fill")
+                    .font(.system(size: 24, weight: .medium))
                     .foregroundStyle(.white.opacity(0.62))
 
                 if let normalizedServerAddress {
@@ -176,7 +193,7 @@ struct ManualServerEntryView: View {
                 } label: {
                     Label(appModel.phase == .validating ? L10n.text("Validating") : L10n.text("Validate Server"), systemImage: "checkmark.shield")
                 }
-                .buttonStyle(SetupActionButtonStyle(prominence: .primary))
+                .buttonStyle(.borderedProminent)
                 .disabled(appModel.phase == .validating)
                 .focused($focusedItem, equals: validateFocus)
 
@@ -185,7 +202,7 @@ struct ManualServerEntryView: View {
                 } label: {
                     Label(L10n.text("Clear"), systemImage: "xmark.circle")
                 }
-                .buttonStyle(SetupActionButtonStyle(prominence: .secondary))
+                .buttonStyle(.bordered)
             }
         }
     }
@@ -196,6 +213,88 @@ struct ManualServerEntryView: View {
             return nil
         }
         return L10n.format("Will connect to %@", url.absoluteString)
+    }
+}
+
+private struct SignInPanel: View {
+    @EnvironmentObject private var appModel: AppModel
+    @FocusState.Binding var focusedItem: ServerSetupView.ServerSetupFocus?
+    let emailFocus: ServerSetupView.ServerSetupFocus
+    let passwordFocus: ServerSetupView.ServerSetupFocus
+    let signInFocus: ServerSetupView.ServerSetupFocus
+    let changeServerFocus: ServerSetupView.ServerSetupFocus
+
+    var body: some View {
+        let isSigningIn = appModel.phase == .signingIn
+
+        VStack(alignment: .leading, spacing: 18) {
+            SetupSectionHeader(
+                title: L10n.text("Sign in to Lumina"),
+                subtitle: L10n.text("Use your Lumina account for this server.")
+            )
+
+            CurrentServerPill(value: appModel.serverURLString)
+
+            SetupInputField(
+                title: L10n.text("Email"),
+                systemImage: "envelope.fill"
+            ) {
+                TextField(L10n.text("Email"), text: $appModel.email)
+                    .textFieldStyle(.plain)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .submitLabel(.next)
+                    .font(.system(size: 32, weight: .semibold))
+                    .disabled(isSigningIn)
+                    .focused($focusedItem, equals: emailFocus)
+            }
+
+            SetupInputField(
+                title: L10n.text("Password"),
+                systemImage: "lock.fill"
+            ) {
+                SecureField(L10n.text("Password"), text: $appModel.password)
+                    .textFieldStyle(.plain)
+                    .textContentType(.password)
+                    .submitLabel(.go)
+                    .font(.system(size: 32, weight: .semibold))
+                    .disabled(isSigningIn)
+                    .focused($focusedItem, equals: passwordFocus)
+                    .onSubmit {
+                        Task { await appModel.signIn() }
+                    }
+            }
+
+            HStack(spacing: 18) {
+                Button {
+                    Task { await appModel.signIn() }
+                } label: {
+                    Label(isSigningIn ? L10n.text("Signing In") : L10n.text("Sign In"), systemImage: "person.badge.key")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isSigningIn)
+                .focused($focusedItem, equals: signInFocus)
+
+                Button {
+                    appModel.resetServer()
+                } label: {
+                    Label(L10n.text("Change Server"), systemImage: "server.rack")
+                }
+                .buttonStyle(.bordered)
+                .disabled(isSigningIn)
+                .focused($focusedItem, equals: changeServerFocus)
+
+                if isSigningIn {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text(L10n.text("Signing in..."))
+                            .font(.system(size: 29, weight: .semibold))
+                    }
+                    .foregroundStyle(.white.opacity(0.82))
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
     }
 }
 
@@ -215,6 +314,7 @@ struct ServerUnavailableView: View {
             eyebrow: L10n.text("Server"),
             title: L10n.text("Server Unavailable"),
             subtitle: L10n.text("Your saved Lumina server could not be reached."),
+            statusMessage: appModel.statusMessage,
             content: AnyView(
                 VStack(alignment: .leading, spacing: 28) {
                     CurrentServerPill(value: appModel.serverURLString)
@@ -225,7 +325,7 @@ struct ServerUnavailableView: View {
                         } label: {
                             Label(L10n.text("Retry"), systemImage: "arrow.clockwise")
                         }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .primary))
+                        .buttonStyle(.borderedProminent)
                         .focused($focusedAction, equals: .retry)
 
                         Button {
@@ -233,7 +333,7 @@ struct ServerUnavailableView: View {
                         } label: {
                             Label(L10n.text("Search Servers"), systemImage: "dot.radiowaves.left.and.right")
                         }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .secondary))
+                        .buttonStyle(.bordered)
                         .focused($focusedAction, equals: .search)
 
                         Button {
@@ -241,100 +341,13 @@ struct ServerUnavailableView: View {
                         } label: {
                             Label(L10n.text("Change Server"), systemImage: "server.rack")
                         }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .secondary))
+                        .buttonStyle(.bordered)
                         .focused($focusedAction, equals: .changeServer)
                     }
-
-                    StatusText(message: appModel.statusMessage)
                 }
             )
         )
         .defaultFocus($focusedAction, .retry)
-    }
-}
-
-struct SignInView: View {
-    @EnvironmentObject private var appModel: AppModel
-    @FocusState private var focusedItem: SignInFocus?
-
-    private enum SignInFocus: Hashable {
-        case email
-        case password
-        case signIn
-        case changeServer
-    }
-
-    var body: some View {
-        let isSigningIn = appModel.phase == .signingIn
-
-        SetupExperienceShell(
-            icon: "person.badge.key.fill",
-            eyebrow: L10n.text("Secure Sign In"),
-            title: L10n.text("Sign in to Lumina"),
-            subtitle: L10n.text("Use your Lumina account for this server."),
-            content: AnyView(
-                VStack(alignment: .leading, spacing: 22) {
-                    CurrentServerPill(value: appModel.serverURLString)
-
-                    SetupInputField(title: L10n.text("Email"), systemImage: "envelope.fill") {
-                        TextField(L10n.text("Email"), text: $appModel.email)
-                            .textFieldStyle(.plain)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .submitLabel(.next)
-                            .font(.system(size: 32, weight: .semibold))
-                            .disabled(isSigningIn)
-                            .focused($focusedItem, equals: .email)
-                    }
-
-                    SetupInputField(title: L10n.text("Password"), systemImage: "lock.fill") {
-                        SecureField(L10n.text("Password"), text: $appModel.password)
-                            .textFieldStyle(.plain)
-                            .textContentType(.password)
-                            .submitLabel(.go)
-                            .font(.system(size: 32, weight: .semibold))
-                            .disabled(isSigningIn)
-                            .focused($focusedItem, equals: .password)
-                            .onSubmit {
-                                Task { await appModel.signIn() }
-                            }
-                    }
-
-                    HStack(spacing: 18) {
-                        Button {
-                            Task { await appModel.signIn() }
-                        } label: {
-                            Label(isSigningIn ? L10n.text("Signing In") : L10n.text("Sign In"), systemImage: "person.badge.key")
-                        }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .primary))
-                        .disabled(isSigningIn)
-                        .focused($focusedItem, equals: .signIn)
-
-                        Button {
-                            appModel.resetServer()
-                        } label: {
-                            Label(L10n.text("Change Server"), systemImage: "server.rack")
-                        }
-                        .buttonStyle(SetupActionButtonStyle(prominence: .secondary))
-                        .disabled(isSigningIn)
-                        .focused($focusedItem, equals: .changeServer)
-
-                        if isSigningIn {
-                            HStack(spacing: 12) {
-                                ProgressView()
-                                Text(L10n.text("Signing in..."))
-                                    .font(.system(size: 29, weight: .semibold))
-                            }
-                            .foregroundStyle(.white.opacity(0.82))
-                            .accessibilityElement(children: .combine)
-                        }
-                    }
-
-                    StatusText(message: isSigningIn ? L10n.text("Signing in...") : appModel.statusMessage)
-                }
-            )
-        )
-        .defaultFocus($focusedItem, .email)
     }
 }
 
@@ -343,11 +356,12 @@ private struct SetupExperienceShell: View {
     let eyebrow: String
     let title: String
     let subtitle: String
+    let statusMessage: String?
     let content: AnyView
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 34) {
-            VStack(alignment: .leading, spacing: 18) {
+        HStack(alignment: .top, spacing: 96) {
+            VStack(alignment: .leading, spacing: 30) {
                 HStack(spacing: 18) {
                     Image(systemName: icon)
                         .font(.system(size: 38, weight: .semibold))
@@ -370,24 +384,35 @@ private struct SetupExperienceShell: View {
                 }
 
                 Text(title)
-                    .font(.system(size: 66, weight: .bold))
+                    .font(.system(size: 74, weight: .bold))
                     .lineLimit(2)
-                    .minimumScaleFactor(0.82)
+                    .minimumScaleFactor(0.78)
 
                 Text(subtitle)
                     .font(.system(size: 31, weight: .medium))
                     .foregroundStyle(.white.opacity(0.74))
                     .lineSpacing(4)
                     .lineLimit(3)
-                    .frame(maxWidth: 940, alignment: .leading)
-            }
+                    .frame(maxWidth: 640, alignment: .leading)
 
-            content
+                StatusBanner(message: statusMessage)
+
+                Spacer(minLength: 0)
+            }
+            .frame(width: 650, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 30) {
+                content
+            }
+            .padding(.horizontal, 42)
+            .padding(.vertical, 38)
+            .frame(width: 900, alignment: .topLeading)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
         }
-        .frame(maxWidth: TVLayout.setupContentMaxWidth, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(.horizontal, TVLayout.safeHorizontalPadding)
-        .padding(.vertical, TVLayout.contentBottomPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, TVLayout.safeTopPadding)
+        .padding(.bottom, TVLayout.contentBottomPadding)
     }
 }
 
@@ -403,14 +428,55 @@ private struct SetupInputField<Field: View>: View {
                 .foregroundStyle(.white.opacity(0.66))
 
             field()
-                .padding(.horizontal, 24)
-                .frame(width: 820, height: 78, alignment: .leading)
-                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color.white.opacity(0.18), lineWidth: 2)
-                }
+                .frame(width: TVLayout.setupFieldWidth, height: 78, alignment: .leading)
                 .accessibilityLabel(title)
+        }
+    }
+}
+
+private struct SetupProgressRow: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 16) {
+            ProgressView()
+
+            Text(text)
+                .font(.system(size: 29, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.82))
+                .lineLimit(2)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct StatusBanner: View {
+    let message: String?
+
+    var body: some View {
+        if let message {
+            Label(message, systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 29, weight: .semibold))
+                .foregroundStyle(.yellow)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("status-message")
+        }
+    }
+}
+
+private struct SetupSectionHeader: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 34, weight: .bold))
+            Text(subtitle)
+                .font(.system(size: 25, weight: .medium))
+                .foregroundStyle(.white.opacity(0.64))
+                .lineLimit(2)
         }
     }
 }
@@ -425,78 +491,8 @@ private struct CurrentServerPill: View {
             .lineLimit(1)
             .minimumScaleFactor(0.78)
             .padding(.horizontal, 20)
-            .frame(maxWidth: 820, minHeight: 56, alignment: .leading)
-            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-        }
-}
-
-private enum SetupActionProminence {
-    case primary
-    case secondary
-}
-
-private struct SetupActionButtonStyle: ButtonStyle {
-    @Environment(\.isFocused) private var isFocused
-    let prominence: SetupActionProminence
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 30, weight: .bold))
-            .foregroundStyle(foregroundColor)
-            .labelStyle(.titleAndIcon)
-            .padding(.horizontal, 26)
-            .frame(minWidth: 214, minHeight: 72)
-            .background(background, in: RoundedRectangle(cornerRadius: 12))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(borderColor, lineWidth: isFocused ? 4 : 2)
-            }
-            .scaleEffect(isFocused ? 1.06 : configuration.isPressed ? 0.98 : 1)
-            .shadow(color: .black.opacity(isFocused ? 0.36 : 0.18), radius: isFocused ? 24 : 10, y: isFocused ? 14 : 6)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-
-    private var foregroundColor: Color {
-        prominence == .primary ? .black : .white
-    }
-
-    private var background: AnyShapeStyle {
-        switch prominence {
-        case .primary:
-            return AnyShapeStyle(
-                LinearGradient(
-                    colors: [Color.white, Color(red: 0.75, green: 0.93, blue: 0.96)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-        case .secondary:
-            return AnyShapeStyle(Color.white.opacity(isFocused ? 0.18 : 0.1))
-        }
-    }
-
-    private var borderColor: Color {
-        isFocused ? Color.white.opacity(0.82) : Color.white.opacity(0.16)
-    }
-}
-
-private struct SetupCardButtonStyle: ButtonStyle {
-    @Environment(\.isFocused) private var isFocused
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(.white)
-            .padding(.horizontal, 24)
-            .background(Color.white.opacity(isFocused ? 0.17 : 0.1), in: RoundedRectangle(cornerRadius: 12))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(isFocused ? Color.white.opacity(0.82) : Color.white.opacity(0.14), lineWidth: isFocused ? 4 : 2)
-            }
-            .scaleEffect(isFocused ? 1.035 : configuration.isPressed ? 0.985 : 1)
-            .shadow(color: .black.opacity(isFocused ? 0.34 : 0.16), radius: isFocused ? 24 : 10, y: isFocused ? 14 : 6)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .frame(minWidth: TVLayout.setupFieldWidth, maxWidth: TVLayout.setupFieldWidth, minHeight: 56, alignment: .leading)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

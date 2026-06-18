@@ -14,8 +14,13 @@ final class luminaTests: XCTestCase {
     func testSupportedCapabilitiesDecodeAndAreCompatible() throws {
         let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
 
+        XCTAssertEqual(capabilities.server.id, "server-stable-id")
         XCTAssertEqual(capabilities.auth.modes, ["password_jwt"])
         XCTAssertTrue(capabilities.isTvMVPCompatible)
+        XCTAssertEqual(capabilities.discovery?.serviceType, "_lumina._tcp")
+        XCTAssertEqual(capabilities.discovery?.apiPath, "/api/v1")
+        XCTAssertEqual(capabilities.discovery?.capabilitiesRoute, "/api/v1/system/capabilities")
+        XCTAssertEqual(capabilities.discovery?.secure, false)
         XCTAssertEqual(capabilities.routes["movieHlsManifest"], "/api/v1/stream/movies/:id/hls/manifest.m3u8")
         XCTAssertEqual(capabilities.routes["authLogin"], "/api/v1/auth/login")
         XCTAssertEqual(capabilities.routes["catalogMovieDetail"], "/api/v1/catalog/movies/:movieId")
@@ -73,6 +78,79 @@ final class luminaTests: XCTestCase {
         let data = withUnsafeBytes(of: ipv4) { Data($0) }
 
         XCTAssertEqual(NetServiceAddressResolver.host(from: [data]), "192.168.1.42")
+    }
+
+    func testDiscoveryTXTRecordsBuildContractAwareServer() throws {
+        let server = try XCTUnwrap(LuminaDiscoveryTXTRecords.discoveredServer(
+            name: "Living Room Lumina",
+            host: "lumina.local.",
+            port: 3000,
+            txt: [
+                "app": "lumina",
+                "id": "server-stable-id",
+                "version": "1.0.0",
+                "apiVersion": "2026-05-tv",
+                "api": "/api/v1",
+                "secure": "false",
+                "capabilities": "/api/v1/system/capabilities",
+                "host": "192.168.1.50",
+                "address": "192.168.1.51"
+            ]
+        ))
+
+        XCTAssertEqual(server.id, "server-stable-id")
+        XCTAssertEqual(server.serverID, "server-stable-id")
+        XCTAssertEqual(server.serverVersion, "1.0.0")
+        XCTAssertEqual(server.apiVersion, "2026-05-tv")
+        XCTAssertEqual(server.apiPath, "/api/v1")
+        XCTAssertEqual(server.baseURL?.absoluteString, "http://lumina.local:3000")
+        XCTAssertEqual(server.capabilitiesURL?.absoluteString, "http://lumina.local:3000/api/v1/system/capabilities")
+    }
+
+    func testDiscoveryTXTRecordsPreferAddressHintOverHostHint() {
+        XCTAssertEqual(
+            LuminaDiscoveryTXTRecords.addressHint(from: [
+                "address": "192.168.1.51",
+                "host": "192.168.1.50"
+            ]),
+            "192.168.1.51"
+        )
+    }
+
+    func testDiscoveryTXTRecordsUseHostHintWhenAddressIsMissing() {
+        XCTAssertEqual(
+            LuminaDiscoveryTXTRecords.addressHint(from: ["host": "192.168.1.50"]),
+            "192.168.1.50"
+        )
+    }
+
+    func testDiscoveryTXTRecordsRejectAddressHintsWithWhitespace() {
+        XCTAssertNil(LuminaDiscoveryTXTRecords.addressHint(from: ["address": "192.168.1. 51"]))
+        XCTAssertNil(LuminaDiscoveryTXTRecords.addressHint(from: ["host": "lumina server.local"]))
+    }
+
+    func testDiscoveryTXTRecordsIgnoreNonLuminaServices() {
+        let server = LuminaDiscoveryTXTRecords.discoveredServer(
+            name: "Other",
+            host: "other.local.",
+            port: 3000,
+            txt: ["app": "not-lumina"]
+        )
+
+        XCTAssertNil(server)
+    }
+
+    func testDiscoveredServerFallbackIDAndDisplayAddressNormalizeDNSRootDot() {
+        let server = LuminaDiscoveredServer(
+            name: "Lumina",
+            host: "lumina.local.",
+            port: 3000,
+            isSecure: false
+        )
+
+        XCTAssertEqual(server.id, "lumina.local-3000")
+        XCTAssertEqual(server.displayAddress, "lumina.local:3000")
+        XCTAssertEqual(server.baseURL?.absoluteString, "http://lumina.local:3000")
     }
 
     func testErrorEnvelopeDecodesSafeMessage() throws {
