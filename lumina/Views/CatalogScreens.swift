@@ -11,50 +11,49 @@ struct HomeShellView: View {
     @EnvironmentObject private var appModel: AppModel
 
     var body: some View {
-        TabView(selection: $appModel.selectedHomeTab) {
-            CatalogHomeView()
-                .tag(HomeTab.home)
+        TVTabContainer {
+            TabView(selection: $appModel.selectedHomeTab) {
+                CatalogHomeView()
+                    .tag(HomeTab.home)
+                    .tabItem {
+                        Label(L10n.text("Home"), systemImage: "house")
+                    }
+
+                CatalogGridView(
+                    title: L10n.text("Movies"),
+                    items: appModel.movies,
+                    emptyTitle: L10n.text("No movies found"),
+                    topPadding: TVLayout.contentTopPadding
+                )
+                .tag(HomeTab.movies)
                 .tabItem {
-                    Label(L10n.text("Home"), systemImage: "house")
+                    Label(L10n.text("Movies"), systemImage: "film")
                 }
 
-            CatalogGridView(
-                title: L10n.text("Movies"),
-                items: appModel.movies,
-                emptyTitle: L10n.text("No movies found"),
-                topPadding: TVLayout.contentTopPadding
-            )
-            .tag(HomeTab.movies)
-            .tabItem {
-                Label(L10n.text("Movies"), systemImage: "film")
+                CatalogGridView(
+                    title: L10n.text("TV Shows"),
+                    items: appModel.tvShows,
+                    emptyTitle: L10n.text("No TV shows found"),
+                    topPadding: TVLayout.contentTopPadding
+                )
+                .tag(HomeTab.tvShows)
+                .tabItem {
+                    Label(L10n.text("TV Shows"), systemImage: "tv")
+                }
+
+                CatalogSearchView(topPadding: TVLayout.contentTopPadding)
+                    .tag(HomeTab.search)
+                    .tabItem {
+                        Label(L10n.text("Search"), systemImage: "magnifyingglass")
+                    }
+
+                SettingsView(topPadding: TVLayout.safeTopPadding)
+                    .tag(HomeTab.settings)
+                    .tabItem {
+                        Label(L10n.text("Settings"), systemImage: "gearshape")
+                    }
             }
-
-            CatalogGridView(
-                title: L10n.text("TV Shows"),
-                items: appModel.tvShows,
-                emptyTitle: L10n.text("No TV shows found"),
-                topPadding: TVLayout.contentTopPadding
-            )
-            .tag(HomeTab.tvShows)
-            .tabItem {
-                Label(L10n.text("TV Shows"), systemImage: "tv")
-            }
-
-            CatalogSearchView(topPadding: TVLayout.contentTopPadding)
-                .tag(HomeTab.search)
-                .tabItem {
-                    Label(L10n.text("Search"), systemImage: "magnifyingglass")
-                }
-
-            SettingsView(topPadding: TVLayout.safeTopPadding)
-                .tag(HomeTab.settings)
-                .tabItem {
-                    Label(L10n.text("Settings"), systemImage: "gearshape")
-                }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.ignoresSafeArea())
-        .ignoresSafeArea(.container, edges: .horizontal)
         .task {
             if appModel.automaticCatalogRefreshEnabled {
                 await appModel.loadCatalog()
@@ -79,11 +78,11 @@ private struct CatalogHomeView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            homeContent(availableHeight: geometry.size.height)
+        TVFullBleedPageLayout {
+            GeometryReader { geometry in
+                homeContent(availableHeight: geometry.size.height)
+            }
         }
-        .background(Color.black.ignoresSafeArea())
-        .ignoresSafeArea(.container, edges: [.top, .horizontal])
         .onAppear {
             resetHeroSelectionIfNeeded()
         }
@@ -383,27 +382,22 @@ private struct CatalogGridView: View {
     ]
 
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 30) {
-                CatalogHeader(title: title, subtitle: L10n.titleCount(items.count))
+        TVTabPageLayout(topPadding: topPadding, spacing: 30) {
+            CatalogHeader(title: title, subtitle: L10n.titleCount(items.count))
 
-                if items.isEmpty && appModel.isCatalogLoading {
-                    ProgressView(L10n.loading(title))
-                } else if items.isEmpty {
-                    EmptyCatalogState(title: emptyTitle)
-                } else {
-                    LazyVGrid(columns: columns, alignment: .leading, spacing: 34) {
-                        ForEach(items) { item in
-                            CatalogPosterButton(item: item)
-                        }
+            if items.isEmpty && appModel.isCatalogLoading {
+                ProgressView(L10n.loading(title))
+            } else if items.isEmpty {
+                EmptyCatalogState(title: emptyTitle)
+            } else {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 34) {
+                    ForEach(items) { item in
+                        CatalogPosterButton(item: item)
                     }
                 }
-
-                StatusText(message: appModel.statusMessage)
             }
-            .padding(.horizontal, TVLayout.safeHorizontalPadding)
-            .padding(.top, topPadding)
-            .padding(.bottom, TVLayout.contentBottomPadding)
+
+            StatusText(message: appModel.statusMessage)
         }
     }
 }
@@ -419,49 +413,44 @@ private struct CatalogSearchView: View {
     }
 
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 28) {
-                CatalogHeader(title: L10n.text("Search"), subtitle: L10n.text("Find movies and TV shows"))
+        TVTabPageLayout(topPadding: topPadding, spacing: 28) {
+            CatalogHeader(title: L10n.text("Search"), subtitle: L10n.text("Find movies and TV shows"))
 
-                HStack(spacing: 18) {
-                    TextField(L10n.text("Search your library"), text: $appModel.searchQuery)
-                        .textFieldStyle(.plain)
-                        .textContentType(.none)
-                        .submitLabel(.search)
-                        .font(.system(size: 31, weight: .medium))
-                        .padding(18)
-                        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                        .frame(maxWidth: 680)
-                        .focused($focusedField, equals: .query)
-                        .onSubmit {
-                            Task { await appModel.runSearch() }
-                        }
-
-                    Button {
+            HStack(spacing: 18) {
+                TextField(L10n.text("Search your library"), text: $appModel.searchQuery)
+                    .textFieldStyle(.plain)
+                    .textContentType(.none)
+                    .submitLabel(.search)
+                    .font(.system(size: 31, weight: .medium))
+                    .padding(18)
+                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                    .frame(maxWidth: 680)
+                    .focused($focusedField, equals: .query)
+                    .onSubmit {
                         Task { await appModel.runSearch() }
-                    } label: {
-                        Label(L10n.text("Search"), systemImage: "magnifyingglass")
-                            .font(.system(size: 31, weight: .semibold))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .focused($focusedField, equals: .submit)
-                }
 
-                if appModel.isCatalogLoading && appModel.searchResults.isEmpty {
-                    ProgressView(L10n.text("Searching"))
-                } else if appModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    SearchSuggestionState()
-                } else if appModel.searchResults.isEmpty {
-                    EmptyCatalogState(title: L10n.text("No results yet. Try a title, actor, or genre."))
-                } else {
-                    CatalogShelfView(title: L10n.text("Results"), items: appModel.searchResults)
+                Button {
+                    Task { await appModel.runSearch() }
+                } label: {
+                    Label(L10n.text("Search"), systemImage: "magnifyingglass")
+                        .font(.system(size: 31, weight: .semibold))
                 }
-
-                StatusText(message: appModel.statusMessage)
+                .buttonStyle(.borderedProminent)
+                .focused($focusedField, equals: .submit)
             }
-            .padding(.horizontal, TVLayout.safeHorizontalPadding)
-            .padding(.top, topPadding)
-            .padding(.bottom, TVLayout.contentBottomPadding)
+
+            if appModel.isCatalogLoading && appModel.searchResults.isEmpty {
+                ProgressView(L10n.text("Searching"))
+            } else if appModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                SearchSuggestionState()
+            } else if appModel.searchResults.isEmpty {
+                EmptyCatalogState(title: L10n.text("No results yet. Try a title, actor, or genre."))
+            } else {
+                CatalogShelfView(title: L10n.text("Results"), items: appModel.searchResults)
+            }
+
+            StatusText(message: appModel.statusMessage)
         }
         .defaultFocus($focusedField, .query)
     }

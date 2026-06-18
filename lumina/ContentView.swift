@@ -108,43 +108,38 @@ struct SettingsView: View {
     var body: some View {
         let summary = appModel.supportSummary
 
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text("Settings")
-                    .font(.system(size: 48, weight: .bold))
+        TVTabPageLayout(topPadding: topPadding, spacing: 24, horizontalPadding: 70, bottomPadding: 70) {
+            Text("Settings")
+                .font(.system(size: 48, weight: .bold))
 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 330), spacing: 16)], spacing: 16) {
-                    ContractBadge(title: L10n.text("App Build"), value: summary.appBuild)
-                    ContractBadge(title: L10n.text("Server"), value: summary.serverSummary)
-                    ContractBadge(title: L10n.text("API"), value: summary.apiSummary)
-                    ContractBadge(title: L10n.text("Validation"), value: summary.validationSummary)
-                    ContractBadge(title: L10n.text("User"), value: summary.userDisplayName)
-                    ContractBadge(title: L10n.text("Diagnostics"), value: summary.diagnosticsSummary)
-                    ContractBadge(title: L10n.text("Last Error"), value: summary.lastSafeError)
-                    ContractBadge(title: L10n.text("Support ID"), value: summary.lastSupportId)
-                }
-
-                HStack(spacing: 18) {
-                    Button {
-                        Task { await appModel.validateServer() }
-                    } label: {
-                        Label(L10n.text("Revalidate"), systemImage: "arrow.clockwise")
-                    }
-                    .buttonStyle(.bordered)
-                    .focused($focusedAction, equals: .revalidate)
-
-                    Button(role: .destructive) {
-                        appModel.signOut()
-                    } label: {
-                        Label(L10n.text("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .focused($focusedAction, equals: .signOut)
-                }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 330), spacing: 16)], spacing: 16) {
+                ContractBadge(title: L10n.text("App Build"), value: summary.appBuild)
+                ContractBadge(title: L10n.text("Server"), value: summary.serverSummary)
+                ContractBadge(title: L10n.text("API"), value: summary.apiSummary)
+                ContractBadge(title: L10n.text("Validation"), value: summary.validationSummary)
+                ContractBadge(title: L10n.text("User"), value: summary.userDisplayName)
+                ContractBadge(title: L10n.text("Diagnostics"), value: summary.diagnosticsSummary)
+                ContractBadge(title: L10n.text("Last Error"), value: summary.lastSafeError)
+                ContractBadge(title: L10n.text("Support ID"), value: summary.lastSupportId)
             }
-            .padding(.horizontal, 70)
-            .padding(.top, topPadding)
-            .padding(.bottom, 70)
+
+            HStack(spacing: 18) {
+                Button {
+                    Task { await appModel.validateServer() }
+                } label: {
+                    Label(L10n.text("Revalidate"), systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+                .focused($focusedAction, equals: .revalidate)
+
+                Button(role: .destructive) {
+                    appModel.signOut()
+                } label: {
+                    Label(L10n.text("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
+                }
+                .buttonStyle(.borderedProminent)
+                .focused($focusedAction, equals: .signOut)
+            }
         }
         .foregroundStyle(.white)
         .background(Color.black.ignoresSafeArea())

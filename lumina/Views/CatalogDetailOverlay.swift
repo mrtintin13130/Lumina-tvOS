@@ -14,7 +14,7 @@ struct CatalogDetailPage: View {
     let item: CatalogItem
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        TVMediaDetailLayout {
             DetailBackdropImage(url: appModel.artworkURL(for: item.backdropPath ?? item.posterPath, kind: .backdrop))
                 .ignoresSafeArea()
 
@@ -39,7 +39,7 @@ struct CatalogDetailPage: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-
+        } content: {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 42) {
                     DetailHero(focusedAction: $focusedAction, item: item)
@@ -74,8 +74,6 @@ struct CatalogDetailPage: View {
                 .padding(.top, TVLayout.detailMenuTopPadding)
                 .padding(.horizontal, TVLayout.safeHorizontalPadding)
         }
-        .ignoresSafeArea(.container, edges: .horizontal)
-        .background(Color.black.ignoresSafeArea())
         .onExitCommand {
             appModel.closeCatalogDetail()
         }
