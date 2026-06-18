@@ -447,9 +447,12 @@ private struct DetailPersonShelf: View {
                     }
                 }
                 .padding(.vertical, TVLayout.compactShelfFocusGutter)
-                .padding(.horizontal, TVLayout.shelfFocusGutter)
+                .padding(.leading, TVLayout.safeHorizontalPadding)
+                .padding(.trailing, TVLayout.safeHorizontalPadding)
             }
+            .contentMargins(.horizontal, 0, for: .scrollContent)
             .scrollClipDisabled()
+            .padding(.horizontal, -TVLayout.safeHorizontalPadding)
         }
     }
 }
@@ -515,7 +518,12 @@ private struct TVSeasonEpisodeSection: View {
             }
 
             if !appModel.selectedTVEpisodes.isEmpty {
-                CatalogShelfView(title: L10n.text("Episodes"), items: appModel.selectedTVEpisodes)
+                CatalogShelfView(
+                    title: L10n.text("Episodes"),
+                    items: appModel.selectedTVEpisodes,
+                    contentHorizontalInset: TVLayout.safeHorizontalPadding
+                )
+                .padding(.horizontal, -TVLayout.safeHorizontalPadding)
             } else if appModel.selectedSeasonNumber != nil && !appModel.isDetailLoading {
                 EmptyCatalogState(title: L10n.text("No episodes found"))
             }

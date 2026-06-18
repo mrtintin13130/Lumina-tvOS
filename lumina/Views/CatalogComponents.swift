@@ -23,7 +23,7 @@ enum TVLayout {
     static let compactShelfFocusGutter: CGFloat = 22
     static let detailContentMaxWidth: CGFloat = 1360
     static let detailHeroTopPadding: CGFloat = 290
-    static let detailMenuTopPadding: CGFloat = 48
+    static let detailMenuTopPadding: CGFloat = safeTopPadding
     static let setupContentMaxWidth: CGFloat = 1120
     static let setupFieldWidth: CGFloat = 820
 }
