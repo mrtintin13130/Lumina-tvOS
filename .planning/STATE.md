@@ -5,7 +5,7 @@ milestone_name: Stability, Usability, And Beta Hardening
 status: Milestone v1.2 completed and archived
 stopped_at: Milestone v1.1 initialized and ready to plan Phase 8.
 last_updated: "2026-06-17T00:00:00.000Z"
-last_activity: 2026-06-17
+last_activity: 2026-06-18
 progress:
   total_phases: 5
   completed_phases: 5
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 Phase: Complete
 Plan: Complete
 Status: Milestone v1.2 completed and archived
-Last activity: 2026-06-17 - Archived v1.2 milestone and recorded known deferred items
+Last activity: 2026-06-18 - Completed quick task home-loading-state-center
 
 Progress: [##########] 100%
 
@@ -110,6 +110,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-18 | home-loading-state-center | Replaced the Home page's inline catalog spinner with a centered, focus-neutral tvOS loading composition, added a stable media-themed indicator treatment, localized the supporting copy, and verified with static diff checks plus a generic tvOS build. |
 | 2026-06-18 | bonjour-txt-address-fallback | Added support for backend-published TXT `address`/`host` LAN hints: resolved Bonjour socket addresses remain preferred, TXT `address` falls back before TXT `host`, `didNotResolve` can still create a candidate from a valid LAN hint, malformed whitespace hints are rejected, and generic tvOS build-for-testing passed. |
 | 2026-06-18 | bonjour-resolution-warning-fix | Fixed Swift concurrency warnings in Bonjour discovery by removing `NetService` captures from `@Sendable` `Task` closures, kept delegate handling on the main actor, enabled peer-to-peer resolution, increased retry tolerance, preferred numeric resolved addresses, normalized trailing DNS root dots, and verified with generic tvOS build-for-testing. |
 | 2026-06-18 | bonjour-discovery-contract | Aligned tvOS Bonjour discovery with backend TXT hints and capability metadata: filter on `app=lumina`, prefer TXT stable server id, preserve discovery hints, decode optional `server.id`/`discovery` capabilities fields, and verify with generic tvOS build plus build-for-testing; simulator execution remained blocked by local CoreSimulatorService. |

@@ -102,22 +102,21 @@ private struct CatalogHomeView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 if appModel.isCatalogLoading && appModel.homeSections.isEmpty {
-                    ProgressView(L10n.text("Loading catalog"))
+                    HomeLoadingView()
                         .padding(.horizontal, Layout.horizontalPadding)
-                        .padding(.top, Layout.topPadding)
-                }
+                } else {
+                    if let selectedHeroItem {
+                        ContextualHomeHeroView(item: selectedHeroItem, availableHeight: availableHeight)
+                    }
 
-                if let selectedHeroItem {
-                    ContextualHomeHeroView(item: selectedHeroItem, availableHeight: availableHeight)
+                    ScrollView(.vertical) {
+                        shelvesContent
+                            .padding(.top, selectedHeroItem == nil ? Layout.shelfSpacing : Layout.heroShelfSpacing)
+                            .padding(.bottom, Layout.bottomPadding)
+                    }
+                    .contentMargins(.all, 0, for: .scrollContent)
+                    .frame(maxWidth: .infinity)
                 }
-
-                ScrollView(.vertical) {
-                    shelvesContent
-                        .padding(.top, selectedHeroItem == nil ? Layout.shelfSpacing : Layout.heroShelfSpacing)
-                        .padding(.bottom, Layout.bottomPadding)
-                }
-                .contentMargins(.all, 0, for: .scrollContent)
-                .frame(maxWidth: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
@@ -216,6 +215,47 @@ private struct CatalogHomeView: View {
     private func isRecentlyAddedShowSection(_ section: CatalogSection) -> Bool {
         (section.mediaType == "tv_show" || section.mediaType == "show")
             && section.matchesHomeSectionKeywords(["recently", "added"])
+    }
+}
+
+private struct HomeLoadingView: View {
+    var body: some View {
+        VStack(spacing: 26) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.white.opacity(0.10))
+                    .frame(width: 168, height: 104)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(.white.opacity(0.16), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
+
+                Image(systemName: "play.tv")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.78))
+
+                ProgressView()
+                    .scaleEffect(1.16)
+                    .frame(width: 48, height: 48)
+                    .offset(y: 72)
+            }
+            .frame(width: 208, height: 176)
+
+            VStack(spacing: 10) {
+                Text(L10n.text("Loading catalog"))
+                    .font(.system(size: 40, weight: .semibold))
+                Text(L10n.text("Getting your library ready"))
+                    .font(.system(size: 29, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.66))
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.top, TVLayout.safeTopPadding)
+        .padding(.bottom, TVLayout.contentBottomPadding)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(L10n.text("Loading catalog"))
     }
 }
 
