@@ -56,11 +56,11 @@ struct HomeShellView: View {
                     }
 
                 CatalogTabPage {
-                    SettingsView(topPadding: TVLayout.safeTopPadding)
+                    ProfileView(topPadding: TVLayout.safeTopPadding)
                 }
                     .tag(HomeTab.settings)
                     .tabItem {
-                        Label(L10n.text("Settings"), systemImage: "gearshape")
+                        Label(L10n.text("Profile"), systemImage: "person.crop.circle")
                     }
             }
         }
@@ -444,7 +444,7 @@ private struct CatalogGridView: View {
     }
 }
 
-private struct CatalogBrowseBackground: View {
+struct CatalogBrowseBackground: View {
     var body: some View {
         ZStack {
             LinearGradient(

@@ -14,6 +14,7 @@
 		5B3255742FCA363F00A23693 /* luminaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B3255732FCA363F00A23693 /* luminaTests.swift */; };
 		5B32557E2FCA363F00A23693 /* luminaUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32557D2FCA363F00A23693 /* luminaUITests.swift */; };
 		5B3255802FCA363F00A23693 /* luminaUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */; };
+		5BE000012FCA600000000001 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 5BE000022FCA600000000001 /* Settings.bundle */; };
 		5BC000082FCA500000000001 /* capabilities-supported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000042FCA500000000001 /* capabilities-supported.json */; };
 		5BC000092FCA500000000001 /* capabilities-unsupported.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000052FCA500000000001 /* capabilities-unsupported.json */; };
 		5BC0000A2FCA500000000001 /* error-envelope-stream-token-expired.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */; };
@@ -86,6 +87,7 @@
 		5B3255792FCA363F00A23693 /* luminaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = luminaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B32557D2FCA363F00A23693 /* luminaUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = luminaUITests.swift; sourceTree = "<group>"; };
 		5B32557F2FCA363F00A23693 /* luminaUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = luminaUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		5BE000022FCA600000000001 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = wrapper.settings; path = Settings.bundle; sourceTree = "<group>"; };
 		5BC000042FCA500000000001 /* capabilities-supported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-supported.json"; sourceTree = "<group>"; };
 		5BC000052FCA500000000001 /* capabilities-unsupported.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "capabilities-unsupported.json"; sourceTree = "<group>"; };
 		5BC000062FCA500000000001 /* error-envelope-stream-token-expired.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "error-envelope-stream-token-expired.json"; sourceTree = "<group>"; };
@@ -221,6 +223,7 @@
 				5BD0001E2FCA500000000001 /* Views/CatalogScreens.swift */,
 				5BD000292FCA500000000001 /* lumina.entitlements */,
 				5BC0000C2FCA500000000001 /* Info.plist */,
+				5BE000022FCA600000000001 /* Settings.bundle */,
 				5BD0002D2FCA500000000001 /* Localizable.strings */,
 				5B3255662FCA363E00A23693 /* Assets.xcassets */,
 				5B3255682FCA363E00A23693 /* Preview Content */,
@@ -371,6 +374,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5BE000012FCA600000000001 /* Settings.bundle in Resources */,
 				5BD0002C2FCA500000000001 /* Localizable.strings in Resources */,
 				5B32556A2FCA363E00A23693 /* Preview Assets.xcassets in Resources */,
 				5B3255672FCA363E00A23693 /* Assets.xcassets in Resources */,

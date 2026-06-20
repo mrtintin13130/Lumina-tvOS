@@ -16,9 +16,9 @@ final class luminaUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Connect to Lumina"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Server Address"].exists)
-        XCTAssertTrue(app.buttons["Validate Server"].exists)
+        XCTAssertTrue(app.staticTexts["Sign in to Lumina"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Email"].exists)
+        XCTAssertTrue(app.buttons["Change Server"].exists)
     }
 
     func testSeededHomeSmoke() throws {
@@ -27,7 +27,7 @@ final class luminaUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["UI Test Movie"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Home"].exists)
         XCTAssertTrue(app.buttons["Search"].exists)
-        XCTAssertTrue(app.buttons["Settings"].exists)
+        XCTAssertTrue(app.buttons["Profile"].exists)
     }
 
     func testSeededDetailAndPlaybackEntrySmoke() throws {
@@ -49,8 +49,10 @@ final class luminaUITests: XCTestCase {
     func testSeededSettingsAndSignOutDestinationSmoke() throws {
         let settingsApp = launchSeededApp(argument: "-uiTestingSettings")
 
-        XCTAssertTrue(settingsApp.staticTexts["App Build"].waitForExistence(timeout: 8))
-        XCTAssertTrue(settingsApp.staticTexts["Support ID"].exists)
+        XCTAssertTrue(settingsApp.staticTexts["Profile"].waitForExistence(timeout: 8))
+        XCTAssertTrue(settingsApp.buttons["Open Apple TV Settings"].exists)
+        XCTAssertFalse(settingsApp.staticTexts["Support ID"].exists)
+        XCTAssertTrue(settingsApp.buttons["Test Connection"].exists)
         XCTAssertTrue(settingsApp.buttons["Sign Out"].exists)
 
         let signInApp = launchSeededApp(argument: "-uiTestingSignIn")

@@ -925,6 +925,20 @@ final class luminaTests: XCTestCase {
     }
 
     @MainActor
+    func testAppModelRestoreWithoutSavedServerStartsAtSignIn() async throws {
+        let model = AppModel(
+            tokenStore: InMemoryTokenStore(),
+            settingsStore: InMemoryServerSettingsStore()
+        )
+
+        await model.restoreSession()
+
+        XCTAssertEqual(model.phase, .signIn)
+        XCTAssertEqual(model.serverURLString, "")
+        XCTAssertNil(model.capabilities)
+    }
+
+    @MainActor
     func testAppModelSignInStoresSessionAndLoadsCatalog() async throws {
         let capabilities = try decodeFixture(ServerCapabilities.self, name: "capabilities-supported")
         let tokenStore = InMemoryTokenStore()
@@ -1012,7 +1026,7 @@ final class luminaTests: XCTestCase {
     }
 
     @MainActor
-    func testAppModelRestoreShowsServerUnavailableWithoutClearingSavedServer() async throws {
+    func testAppModelRestoreFailureReturnsToSignInWithoutClearingSavedServer() async throws {
         let tokenStore = InMemoryTokenStore()
         let settingsStore = InMemoryServerSettingsStore(serverURLString: "http://lumina.example.test")
         let model = AppModel(
@@ -1023,7 +1037,7 @@ final class luminaTests: XCTestCase {
 
         await model.restoreSession()
 
-        XCTAssertEqual(model.phase, .serverUnavailable)
+        XCTAssertEqual(model.phase, .signIn)
         XCTAssertEqual(model.statusMessage, "Server offline.")
         XCTAssertEqual(settingsStore.serverURLString, "http://lumina.example.test")
     }

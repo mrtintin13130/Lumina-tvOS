@@ -46,6 +46,7 @@
 "No TV shows found" = "No TV shows found";
 "Not validated" = "Not validated";
 "Open Details" = "Open Details";
+"Open Apple TV Settings" = "Open Apple TV Settings";
 "Opens details" = "Opens details";
 "Opens person details" = "Opens person details";
 "Opens this collection" = "Opens this collection";
@@ -60,6 +61,7 @@
 "Plain HTTP is blocked by App Transport Security. Allow local networking in the app or use HTTPS." = "Plain HTTP is blocked by App Transport Security. Allow local networking in the app or use HTTPS.";
 "Play" = "Play";
 "Preparing playback" = "Preparing playback";
+"Profile" = "Profile";
 "Restoring Lumina" = "Restoring Lumina";
 "Results" = "Results";
 "Resume" = "Resume";
@@ -90,6 +92,7 @@
 "Signing in..." = "Signing in...";
 "Starts playback" = "Starts playback";
 "Storage" = "Storage";
+"Status" = "Status";
 "Stored sign-in data could not be read." = "Stored sign-in data could not be read.";
 "The Lumina server did not respond in time." = "The Lumina server did not respond in time.";
 "The Lumina server refused the connection." = "The Lumina server refused the connection.";
@@ -143,6 +146,7 @@
 "Not compatible" = "Not compatible";
 "Not validated" = "Not validated";
 "Support ID" = "Support ID";
+"Test Connection" = "Test Connection";
 "events" = "events";
 "%d percent watched" = "%d percent watched";
 "%d min" = "%d min";
@@ -150,3 +154,9 @@
 "%d%% watched" = "%d%% watched";
 "%@ browsing is not wired yet." = "%@ browsing is not wired yet.";
 "%@ details are not wired yet." = "%@ details are not wired yet.";
+"%d servers found" = "%d servers found";
+"Connect to Server" = "Connect to Server";
+"Ensure your server is on the same network and Bonjour is enabled." = "Ensure your server is on the same network and Bonjour is enabled.";
+"Logo placeholder" = "Logo placeholder";
+"Sign in to access your movies and TV shows library. Connect to your Lumina server to get started." = "Sign in to access your movies and TV shows library. Connect to your Lumina server to get started.";
+"Your movies. Your way." = "Your movies. Your way.";

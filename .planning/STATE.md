@@ -110,6 +110,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-20 | profile-browse-background | Reused the shared Movies and TV Shows browse gradient behind the Profile tab, preserving Profile layout/actions; local generic tvOS builds were blocked by CoreSimulator/asset-catalog runtime failures before a clean build result. |
 | 2026-06-20 | detail-expandable-action-buttons | Added opt-in expandable Lumina action buttons and applied them to the media detail Play/Resume, Watchlist, and Favorite actions so they show icon-only while unfocused and expand with labels on focus; generic tvOS build passed with code signing disabled. |
 | 2026-06-20 | reusable-tvos-buttons | Added shared Lumina tvOS action button primitives with stable single-line sizing, focus-aware primary/secondary/destructive styling, and action-row spacing; migrated setup, search, settings, playback cancel, and detail action buttons while leaving media cards on native styles. Build attempts reached Swift compilation without diagnostics but local Xcode service hangs prevented a clean build result. |
 | 2026-06-20 | catalog-grid-background-gradient | Added a subtle layered dark gradient background to the shared Movies and TV Shows catalog grid page, preserving poster focus/layout and leaving Home, Search, Settings, and detail backgrounds unchanged; generic tvOS build passed with code signing disabled. |

@@ -46,6 +46,7 @@
 "No TV shows found" = "Aucune série trouvée";
 "Not validated" = "Non validé";
 "Open Details" = "Voir les détails";
+"Open Apple TV Settings" = "Ouvrir les réglages Apple TV";
 "Opens details" = "Ouvre les détails";
 "Opens person details" = "Ouvre les détails de la personne";
 "Opens this collection" = "Ouvre cette collection";
@@ -60,6 +61,7 @@
 "Plain HTTP is blocked by App Transport Security. Allow local networking in the app or use HTTPS." = "Le HTTP non sécurisé est bloqué par App Transport Security. Autorisez le réseau local dans l'app ou utilisez HTTPS.";
 "Play" = "Lire";
 "Preparing playback" = "Préparation de la lecture";
+"Profile" = "Profil";
 "Restoring Lumina" = "Restauration de Lumina";
 "Results" = "Résultats";
 "Resume" = "Reprendre";
@@ -90,6 +92,7 @@
 "Signing in..." = "Connexion...";
 "Starts playback" = "Démarre la lecture";
 "Storage" = "Stockage";
+"Status" = "État";
 "Stored sign-in data could not be read." = "Les données de connexion enregistrées n'ont pas pu être lues.";
 "The Lumina server did not respond in time." = "Le serveur Lumina n'a pas répondu à temps.";
 "The Lumina server refused the connection." = "Le serveur Lumina a refusé la connexion.";
@@ -143,6 +146,7 @@
 "Not compatible" = "Non compatible";
 "Not validated" = "Non validé";
 "Support ID" = "ID support";
+"Test Connection" = "Tester la connexion";
 "events" = "événements";
 "%d percent watched" = "%d pour cent vus";
 "%d min" = "%d min";
@@ -150,3 +154,9 @@
 "%d%% watched" = "%d %% vus";
 "%@ browsing is not wired yet." = "La navigation dans %@ n'est pas encore disponible.";
 "%@ details are not wired yet." = "Les détails de %@ ne sont pas encore disponibles.";
+"%d servers found" = "%d serveurs trouvés";
+"Connect to Server" = "Connexion au serveur";
+"Ensure your server is on the same network and Bonjour is enabled." = "Vérifiez que votre serveur est sur le même réseau et que Bonjour est activé.";
+"Logo placeholder" = "Emplacement du logo";
+"Sign in to access your movies and TV shows library. Connect to your Lumina server to get started." = "Connectez-vous pour accéder à votre bibliothèque de films et de séries. Connectez-vous à votre serveur Lumina pour commencer.";
+"Your movies. Your way." = "Vos films. À votre façon.";

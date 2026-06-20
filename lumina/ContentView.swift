@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject private var appModel: AppModel
@@ -37,12 +38,8 @@ struct ContentView: View {
     @ViewBuilder
     private var content: some View {
         switch appModel.phase {
-        case .restoring:
-            ProgressView(L10n.text("Restoring Lumina"))
-        case .setup, .validating, .signIn, .signingIn:
-            ServerSetupView()
-        case .serverUnavailable:
-            ServerUnavailableView()
+        case .restoring, .setup, .validating, .serverUnavailable, .signIn, .signingIn:
+            SignInView()
         case .home:
             HomeShellView()
         case .loadingPlayback:
@@ -89,54 +86,180 @@ private struct PlaybackProofView: View {
     }
 }
 
-struct SettingsView: View {
+struct ProfileView: View {
     @EnvironmentObject private var appModel: AppModel
-    @FocusState private var focusedAction: SettingsFocus?
+    @AppStorage("show_advanced_diagnostics") private var showsAdvancedDiagnostics = false
     let topPadding: CGFloat
 
-    private enum SettingsFocus: Hashable {
-        case revalidate
-        case signOut
+    private var settingsURL: URL? {
+        URL(string: UIApplication.openSettingsURLString)
     }
 
     var body: some View {
         let summary = appModel.supportSummary
 
-        TVTabPageLayout(topPadding: topPadding, spacing: 24, horizontalPadding: 70, bottomPadding: 70) {
-            Text("Settings")
-                .font(.system(size: 48, weight: .bold))
+        ZStack(alignment: .topLeading) {
+            CatalogBrowseBackground()
+                .ignoresSafeArea()
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 330), spacing: 16)], spacing: 16) {
-                ContractBadge(title: L10n.text("App Build"), value: summary.appBuild)
-                ContractBadge(title: L10n.text("Server"), value: summary.serverSummary)
-                ContractBadge(title: L10n.text("API"), value: summary.apiSummary)
-                ContractBadge(title: L10n.text("Validation"), value: summary.validationSummary)
-                ContractBadge(title: L10n.text("User"), value: summary.userDisplayName)
-                ContractBadge(title: L10n.text("Diagnostics"), value: summary.diagnosticsSummary)
-                ContractBadge(title: L10n.text("Last Error"), value: summary.lastSafeError)
-                ContractBadge(title: L10n.text("Support ID"), value: summary.lastSupportId)
-            }
+            TVTabPageLayout(topPadding: topPadding, spacing: 34, horizontalPadding: 92, bottomPadding: 76) {
+                ProfileHeader(summary: summary)
 
-            LuminaActionRow {
-                Button {
-                    Task { await appModel.validateServer() }
-                } label: {
-                    Label(L10n.text("Revalidate"), systemImage: "arrow.clockwise")
+                ProfileActions(
+                    settingsURL: settingsURL,
+                    testConnection: {
+                        Task { await appModel.validateServer() }
+                    },
+                    changeServer: {
+                        appModel.resetServer()
+                    },
+                    signOut: {
+                        appModel.signOut()
+                    }
+                )
+
+                if showsAdvancedDiagnostics {
+                    ProfileDiagnostics(summary: summary)
                 }
-                .buttonStyle(LuminaActionButtonStyle(isFocused: focusedAction == .revalidate))
-                .focused($focusedAction, equals: .revalidate)
-
-                Button(role: .destructive) {
-                    appModel.signOut()
-                } label: {
-                    Label(L10n.text("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
-                }
-                .buttonStyle(LuminaActionButtonStyle(role: .destructive, isFocused: focusedAction == .signOut))
-                .focused($focusedAction, equals: .signOut)
             }
         }
         .foregroundStyle(.white)
-        .background(Color.black.ignoresSafeArea())
-        .defaultFocus($focusedAction, .revalidate)
+    }
+}
+
+private struct ProfileHeader: View {
+    let summary: SupportSummary
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 34) {
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 118, weight: .regular))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.white.opacity(0.92))
+
+            VStack(alignment: .leading, spacing: 14) {
+                Text(L10n.text("Profile"))
+                    .font(.system(size: 58, weight: .bold))
+
+                Text(summary.userDisplayName)
+                    .font(.system(size: 38, weight: .semibold))
+
+                Label(summary.serverSummary, systemImage: "server.rack")
+                    .font(.system(size: 29, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.68))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct ProfileActions: View {
+    let settingsURL: URL?
+    let testConnection: () -> Void
+    let changeServer: () -> Void
+    let signOut: () -> Void
+
+    var body: some View {
+        HStack(spacing: 22) {
+            if let settingsURL {
+                Link(destination: settingsURL) {
+                    ProfileActionLabel(
+                        title: L10n.text("Open Apple TV Settings"),
+                        systemImage: "gearshape"
+                    )
+                }
+                .buttonStyle(.card)
+            }
+
+            Button(action: testConnection) {
+                ProfileActionLabel(title: L10n.text("Test Connection"), systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.card)
+
+            Button(action: changeServer) {
+                ProfileActionLabel(title: L10n.text("Change Server"), systemImage: "server.rack")
+            }
+            .buttonStyle(.card)
+
+            Button(role: .destructive, action: signOut) {
+                ProfileActionLabel(title: L10n.text("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
+            }
+            .buttonStyle(.card)
+        }
+    }
+}
+
+private struct ProfileActionLabel: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Image(systemName: systemImage)
+                .font(.system(size: 42, weight: .semibold))
+
+            Text(title)
+                .font(.system(size: 30, weight: .bold))
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+        }
+        .frame(width: 270, height: 150, alignment: .leading)
+        .padding(20)
+    }
+}
+
+private struct ProfileDiagnostics: View {
+    let summary: SupportSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Label(L10n.text("Diagnostics"), systemImage: "stethoscope")
+                .font(.system(size: 31, weight: .bold))
+
+            HStack(alignment: .top, spacing: 24) {
+                SettingsValueRow(title: L10n.text("App Build"), value: summary.appBuild, systemImage: "app.badge")
+                SettingsValueRow(title: L10n.text("Support ID"), value: summary.lastSupportId, systemImage: "number")
+                SettingsValueRow(title: L10n.text("Last Error"), value: summary.lastSafeError, systemImage: "exclamationmark.triangle")
+            }
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 26)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(.white.opacity(0.10), lineWidth: 1)
+        }
+    }
+}
+
+private struct SettingsValueRow: View {
+    let title: String
+    let value: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: systemImage)
+                .font(.system(size: 25, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.72))
+                .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.58))
+
+                Text(value)
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.82)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -137,11 +137,11 @@ final class AppModel: ObservableObject {
         syncFromSessionState()
         syncFromCatalogState()
         syncFromPlaybackState()
-        self.phase = .setup
+        self.phase = .restoring
     }
 
     func restoreSession() async {
-        guard phase == .restoring || phase == .setup || phase == .serverUnavailable else {
+        guard phase == .restoring || phase == .setup || phase == .serverUnavailable || phase == .signIn else {
             return
         }
         do {
@@ -161,13 +161,13 @@ final class AppModel: ObservableObject {
             default:
                 sessionState.statusMessage = error.safeMessage
                 syncFromSessionState()
-                phase = .serverUnavailable
+                phase = .signIn
             }
         } catch {
             diagnostics.record(operation: "restore_session", message: "\(error)")
             sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
             syncFromSessionState()
-            phase = .serverUnavailable
+            phase = .signIn
         }
     }
 
@@ -176,7 +176,7 @@ final class AppModel: ObservableObject {
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
             sessionState.statusMessage = statusMessage
-            phase = .setup
+            phase = .signIn
             return
         }
 
@@ -189,19 +189,19 @@ final class AppModel: ObservableObject {
             diagnostics.record(error: error, operation: "validate_server", phase: .setup)
             sessionState.statusMessage = error.safeMessage
             syncFromSessionState()
-            phase = .setup
+            phase = .signIn
         } catch {
             diagnostics.record(operation: "validate_server", message: "\(error)")
             sessionState.statusMessage = LuminaClientError.fromTransport(error).safeMessage
             syncFromSessionState()
-            phase = .setup
+            phase = .signIn
         }
     }
 
     func chooseDiscoveredServer(_ server: LuminaDiscoveredServer) async {
         guard let url = server.baseURL else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
-            phase = .setup
+            phase = .signIn
             return
         }
         serverURLString = url.absoluteString
@@ -210,7 +210,7 @@ final class AppModel: ObservableObject {
 
     func retrySavedServer() async {
         guard sessionState.retrySavedServer() else {
-            phase = .setup
+            phase = .signIn
             return
         }
         syncFromSessionState()
@@ -220,7 +220,7 @@ final class AppModel: ObservableObject {
 
     func searchForServer() {
         statusMessage = nil
-        phase = .setup
+        phase = .signIn
     }
 
     func signIn() async {
@@ -228,7 +228,7 @@ final class AppModel: ObservableObject {
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
             sessionState.statusMessage = statusMessage
-            phase = .setup
+            phase = .signIn
             return
         }
 
@@ -555,7 +555,7 @@ final class AppModel: ObservableObject {
     private func loadPlaybackProof(movieOverride: PlayableMovie?) async {
         guard let url = normalizeServerURL(serverURLString) else {
             statusMessage = LuminaClientError.invalidServerURL.safeMessage
-            phase = .setup
+            phase = .signIn
             return
         }
         let loadID = playbackState.beginLoad()
@@ -724,7 +724,7 @@ final class AppModel: ObservableObject {
         syncFromPlaybackState()
         syncFromCatalogState()
         syncFromSessionState()
-        phase = .setup
+        phase = .signIn
     }
 
     func normalizeServerURL(_ value: String) -> URL? {
