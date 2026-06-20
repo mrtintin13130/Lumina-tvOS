@@ -16,6 +16,7 @@ struct ServerSetupView: View {
         case retry
         case serverAddress
         case validate
+        case clear
         case email
         case password
         case signIn
@@ -136,7 +137,7 @@ struct ServerSetupView: View {
                 } label: {
                     Label(L10n.text("Retry"), systemImage: "arrow.clockwise")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(LuminaActionButtonStyle(size: .compact, isFocused: focusedItem == .retry))
                 .focused($focusedItem, equals: .retry)
             }
             .frame(minWidth: TVLayout.setupFieldWidth, maxWidth: TVLayout.setupFieldWidth, minHeight: 118, alignment: .topLeading)
@@ -187,13 +188,13 @@ struct ManualServerEntryView: View {
                 }
             }
 
-            HStack(spacing: 18) {
+            LuminaActionRow {
                 Button {
                     Task { await appModel.validateServer() }
                 } label: {
                     Label(appModel.phase == .validating ? L10n.text("Validating") : L10n.text("Validate Server"), systemImage: "checkmark.shield")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LuminaActionButtonStyle(role: .primary, size: .wide, isFocused: focusedItem == validateFocus))
                 .disabled(appModel.phase == .validating)
                 .focused($focusedItem, equals: validateFocus)
 
@@ -202,7 +203,8 @@ struct ManualServerEntryView: View {
                 } label: {
                     Label(L10n.text("Clear"), systemImage: "xmark.circle")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(LuminaActionButtonStyle(size: .compact, isFocused: focusedItem == .clear))
+                .focused($focusedItem, equals: .clear)
             }
         }
     }
@@ -265,13 +267,13 @@ private struct SignInPanel: View {
                     }
             }
 
-            HStack(spacing: 18) {
+            LuminaActionRow {
                 Button {
                     Task { await appModel.signIn() }
                 } label: {
                     Label(isSigningIn ? L10n.text("Signing In") : L10n.text("Sign In"), systemImage: "person.badge.key")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LuminaActionButtonStyle(role: .primary, isFocused: focusedItem == signInFocus))
                 .disabled(isSigningIn)
                 .focused($focusedItem, equals: signInFocus)
 
@@ -280,7 +282,7 @@ private struct SignInPanel: View {
                 } label: {
                     Label(L10n.text("Change Server"), systemImage: "server.rack")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(LuminaActionButtonStyle(size: .wide, isFocused: focusedItem == changeServerFocus))
                 .disabled(isSigningIn)
                 .focused($focusedItem, equals: changeServerFocus)
 
@@ -319,13 +321,13 @@ struct ServerUnavailableView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     CurrentServerPill(value: appModel.serverURLString)
 
-                    HStack(spacing: 18) {
+                    LuminaActionRow {
                         Button {
                             Task { await appModel.retrySavedServer() }
                         } label: {
                             Label(L10n.text("Retry"), systemImage: "arrow.clockwise")
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(LuminaActionButtonStyle(role: .primary, size: .compact, isFocused: focusedAction == .retry))
                         .focused($focusedAction, equals: .retry)
 
                         Button {
@@ -333,7 +335,7 @@ struct ServerUnavailableView: View {
                         } label: {
                             Label(L10n.text("Search Servers"), systemImage: "dot.radiowaves.left.and.right")
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(LuminaActionButtonStyle(isFocused: focusedAction == .search))
                         .focused($focusedAction, equals: .search)
 
                         Button {
@@ -341,7 +343,7 @@ struct ServerUnavailableView: View {
                         } label: {
                             Label(L10n.text("Change Server"), systemImage: "server.rack")
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(LuminaActionButtonStyle(isFocused: focusedAction == .changeServer))
                         .focused($focusedAction, equals: .changeServer)
                     }
                 }

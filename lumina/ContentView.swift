@@ -25,12 +25,6 @@ struct ContentView: View {
                     .zIndex(9)
             }
 
-            if case .home = appModel.phase,
-               let detail = appModel.selectedCatalogItem {
-                CatalogDetailPage(item: detail)
-                    .transition(.opacity)
-                    .zIndex(10)
-            }
         }
         .foregroundStyle(.white)
         .animation(.easeOut(duration: 0.16), value: appModel.selectedEditorialSection?.id)
@@ -65,14 +59,14 @@ private struct LoadingPlaybackView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-                ProgressView(L10n.text("Preparing playback"))
-                Button {
-                    appModel.exitPlayback()
-                } label: {
-                    Label(L10n.text("Cancel"), systemImage: "xmark.circle")
-                }
-                .buttonStyle(.bordered)
-                .focused($isCancelFocused)
+            ProgressView(L10n.text("Preparing playback"))
+            Button {
+                appModel.exitPlayback()
+            } label: {
+                Label(L10n.text("Cancel"), systemImage: "xmark.circle")
+            }
+            .buttonStyle(LuminaActionButtonStyle(size: .compact, isFocused: isCancelFocused))
+            .focused($isCancelFocused)
         }
         .padding(.horizontal, 90)
         .padding(.vertical, 56)
@@ -123,13 +117,13 @@ struct SettingsView: View {
                 ContractBadge(title: L10n.text("Support ID"), value: summary.lastSupportId)
             }
 
-            HStack(spacing: 18) {
+            LuminaActionRow {
                 Button {
                     Task { await appModel.validateServer() }
                 } label: {
                     Label(L10n.text("Revalidate"), systemImage: "arrow.clockwise")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(LuminaActionButtonStyle(isFocused: focusedAction == .revalidate))
                 .focused($focusedAction, equals: .revalidate)
 
                 Button(role: .destructive) {
@@ -137,7 +131,7 @@ struct SettingsView: View {
                 } label: {
                     Label(L10n.text("Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LuminaActionButtonStyle(role: .destructive, isFocused: focusedAction == .signOut))
                 .focused($focusedAction, equals: .signOut)
             }
         }

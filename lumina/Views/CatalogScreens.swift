@@ -13,52 +13,83 @@ struct HomeShellView: View {
     var body: some View {
         TVTabContainer {
             TabView(selection: $appModel.selectedHomeTab) {
-                CatalogHomeView()
+                CatalogTabPage {
+                    CatalogHomeView()
+                }
                     .tag(HomeTab.home)
                     .tabItem {
                         Label(L10n.text("Home"), systemImage: "house")
                     }
 
-                CatalogGridView(
-                    title: L10n.text("Movies"),
-                    items: appModel.movies,
-                    emptyTitle: L10n.text("No movies found"),
-                    topPadding: TVLayout.contentTopPadding
-                )
+                CatalogTabPage {
+                    CatalogGridView(
+                        title: L10n.text("Movies"),
+                        items: appModel.movies,
+                        emptyTitle: L10n.text("No movies found"),
+                        topPadding: TVLayout.browseGridTopPadding
+                    )
+                }
                 .tag(HomeTab.movies)
                 .tabItem {
                     Label(L10n.text("Movies"), systemImage: "film")
                 }
 
-                CatalogGridView(
-                    title: L10n.text("TV Shows"),
-                    items: appModel.tvShows,
-                    emptyTitle: L10n.text("No TV shows found"),
-                    topPadding: TVLayout.contentTopPadding
-                )
+                CatalogTabPage {
+                    CatalogGridView(
+                        title: L10n.text("TV Shows"),
+                        items: appModel.tvShows,
+                        emptyTitle: L10n.text("No TV shows found"),
+                        topPadding: TVLayout.browseGridTopPadding
+                    )
+                }
                 .tag(HomeTab.tvShows)
                 .tabItem {
                     Label(L10n.text("TV Shows"), systemImage: "tv")
                 }
 
-                CatalogSearchView(topPadding: TVLayout.contentTopPadding)
+                CatalogTabPage {
+                    CatalogSearchView(topPadding: TVLayout.contentTopPadding)
+                }
                     .tag(HomeTab.search)
                     .tabItem {
                         Label(L10n.text("Search"), systemImage: "magnifyingglass")
                     }
 
-                SettingsView(topPadding: TVLayout.safeTopPadding)
+                CatalogTabPage {
+                    SettingsView(topPadding: TVLayout.safeTopPadding)
+                }
                     .tag(HomeTab.settings)
                     .tabItem {
                         Label(L10n.text("Settings"), systemImage: "gearshape")
                     }
             }
         }
+        .onChange(of: appModel.selectedHomeTab) { _, _ in
+            appModel.closeCatalogDetail()
+        }
         .task {
             if appModel.automaticCatalogRefreshEnabled {
                 await appModel.loadCatalog()
             }
         }
+    }
+}
+
+private struct CatalogTabPage<Content: View>: View {
+    @EnvironmentObject private var appModel: AppModel
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ZStack {
+            content()
+
+            if let detail = appModel.selectedCatalogItem {
+                CatalogDetailPage(item: detail)
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+        }
+        .animation(.easeOut(duration: 0.16), value: appModel.selectedCatalogItem?.id)
     }
 }
 
@@ -258,8 +289,14 @@ private struct HomeLoadingView: View {
     }
 }
 
-private struct HomeDynamicBackground: View {
+struct HomeDynamicBackground: View {
     let palette: HomeBackgroundPalette
+    let animates: Bool
+
+    init(palette: HomeBackgroundPalette, animates: Bool = true) {
+        self.palette = palette
+        self.animates = animates
+    }
 
     var body: some View {
         ZStack {
@@ -293,11 +330,11 @@ private struct HomeDynamicBackground: View {
                 endPoint: .bottom
             )
         }
-        .animation(.easeInOut(duration: 1.45), value: palette)
+        .animation(animates ? .easeInOut(duration: 1.45) : nil, value: palette)
     }
 }
 
-private struct HomeBackgroundPalette: Equatable {
+struct HomeBackgroundPalette: Equatable {
     let backgroundHex: String?
     let backgroundSecondaryHex: String?
     let accentHex: String?
@@ -378,26 +415,66 @@ private struct CatalogGridView: View {
     let topPadding: CGFloat
 
     private let columns = [
-        GridItem(.adaptive(minimum: 250, maximum: 270), spacing: 34)
+        GridItem(.adaptive(minimum: 220, maximum: 240), spacing: 34)
     ]
 
     var body: some View {
-        TVTabPageLayout(topPadding: topPadding, spacing: 30) {
-            CatalogHeader(title: title, subtitle: L10n.titleCount(items.count))
+        ZStack(alignment: .topLeading) {
+            CatalogBrowseBackground()
+                .ignoresSafeArea()
 
-            if items.isEmpty && appModel.isCatalogLoading {
-                ProgressView(L10n.loading(title))
-            } else if items.isEmpty {
-                EmptyCatalogState(title: emptyTitle)
-            } else {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 34) {
-                    ForEach(items) { item in
-                        CatalogPosterButton(item: item)
+            TVTabPageLayout(topPadding: topPadding, spacing: 30) {
+                CatalogHeader(title: title, subtitle: L10n.titleCount(items.count))
+
+                if items.isEmpty && appModel.isCatalogLoading {
+                    ProgressView(L10n.loading(title))
+                } else if items.isEmpty {
+                    EmptyCatalogState(title: emptyTitle)
+                } else {
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 34) {
+                        ForEach(items) { item in
+                            CatalogPosterButton(item: item)
+                        }
                     }
                 }
-            }
 
-            StatusText(message: appModel.statusMessage)
+                StatusText(message: appModel.statusMessage)
+            }
+        }
+    }
+}
+
+private struct CatalogBrowseBackground: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.02, green: 0.021, blue: 0.024),
+                    Color(red: 0.035, green: 0.039, blue: 0.043),
+                    Color.black
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            LinearGradient(
+                colors: [
+                    Color(red: 0.07, green: 0.12, blue: 0.11).opacity(0.26),
+                    .clear,
+                    Color(red: 0.11, green: 0.055, blue: 0.075).opacity(0.18)
+                ],
+                startPoint: .topTrailing,
+                endPoint: .bottomLeading
+            )
+
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.08),
+                    .black.opacity(0.42)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
         }
     }
 }
@@ -434,9 +511,8 @@ private struct CatalogSearchView: View {
                     Task { await appModel.runSearch() }
                 } label: {
                     Label(L10n.text("Search"), systemImage: "magnifyingglass")
-                        .font(.system(size: 31, weight: .semibold))
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(LuminaActionButtonStyle(role: .primary, size: .compact, isFocused: focusedField == .submit))
                 .focused($focusedField, equals: .submit)
             }
 

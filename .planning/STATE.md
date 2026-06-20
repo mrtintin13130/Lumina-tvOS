@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 Phase: Complete
 Plan: Complete
 Status: Milestone v1.2 completed and archived
-Last activity: 2026-06-18 - Completed quick task home-loading-state-center
+Last activity: 2026-06-20 - Completed quick task catalog-grid-background-gradient
 
 Progress: [##########] 100%
 
@@ -110,6 +110,11 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Date | Task | Summary |
 |------|------|---------|
+| 2026-06-20 | detail-expandable-action-buttons | Added opt-in expandable Lumina action buttons and applied them to the media detail Play/Resume, Watchlist, and Favorite actions so they show icon-only while unfocused and expand with labels on focus; generic tvOS build passed with code signing disabled. |
+| 2026-06-20 | reusable-tvos-buttons | Added shared Lumina tvOS action button primitives with stable single-line sizing, focus-aware primary/secondary/destructive styling, and action-row spacing; migrated setup, search, settings, playback cancel, and detail action buttons while leaving media cards on native styles. Build attempts reached Swift compilation without diagnostics but local Xcode service hangs prevented a clean build result. |
+| 2026-06-20 | catalog-grid-background-gradient | Added a subtle layered dark gradient background to the shared Movies and TV Shows catalog grid page, preserving poster focus/layout and leaving Home, Search, Settings, and detail backgrounds unchanged; generic tvOS build passed with code signing disabled. |
+| 2026-06-20 | catalog-grid-spacing-simplification | Reduced the Movies and TV Shows browse page top inset from the general `46` pt catalog content padding to a named `24` pt browse-grid padding, preserving the 80 pt Apple TV-safe horizontal content rail; generic tvOS build passed with code signing disabled. |
+| 2026-06-18 | catalog-grid-extra-column | Reduced the shared Movies and TV Shows catalog grid item range from `250...270` pt to `220...240` pt, preserving the existing 34 pt spacing while allowing one additional adaptive poster column on the standard tvOS page layout; generic tvOS build passed with code signing disabled. |
 | 2026-06-18 | catalog-page-scaffolds | Added reusable tvOS page layout primitives (`TVTabContainer`, `TVTabPageLayout`, `TVFullBleedPageLayout`, `TVMediaDetailLayout`, and `.tvContentRail()`), migrated catalog tabs, Home, grid, Search, Settings, and detail pages onto named safe-area containers, registered the new Swift file in Xcode, and verified with a generic tvOS build. |
 | 2026-06-18 | catalog-horizontal-inset-root-cause | Fixed the remaining oversized side spacing by removing double horizontal safe-area ownership: the catalog `TabView` and detail foreground now ignore horizontal safe area only, preserving native top behavior while keeping Lumina's explicit 80 pt content inset as the single alignment source; generic tvOS build passed with code signing disabled. |
 | 2026-06-18 | catalog-safe-area-alignment | Aligned catalog safe-area ownership with the Home pattern: the shared catalog `TabView` no longer ignores top/horizontal safe areas, Home keeps its own full-bleed behavior locally, the detail menu uses the top safe margin, and detail cast/crew plus episode shelves use Home-style horizontal safe insets; generic tvOS build passed with code signing disabled. |

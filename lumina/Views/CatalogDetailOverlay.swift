@@ -15,37 +15,15 @@ struct CatalogDetailPage: View {
 
     var body: some View {
         TVMediaDetailLayout {
-            DetailBackdropImage(url: appModel.artworkURL(for: item.backdropPath ?? item.posterPath, kind: .backdrop))
+            HomeDynamicBackground(
+                palette: HomeBackgroundPalette(item: item),
+                animates: false
+            )
                 .ignoresSafeArea()
-
-            LinearGradient(
-                colors: [
-                    .black.opacity(0.9),
-                    .black.opacity(0.42),
-                    .black.opacity(0.05)
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .ignoresSafeArea()
-
-            LinearGradient(
-                colors: [
-                    .clear,
-                    .black.opacity(0.48),
-                    .black
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
         } content: {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 42) {
-                    DetailHero(focusedAction: $focusedAction, item: item)
-                        .padding(.top, TVLayout.detailHeroTopPadding)
-                        .padding(.horizontal, TVLayout.safeHorizontalPadding)
-                        .frame(maxWidth: TVLayout.detailContentMaxWidth, alignment: .leading)
+                    DetailContextualHero(focusedAction: $focusedAction, item: item)
 
                     DetailPeopleShelves(item: item)
                         .padding(.horizontal, TVLayout.safeHorizontalPadding)
@@ -69,10 +47,6 @@ struct CatalogDetailPage: View {
                 .padding(.bottom, TVLayout.contentBottomPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            DetailMainMenu()
-                .padding(.top, TVLayout.detailMenuTopPadding)
-                .padding(.horizontal, TVLayout.safeHorizontalPadding)
         }
         .onExitCommand {
             appModel.closeCatalogDetail()
@@ -90,68 +64,62 @@ struct CatalogDetailPage: View {
     }
 }
 
-private struct DetailMainMenu: View {
+private struct DetailContextualHero: View {
     @EnvironmentObject private var appModel: AppModel
-    @FocusState private var focusedTab: HomeTab?
+    @FocusState.Binding var focusedAction: DetailAction?
 
-    private let items: [(tab: HomeTab, title: String, systemImage: String)] = [
-        (.home, L10n.text("Home"), "house"),
-        (.movies, L10n.text("Movies"), "film"),
-        (.tvShows, L10n.text("TV Shows"), "tv"),
-        (.search, L10n.text("Search"), "magnifyingglass"),
-        (.settings, L10n.text("Settings"), "gearshape")
-    ]
+    let item: CatalogItem
+
+    private let artworkTopBleedHeight: CGFloat = 120
+    private let artworkBottomBleedHeight: CGFloat = 60
+    private let topFadeHeight: CGFloat = 210
+    private let minBottomFadeHeight: CGFloat = 300
+    private let maxBottomFadeHeight: CGFloat = 520
+    private let bottomFadeHeightRatio: CGFloat = 0.66
 
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(items, id: \.tab) { item in
-                Button {
-                    appModel.openHomeTab(item.tab)
-                } label: {
-                    Label(item.title, systemImage: item.systemImage)
-                        .font(.system(size: 23, weight: .semibold))
-                        .labelStyle(.titleAndIcon)
-                        .frame(minWidth: item.tab == .tvShows ? 158 : 128)
-                }
-                .buttonStyle(DetailMenuButtonStyle(isSelected: appModel.selectedHomeTab == item.tab))
-                .focused($focusedTab, equals: item.tab)
-                .modifier(DetailMenuFocusModifier(isFocused: focusedTab == item.tab))
-            }
-        }
-        .padding(8)
-        .background(.black.opacity(0.34), in: Capsule())
-        .overlay {
-            Capsule()
-                .stroke(.white.opacity(0.12), lineWidth: 1)
-        }
-    }
-}
+        ZStack(alignment: .bottomLeading) {
+            Color.clear
 
-private struct DetailMenuButtonStyle: ButtonStyle {
-    let isSelected: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(isSelected ? .black : .white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(
-                isSelected ? .white.opacity(configuration.isPressed ? 0.74 : 0.9) : .white.opacity(configuration.isPressed ? 0.18 : 0.08),
-                in: Capsule()
+            DetailContextualHeroBackdrop(
+                url: appModel.artworkURL(
+                    for: item.heroBackdropPath,
+                    kind: .backdrop
+                ),
+                topFadeHeight: topFadeHeight,
+                bottomFadeHeight: artworkBottomFadeHeight
             )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
+            .frame(width: heroArtworkWidth, height: heroArtworkHeight, alignment: .topTrailing)
+            .frame(maxWidth: .infinity, maxHeight: heroArtworkHeight, alignment: .topTrailing)
+            .frame(height: heroHeight, alignment: .top)
+            .offset(y: -artworkTopBleedHeight)
+            .ignoresSafeArea(.container, edges: [.top, .horizontal])
+            .accessibilityHidden(true)
+
+            DetailHero(focusedAction: $focusedAction, item: item)
+                .padding(.horizontal, TVLayout.safeHorizontalPadding)
+                .padding(.bottom, 66)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: heroHeight)
+        .focusSection()
     }
-}
 
-private struct DetailMenuFocusModifier: ViewModifier {
-    let isFocused: Bool
+    private var heroHeight: CGFloat {
+        TVLayout.detailContextualHeroHeight
+    }
 
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(isFocused ? 1.05 : 1)
-            .shadow(color: .white.opacity(isFocused ? 0.28 : 0), radius: 14, x: 0, y: 0)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
+    private var artworkBottomFadeHeight: CGFloat {
+        let proposedHeight = heroArtworkHeight * bottomFadeHeightRatio
+        return min(max(proposedHeight, minBottomFadeHeight), maxBottomFadeHeight)
+    }
+
+    private var heroArtworkWidth: CGFloat {
+        heroArtworkHeight * 16 / 9
+    }
+
+    private var heroArtworkHeight: CGFloat {
+        heroHeight + artworkTopBleedHeight + artworkBottomBleedHeight
     }
 }
 
@@ -159,6 +127,7 @@ private enum DetailAction: Hashable {
     case play
     case watchlist
     case favorite
+    case trailer
 }
 
 private struct DetailHero: View {
@@ -169,37 +138,38 @@ private struct DetailHero: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 16) {
-                DetailTitleMark(item: item)
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 16) {
+                    DetailTitleMark(item: item)
 
-                DetailMetadataRow(values: item.detailMetadata)
+                    DetailMetadataRow(values: item.detailMetadata)
+                }
+
+                if let overview = item.overview, !overview.isEmpty {
+                    Text(overview)
+                        .font(.system(size: 29, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .lineLimit(4)
+                        .lineSpacing(5)
+                        .frame(maxWidth: 960, alignment: .leading)
+                }
+
+                DetailHeroProgress(item: item)
+                DetailMembershipRow(item: item)
             }
+            .frame(maxWidth: TVLayout.detailContentMaxWidth, alignment: .leading)
 
-            if let overview = item.overview, !overview.isEmpty {
-                Text(overview)
-                    .font(.system(size: 29, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.82))
-                    .lineLimit(4)
-                    .lineSpacing(5)
-                    .frame(maxWidth: 960, alignment: .leading)
-            }
-
-            DetailHeroProgress(item: item)
-            DetailMembershipRow(item: item)
-
-            HStack(alignment: .center, spacing: 14) {
+            LuminaActionRow(spacing: 16) {
                 if item.mediaType == "movie" {
                     Button {
                         Task { await appModel.playCatalogMovie(item) }
                     } label: {
                         Label(item.primaryActionTitle, systemImage: "play.fill")
-                            .font(.system(size: 29, weight: .bold))
-                            .frame(minWidth: 192)
                     }
-                    .buttonStyle(DetailActionButtonStyle(isPrimary: true))
+                    .buttonStyle(detailActionButtonStyle(role: .primary, action: .play))
                     .disabled(item.hasPlayableMedia == false)
                     .focused($focusedAction, equals: .play)
-                    .modifier(DetailActionFocusModifier(isFocused: focusedAction == .play))
+                    .accessibilityLabel(item.primaryActionTitle)
                     .accessibilityHint(L10n.text("Starts playback"))
                 }
 
@@ -208,12 +178,10 @@ private struct DetailHero: View {
                         Task { await appModel.toggleWatchlist(item) }
                     } label: {
                         Label(item.watchlistActionTitle, systemImage: item.isWatchlisted == true ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 29, weight: .bold))
-                            .frame(minWidth: 220)
                     }
-                    .buttonStyle(DetailActionButtonStyle(isPrimary: false))
+                    .buttonStyle(detailActionButtonStyle(role: .secondary, action: .watchlist))
                     .focused($focusedAction, equals: .watchlist)
-                    .modifier(DetailActionFocusModifier(isFocused: focusedAction == .watchlist))
+                    .accessibilityLabel(item.watchlistActionTitle)
                     .accessibilityHint(L10n.text("Updates watchlist"))
                 }
 
@@ -222,71 +190,156 @@ private struct DetailHero: View {
                         Task { await appModel.toggleFavorite(item) }
                     } label: {
                         Label(item.favoriteActionTitle, systemImage: item.isFavorite == true ? "heart.fill" : "heart")
-                            .font(.system(size: 29, weight: .bold))
-                            .frame(minWidth: 210)
                     }
-                    .buttonStyle(DetailActionButtonStyle(isPrimary: false))
+                    .buttonStyle(detailActionButtonStyle(role: .secondary, action: .favorite))
                     .focused($focusedAction, equals: .favorite)
-                    .modifier(DetailActionFocusModifier(isFocused: focusedAction == .favorite))
+                    .accessibilityLabel(item.favoriteActionTitle)
                     .accessibilityHint(L10n.text("Updates favorites"))
                 }
 
-                TrailerUnavailableLabel(isVisible: item.primaryTrailerTitle != nil)
+                TrailerUnavailableButton(
+                    isVisible: item.primaryTrailerTitle != nil,
+                    focusedAction: $focusedAction
+                )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: 1040, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func detailActionButtonStyle(
+        role: LuminaActionButtonRole,
+        action: DetailAction
+    ) -> LuminaActionButtonStyle {
+        let isFocused = focusedAction == action
+        return LuminaActionButtonStyle(
+            role: role,
+            size: .regular,
+            isFocused: isFocused,
+            presentation: .expandable(isExpanded: isFocused)
+        )
     }
 }
 
-private struct TrailerUnavailableLabel: View {
+private struct TrailerUnavailableButton: View {
     let isVisible: Bool
+    @FocusState.Binding var focusedAction: DetailAction?
+
+    private var isFocused: Bool {
+        focusedAction == .trailer
+    }
 
     var body: some View {
         if isVisible {
-            Label(L10n.text("Trailer unavailable"), systemImage: "film.stack")
-                .font(.system(size: 29, weight: .bold))
-                .foregroundStyle(.white.opacity(0.64))
-                .padding(.horizontal, 28)
-                .padding(.vertical, 16)
-                .background(.white.opacity(0.08), in: Capsule())
-                .accessibilityLabel(L10n.text("Trailer unavailable"))
+            Button {} label: {
+                Label(L10n.text("Trailer unavailable"), systemImage: "film.stack")
+            }
+            .buttonStyle(
+                LuminaActionButtonStyle(
+                    role: .secondary,
+                    size: .regular,
+                    isFocused: isFocused,
+                    presentation: .expandable(isExpanded: isFocused)
+                )
+            )
+            .focused($focusedAction, equals: .trailer)
+            .accessibilityLabel(L10n.text("Trailer unavailable"))
         }
     }
 }
 
-private struct DetailBackdropImage: View {
+private struct DetailContextualHeroBackdrop: View {
     let url: URL?
+    let topFadeHeight: CGFloat
+    let bottomFadeHeight: CGFloat
 
     var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color.black)
-
+        ZStack(alignment: .trailing) {
             if let url {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image
                             .resizable()
-                            .scaledToFill()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                            .mask(leftFadeMask)
+                            .mask(topFadeMask)
+                            .mask(bottomFadeMask)
+
                     case .failure:
-                        Image(systemName: "photo")
-                            .font(.system(size: 64, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.28))
+                        placeholderIcon("photo")
+
                     case .empty:
                         ProgressView()
+
                     @unknown default:
                         EmptyView()
                     }
                 }
             } else {
-                Image(systemName: "play.rectangle")
-                    .font(.system(size: 70, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.28))
+                placeholderIcon("play.rectangle")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+    }
+
+    private var leftFadeMask: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .clear, location: 0.12),
+                .init(color: .black.opacity(0.24), location: 0.26),
+                .init(color: .black.opacity(0.78), location: 0.5),
+                .init(color: .black, location: 0.72)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    private var topFadeMask: some View {
+        VStack(spacing: 0) {
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.2), location: 0.28),
+                    .init(color: .black.opacity(0.78), location: 0.68),
+                    .init(color: .black, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: topFadeHeight)
+
+            Color.black
+        }
+    }
+
+    private var bottomFadeMask: some View {
+        VStack(spacing: 0) {
+            Color.black
+
+            LinearGradient(
+                stops: [
+                    .init(color: .black, location: 0),
+                    .init(color: .black.opacity(0.78), location: 0.32),
+                    .init(color: .black.opacity(0.24), location: 0.64),
+                    .init(color: .clear, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: bottomFadeHeight)
+        }
+    }
+
+    private func placeholderIcon(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 70, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.28))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .padding(.trailing, TVLayout.safeHorizontalPadding)
     }
 }
 
@@ -394,38 +447,6 @@ private struct DetailPeopleShelves: View {
                 DetailEmptyPeopleShelf()
             }
         }
-    }
-}
-
-private struct DetailActionButtonStyle: ButtonStyle {
-    let isPrimary: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(isPrimary ? .black : .white)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 16)
-            .background(
-                isPrimary ? .white.opacity(configuration.isPressed ? 0.78 : 0.94) : .white.opacity(0.1),
-                in: Capsule()
-            )
-            .overlay {
-                Capsule()
-                    .stroke(.white.opacity(isPrimary ? 0 : 0.14), lineWidth: 1)
-            }
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
-    }
-}
-
-private struct DetailActionFocusModifier: ViewModifier {
-    let isFocused: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(isFocused ? 1.06 : 1)
-            .shadow(color: .white.opacity(isFocused ? 0.34 : 0), radius: 18, x: 0, y: 0)
-            .animation(.easeOut(duration: 0.16), value: isFocused)
     }
 }
 

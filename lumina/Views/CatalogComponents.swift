@@ -13,6 +13,7 @@ enum TVLayout {
     static let compactHorizontalPadding: CGFloat = 72
     static let safeTopPadding: CGFloat = 60
     static let contentTopPadding: CGFloat = 46
+    static let browseGridTopPadding: CGFloat = 24
     static let contentBottomPadding: CGFloat = 56
     static let shelfSpacing: CGFloat = 36
     static let heroShelfSpacing: CGFloat = 0
@@ -22,6 +23,7 @@ enum TVLayout {
     static let shelfFocusGutter: CGFloat = 26
     static let compactShelfFocusGutter: CGFloat = 22
     static let detailContentMaxWidth: CGFloat = 1360
+    static let detailContextualHeroHeight: CGFloat = 720
     static let detailHeroTopPadding: CGFloat = 290
     static let detailMenuTopPadding: CGFloat = safeTopPadding
     static let setupContentMaxWidth: CGFloat = 1120
